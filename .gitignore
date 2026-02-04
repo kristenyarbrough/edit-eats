@@ -31,3 +31,19 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Maven
+target/
+
+# IntelliJ
+.idea/
+*.iml
+
+# H2 Database files
+data/
+*.mv.db
+*.lock.db
+
+# OS
+.DS_Store
+Thumbs.db

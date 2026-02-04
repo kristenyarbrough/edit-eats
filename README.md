@@ -1,4 +1,12 @@
 # Edit Eats 🍲🗓️
+
+## API Documentation
+
+Swagger UI available at:
+`http://localhost:8080/swagger-ui/index.html`
+
+![Swagger UI](swagger.png)
+
 A Spring Boot + Java 17 backend for storing recipes, planning meals, and generating a combined shopping list with unit conversions.
 
 This started as a personal project to build real-world Java backend experience (service layer, JPA relationships, transactions, request validation, and API design) and to create something genuinely useful.
