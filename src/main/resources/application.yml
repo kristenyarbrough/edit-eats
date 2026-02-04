@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/editeats;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE;MODE=PostgreSQL
+    driverClassName: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+  h2:
+    console:
+      enabled: true
+
+server:
+  port: 8080
