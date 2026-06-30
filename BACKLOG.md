@@ -1,16 +1,27 @@
 # Edit Eats Backlog
 
-## Current Sprint 🚧
+## Sprint 1 - Recipe Management
 
-### Epic: Recipe Management
+### Ingredient Categories
+- [x] Create IngredientCategory entity
+- [x] Create IngredientCategoryRepository
+- [ ] Create IngredientCategoryService
+- [ ] Create IngredientCategoryController
 
-- [ ] Create IngredientCategory entity
+### Ingredients
 - [ ] Create Ingredient entity
+- [ ] Create IngredientRepository
+- [ ] Create IngredientService
+- [ ] Create IngredientController
+
+### Recipes
 - [ ] Create Recipe entity
 - [ ] Create RecipeIngredient entity
-- [ ] Create repositories
-- [ ] Create services
-- [ ] Create CRUD endpoints
+- [ ] Create RecipeRepository
+- [ ] Create RecipeService
+- [ ] Create RecipeController
+
+### Testing
 - [ ] Test in Swagger
 
 ---
