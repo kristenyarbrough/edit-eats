@@ -19,7 +19,12 @@ public class Ingredient {
     @Column(nullable = false)
     private String name;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String category;
+    private Unit defaultUnit;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "ingredient_category_id")
+    private IngredientCategory ingredientCategory;
 
 }

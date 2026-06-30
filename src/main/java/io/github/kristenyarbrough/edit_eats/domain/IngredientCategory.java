@@ -18,4 +18,5 @@ public class IngredientCategory {
 
     @Column(nullable = false, unique = true)
     private String name;
+
 }

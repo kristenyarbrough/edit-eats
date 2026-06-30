@@ -9,8 +9,9 @@
 - [ ] Create IngredientCategoryController
 
 ### Ingredients
-- [ ] Create Ingredient entity
-- [ ] Create IngredientRepository
+- [x] Create Ingredient entity
+- [x] Create IngredientRepository
+- [x] Create CreateIngredientRequest DTO
 - [ ] Create IngredientService
 - [ ] Create IngredientController
 
