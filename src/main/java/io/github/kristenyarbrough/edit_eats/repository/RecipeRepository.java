@@ -1,4 +1,4 @@
-package io.github.kristenyarbrough.edit_eats.repo;
+package io.github.kristenyarbrough.edit_eats.repository;
 
 import io.github.kristenyarbrough.edit_eats.domain.Recipe;
 import org.springframework.data.jpa.repository.JpaRepository;

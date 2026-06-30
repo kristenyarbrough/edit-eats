@@ -4,7 +4,7 @@ import io.github.kristenyarbrough.edit_eats.domain.Recipe;
 import io.github.kristenyarbrough.edit_eats.dto.CreateRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.ShoppingListItem;
 import io.github.kristenyarbrough.edit_eats.dto.ShoppingListRequest;
-import io.github.kristenyarbrough.edit_eats.repo.RecipeRepository;
+import io.github.kristenyarbrough.edit_eats.repository.RecipeRepository;
 import io.github.kristenyarbrough.edit_eats.service.RecipeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

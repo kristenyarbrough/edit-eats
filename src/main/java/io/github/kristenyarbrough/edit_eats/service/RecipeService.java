@@ -5,7 +5,7 @@ import io.github.kristenyarbrough.edit_eats.domain.RecipeIngredient;
 import io.github.kristenyarbrough.edit_eats.dto.CreateRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.ShoppingListItem;
 import io.github.kristenyarbrough.edit_eats.dto.ShoppingListRequest;
-import io.github.kristenyarbrough.edit_eats.repo.RecipeRepository;
+import io.github.kristenyarbrough.edit_eats.repository.RecipeRepository;
 import io.github.kristenyarbrough.edit_eats.util.UnitConverter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,13 +42,13 @@ public class RecipeService {
                 .createdAt(OffsetDateTime.now())
                 .build();
 
-        for (var ing : req.getIngredients()) {
+        for (var ing : req.getRecipeIngredientRequests()) {
             recipe.getIngredients().add(
                     RecipeIngredient.builder()
                             .name(ing.getName())
                             .quantity(ing.getQuantity())
                             .unit(ing.getUnit())
-                            .notes(ing.getNotes())
+                            .notes(ing.getPreparation())
                             .recipe(recipe)
                             .build()
             );
@@ -94,13 +94,13 @@ public class RecipeService {
         // clear old ingredients
         recipe.getIngredients().clear();
 
-        for (var ing : req.getIngredients()) {
+        for (var ing : req.getRecipeIngredientRequests()) {
             recipe.getIngredients().add(
                     RecipeIngredient.builder()
                             .name(ing.getName())
                             .quantity(ing.getQuantity())
                             .unit(ing.getUnit())
-                            .notes(ing.getNotes())
+                            .notes(ing.getPreparation())
                             .recipe(recipe)
                             .build()
             );

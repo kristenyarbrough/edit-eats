@@ -36,15 +36,16 @@ public class CreateRecipeRequest {
 
     @NotEmpty
     @Valid
-    private List<Ingredient> ingredients;
+    private List<RecipeIngredientRequest> recipeIngredientRequests;
 
     @Data
-    public static class Ingredient {
+    public static class RecipeIngredientRequest {
         @NotBlank
         private String name;
 
         private BigDecimal quantity;
         private Unit unit;
-        private String notes;
+        private String preparation;
+        private Boolean optional = false;
     }
 }
