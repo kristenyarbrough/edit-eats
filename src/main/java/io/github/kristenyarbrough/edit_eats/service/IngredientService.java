@@ -5,7 +5,9 @@ import io.github.kristenyarbrough.edit_eats.domain.IngredientCategory;
 import io.github.kristenyarbrough.edit_eats.dto.CreateIngredientRequest;
 import io.github.kristenyarbrough.edit_eats.repository.IngredientCategoryRepository;
 import io.github.kristenyarbrough.edit_eats.repository.IngredientRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class IngredientService {
@@ -30,8 +32,9 @@ public class IngredientService {
         IngredientCategory category =
                 ingredientCategoryRepository
                         .findById(request.getIngredientCategoryId())
-                        .orElseThrow(() -> new IllegalArgumentException(
-                                "Ingredient category not found."));
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Ingredient category not found: " + request.getIngredientCategoryId()));
 
         Ingredient ingredient = Ingredient.builder()
                 .name(request.getName())

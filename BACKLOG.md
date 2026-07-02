@@ -5,15 +5,15 @@
 ### Ingredient Categories
 - [x] Create IngredientCategory entity
 - [x] Create IngredientCategoryRepository
-- [ ] Create IngredientCategoryService
-- [ ] Create IngredientCategoryController
+- [x] Create IngredientCategoryService
+- [x] Create IngredientCategoryController
 
 ### Ingredients
 - [x] Create Ingredient entity
 - [x] Create IngredientRepository
 - [x] Create CreateIngredientRequest DTO
-- [ ] Create IngredientService
-- [ ] Create IngredientController
+- [x] Create IngredientService
+- [x] Create IngredientController
 
 ### Recipes
 - [ ] Create Recipe entity
