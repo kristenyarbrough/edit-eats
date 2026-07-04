@@ -16,11 +16,11 @@
 - [x] Create IngredientController
 
 ### Recipes
-- [ ] Create Recipe entity
+- [x] Create Recipe entity
 - [ ] Create RecipeIngredient entity
-- [ ] Create RecipeRepository
-- [ ] Create RecipeService
-- [ ] Create RecipeController
+- [x] Create RecipeRepository
+- [x] Create RecipeService
+- [x] Create RecipeController
 
 ### Testing
 - [ ] Test in Swagger
@@ -79,3 +79,62 @@
 - [ ] Nutrition information
 - [ ] Dark mode
 - [ ] Update README.md
+
+
+# Domain Model
+
+## Recipe
+- id
+- name
+- prepMinutes
+- cookMinutes
+- servings
+- difficulty
+- sourceUrl
+- imageUrl
+- storageInstructions
+- freezerInstructions
+
+Relationships:
+- RecipeIngredients
+- RecipeSteps
+- RecipeCategories
+
+## RecipeIngredient
+- recipe
+- ingredient
+- quantity
+- unit
+- preparation
+- optional
+- displayOrder
+
+## RecipeStep
+- recipe
+- stepNumber
+- instruction
+
+## Ingredient
+- name
+- defaultUnit
+- ingredientCategory
+
+## RecipeCategory
+- name
+
+## IngredientCategory
+- name
+
+# Future Improvements
+
+- [x] Add createdAt to Recipe
+- [x] Add lastModifiedAt to Recipe
+- [ ] Recipe search
+- [ ] Recipe pagination
+- [ ] Recently viewed recipes
+- [ ] Favourite recipes
+- [ ] Recipe ratings
+- [ ] Import recipe from URL
+- [ ] Upload image to Recipe
+- [ ] Update recipe
+- [ ] Add createdBy to Recipe

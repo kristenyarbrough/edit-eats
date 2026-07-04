@@ -39,17 +39,17 @@ public class MealPlanController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meal plan not found"));
     }
 
-    @GetMapping("/{weekStarting}/shopping-list")
-    public List<ShoppingListItem> shoppingList(@PathVariable String weekStarting) {
-        LocalDate date = LocalDate.parse(weekStarting);
-
-        MealPlan plan = repository.findByWeekStarting(date)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meal plan not found"));
-
-        if (plan.getRecipeIds() == null || plan.getRecipeIds().isEmpty()) {
-            return List.of();
-        }
-
-        return recipeService.generateShoppingListByRecipeIds(plan.getRecipeIds());
-    }
+//    @GetMapping("/{weekStarting}/shopping-list")
+//    public List<ShoppingListItem> shoppingList(@PathVariable String weekStarting) {
+//        LocalDate date = LocalDate.parse(weekStarting);
+//
+//        MealPlan plan = repository.findByWeekStarting(date)
+//                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meal plan not found"));
+//
+//        if (plan.getRecipeIds() == null || plan.getRecipeIds().isEmpty()) {
+//            return List.of();
+//        }
+//
+//        return recipeService.generateShoppingListByRecipeIds(plan.getRecipeIds());
+//    }
 }

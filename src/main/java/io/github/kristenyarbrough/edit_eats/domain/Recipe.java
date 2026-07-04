@@ -3,11 +3,10 @@ package io.github.kristenyarbrough.edit_eats.domain;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "recipe")
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor @Builder
 public class Recipe {
@@ -19,12 +18,21 @@ public class Recipe {
     @Column(nullable = false)
     private String name;
 
-    @Lob
     @Column(nullable = false)
-    private String method;
+    private Integer prepMinutes;
+
+    @Column(nullable = false)
+    private Integer cookMinutes;
+
+    @Column(nullable = false)
+    private Integer servings;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Difficulty difficulty;
 
     private String sourceUrl;
-    private String photoUrl;
+    private String imageUrl;
 
     @Lob
     private String storageInstructions;
@@ -32,13 +40,37 @@ public class Recipe {
     @Lob
     private String freezerInstructions;
 
-    private Integer servings;
-    private Integer prepMinutes;
-    private Integer cookMinutes;
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
 
-    private OffsetDateTime createdAt;
+    @Column(nullable = false)
+    private LocalDateTime lastModifiedAt;
 
-    @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<RecipeIngredient> ingredients = new ArrayList<>();
+    @Transient
+    public int getTotalMinutes() {
+        return prepMinutes + cookMinutes;
+    }
+
+    @Transient
+    public String getFormattedTotalTime() {
+        int total = getTotalMinutes();
+
+        int hours = total / 60;
+        int minutes = total % 60;
+
+        if (hours == 0) {
+            return minutes + " mins";
+        }
+
+        if (minutes == 0) {
+            return hours + (hours == 1 ? " hr" : " hrs");
+        }
+
+        return hours + (hours == 1 ? " hr " : " hrs ") + minutes + " mins";
+    }
 }
+//private OffsetDateTime createdAt;
+//
+//@OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
+//@Builder.Default
+//private List<RecipeIngredient> ingredients = new ArrayList<>();
