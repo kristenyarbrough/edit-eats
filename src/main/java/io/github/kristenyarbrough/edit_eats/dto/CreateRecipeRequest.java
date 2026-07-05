@@ -1,8 +1,11 @@
 package io.github.kristenyarbrough.edit_eats.dto;
 
 import io.github.kristenyarbrough.edit_eats.domain.Difficulty;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Data;
+
+import java.util.List;
 
 @Data
 public class CreateRecipeRequest {
@@ -29,6 +32,17 @@ public class CreateRecipeRequest {
     private String imageUrl;
     private String storageInstructions;
     private String freezerInstructions;
+
+    @NotEmpty
+    @Valid
+    private List<Step> steps;
+
+    @Data
+    public static class Step {
+
+        @NotBlank
+        private String instruction;
+    }
 
 }
 

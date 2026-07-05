@@ -17,15 +17,31 @@
 
 ### Recipes
 - [x] Create Recipe entity
-- [ ] Create RecipeIngredient entity
+- [x] Create RecipeIngredient entity
 - [x] Create RecipeRepository
 - [x] Create RecipeService
 - [x] Create RecipeController
+- [x] Create RecipeStep entity
+- [x] Create RecipeStepRepository
 
 ### Testing
-- [ ] Test in Swagger
+- [x] Test in Swagger
 
 ---
+
+## Sprint 2 - Complete Recipe Creation Workflow
+
+### Recipes
+- [ ] Update RecipeIngredient entity
+- [ ] Create RecipeCategory entity (supporting multiple categories per recipe)
+- [ ] Create their repositories
+- [ ] Extend CreateRecipeRequest to include ingredients and categories
+- [ ] Update RecipeService.createRecipe() to save:
+  - [ ] the recipe
+  - [ ] the categories
+  - [ ] all ingredients
+  - [ ] all steps
+  - in a single transaction
 
 ## Next Sprint
 
@@ -138,3 +154,36 @@ Relationships:
 - [ ] Upload image to Recipe
 - [ ] Update recipe
 - [ ] Add createdBy to Recipe
+
+---
+
+## Plan
+
+### Phase 1 — Core recipe management (where we are now)
+- [x] ✅ Ingredient
+- [x] ✅ IngredientCategory
+- [ ] 🚧 Recipe
+- [ ] 🚧 RecipeStep
+- [ ] 🚧 RecipeIngredient
+- [ ] ⏳ RecipeCategory
+
+### Phase 2 — Retrieval
+- [ ] Get recipe by ID
+- [ ] Search recipes
+- [ ] List recipes
+- [ ] Filter by category
+- [ ] Filter by ingredient
+- [ ] Sort
+
+### Phase 3 — Editing
+- [ ] Update recipe
+- [ ] Add/remove ingredients
+- [ ] Reorder steps
+- [ ] Delete recipe
+
+### Phase 4 — The exciting features
+- [ ] Recipe import from URL
+- [ ] Shopping list generation
+- [ ] Scale recipes (2 serves → 8 serves)
+- [ ] Pantry
+- [ ] Meal planner

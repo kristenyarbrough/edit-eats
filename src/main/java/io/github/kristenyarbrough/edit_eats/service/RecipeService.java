@@ -1,8 +1,10 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.Recipe;
+import io.github.kristenyarbrough.edit_eats.domain.RecipeStep;
 import io.github.kristenyarbrough.edit_eats.dto.CreateRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.repository.RecipeRepository;
+import io.github.kristenyarbrough.edit_eats.repository.RecipeStepRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,7 @@ import java.util.*;
 public class RecipeService {
 
     private final RecipeRepository recipeRepository;
+    private final RecipeStepRepository recipeStepRepository;
 
     @Transactional
     public Recipe createRecipe(CreateRecipeRequest request) {
@@ -31,6 +34,24 @@ public class RecipeService {
                 .createdAt(LocalDateTime.now())
                 .lastModifiedAt(LocalDateTime.now())
                 .build();
+
+        recipe = recipeRepository.save(recipe);
+
+        List<RecipeStep> steps = new ArrayList<>();
+
+        int stepNumber = 1;
+
+        for (CreateRecipeRequest.Step stepRequest : request.getSteps()) {
+            steps.add(
+                    RecipeStep.builder()
+                            .recipe(recipe)
+                            .stepNumber(stepNumber++)
+                            .instruction(stepRequest.getInstruction())
+                            .build()
+            );
+        }
+
+        recipeStepRepository.saveAll(steps);
 
 //        for (var ing : request.getRecipeIngredientRequests()) {
 //            recipe.getIngredients().add(
