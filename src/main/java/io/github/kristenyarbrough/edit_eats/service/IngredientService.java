@@ -2,7 +2,7 @@ package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.Ingredient;
 import io.github.kristenyarbrough.edit_eats.domain.IngredientCategory;
-import io.github.kristenyarbrough.edit_eats.dto.CreateIngredientRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.CreateIngredientRequest;
 import io.github.kristenyarbrough.edit_eats.repository.IngredientCategoryRepository;
 import io.github.kristenyarbrough.edit_eats.repository.IngredientRepository;
 import org.springframework.http.HttpStatus;

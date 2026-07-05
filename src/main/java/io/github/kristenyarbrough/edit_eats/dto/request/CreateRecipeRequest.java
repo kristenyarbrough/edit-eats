@@ -1,4 +1,4 @@
-package io.github.kristenyarbrough.edit_eats.dto;
+package io.github.kristenyarbrough.edit_eats.dto.request;
 
 import io.github.kristenyarbrough.edit_eats.domain.Difficulty;
 import jakarta.validation.Valid;
@@ -35,14 +35,7 @@ public class CreateRecipeRequest {
 
     @NotEmpty
     @Valid
-    private List<Step> steps;
-
-    @Data
-    public static class Step {
-
-        @NotBlank
-        private String instruction;
-    }
+    private List<CreateRecipeStepRequest> steps;
 
 }
 

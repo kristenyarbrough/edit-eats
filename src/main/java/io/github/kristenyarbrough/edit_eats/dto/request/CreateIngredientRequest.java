@@ -1,4 +1,4 @@
-package io.github.kristenyarbrough.edit_eats.dto;
+package io.github.kristenyarbrough.edit_eats.dto.request;
 
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
 import jakarta.validation.constraints.NotBlank;

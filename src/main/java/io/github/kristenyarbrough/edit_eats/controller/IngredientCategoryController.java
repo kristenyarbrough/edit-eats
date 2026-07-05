@@ -1,7 +1,7 @@
 package io.github.kristenyarbrough.edit_eats.controller;
 
 import io.github.kristenyarbrough.edit_eats.domain.IngredientCategory;
-import io.github.kristenyarbrough.edit_eats.dto.CreateIngredientCategoryRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.CreateIngredientCategoryRequest;
 import io.github.kristenyarbrough.edit_eats.service.IngredientCategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,7 @@
 package io.github.kristenyarbrough.edit_eats.controller;
 
 import io.github.kristenyarbrough.edit_eats.domain.Recipe;
-import io.github.kristenyarbrough.edit_eats.dto.CreateRecipeRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.service.RecipeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

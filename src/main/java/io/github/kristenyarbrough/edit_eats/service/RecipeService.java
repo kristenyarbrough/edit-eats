@@ -2,7 +2,8 @@ package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.Recipe;
 import io.github.kristenyarbrough.edit_eats.domain.RecipeStep;
-import io.github.kristenyarbrough.edit_eats.dto.CreateRecipeRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeStepRequest;
 import io.github.kristenyarbrough.edit_eats.repository.RecipeRepository;
 import io.github.kristenyarbrough.edit_eats.repository.RecipeStepRepository;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +42,7 @@ public class RecipeService {
 
         int stepNumber = 1;
 
-        for (CreateRecipeRequest.Step stepRequest : request.getSteps()) {
+        for (CreateRecipeStepRequest stepRequest : request.getSteps()) {
             steps.add(
                     RecipeStep.builder()
                             .recipe(recipe)

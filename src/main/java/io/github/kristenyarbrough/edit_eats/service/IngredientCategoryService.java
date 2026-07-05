@@ -1,7 +1,7 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.IngredientCategory;
-import io.github.kristenyarbrough.edit_eats.dto.CreateIngredientCategoryRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.CreateIngredientCategoryRequest;
 import io.github.kristenyarbrough.edit_eats.repository.IngredientCategoryRepository;
 import org.springframework.stereotype.Service;
 
