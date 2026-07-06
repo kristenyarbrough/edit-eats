@@ -1,14 +1,21 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
+import io.github.kristenyarbrough.edit_eats.domain.Ingredient;
 import io.github.kristenyarbrough.edit_eats.domain.Recipe;
+import io.github.kristenyarbrough.edit_eats.domain.RecipeIngredient;
 import io.github.kristenyarbrough.edit_eats.domain.RecipeStep;
+import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeIngredientRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeStepRequest;
+import io.github.kristenyarbrough.edit_eats.repository.IngredientRepository;
+import io.github.kristenyarbrough.edit_eats.repository.RecipeIngredientRepository;
 import io.github.kristenyarbrough.edit_eats.repository.RecipeRepository;
 import io.github.kristenyarbrough.edit_eats.repository.RecipeStepRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -19,9 +26,13 @@ public class RecipeService {
 
     private final RecipeRepository recipeRepository;
     private final RecipeStepRepository recipeStepRepository;
+    private final IngredientRepository ingredientRepository;
+    private final RecipeIngredientRepository recipeIngredientRepository;
 
     @Transactional
     public Recipe createRecipe(CreateRecipeRequest request) {
+        LocalDateTime now = LocalDateTime.now();
+
         Recipe recipe = Recipe.builder()
                 .name(request.getName())
                 .prepMinutes(request.getPrepMinutes())
@@ -32,42 +43,54 @@ public class RecipeService {
                 .servings(request.getServings())
                 .storageInstructions(request.getStorageInstructions())
                 .freezerInstructions(request.getFreezerInstructions())
-                .createdAt(LocalDateTime.now())
-                .lastModifiedAt(LocalDateTime.now())
+                .createdAt(now)
+                .lastModifiedAt(now)
                 .build();
 
         recipe = recipeRepository.save(recipe);
 
+        List<RecipeIngredient> recipeIngredients = new ArrayList<>();
+
+        for (CreateRecipeIngredientRequest ingredientRequest : request.getIngredients()) {
+            Ingredient ingredient = ingredientRepository.findById(ingredientRequest.getIngredientId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Ingredient not found: " + ingredientRequest.getIngredientId()));
+            RecipeIngredient recipeIngredient = RecipeIngredient.builder()
+                    .recipe(recipe)
+                    .ingredient(ingredient)
+                    .quantity(ingredientRequest.getQuantity())
+                    .unit(ingredientRequest.getUnit())
+                    .preparation(ingredientRequest.getPreparation())
+                    .optional(ingredientRequest.getOptional())
+                    .build();
+
+            recipeIngredients.add(recipeIngredient);
+        }
+
+        recipeIngredientRepository.saveAll(recipeIngredients);
+
         List<RecipeStep> steps = new ArrayList<>();
 
-        int stepNumber = 1;
+        for (int i = 0; i < request.getSteps().size(); i++) {
 
-        for (CreateRecipeStepRequest stepRequest : request.getSteps()) {
+            CreateRecipeStepRequest stepRequest = request.getSteps().get(i);
+
             steps.add(
                     RecipeStep.builder()
                             .recipe(recipe)
-                            .stepNumber(stepNumber++)
+                            .stepNumber(i + 1)
                             .instruction(stepRequest.getInstruction())
                             .build()
             );
+
         }
 
         recipeStepRepository.saveAll(steps);
 
-//        for (var ing : request.getRecipeIngredientRequests()) {
-//            recipe.getIngredients().add(
-//                    RecipeIngredient.builder()
-//                            .name(ing.getName())
-//                            .quantity(ing.getQuantity())
-//                            .unit(ing.getUnit())
-//                            .notes(ing.getPreparation())
-//                            .recipe(recipe)
-//                            .build()
-//            );
-//        }
-//
-        return recipeRepository.save(recipe);
+        return recipe;
     }
+}
 //
 //    @Transactional(readOnly = true)
 //    public List<Recipe> getAll() {
@@ -170,4 +193,4 @@ public class RecipeService {
 //        req.setRecipeIds(recipeIds);
 //        return generateShoppingList(req);
 //    }
-}
+

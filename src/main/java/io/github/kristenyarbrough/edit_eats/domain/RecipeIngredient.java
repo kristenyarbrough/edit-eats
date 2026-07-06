@@ -4,17 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 
 @Entity
-@Table(
-        name = "recipe_ingredient",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_recipe_ingredient",
-                columnNames = {"recipe_id", "ingredient_id"}
-        )
-)
+@Table(name = "recipe_ingredient")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -34,7 +26,7 @@ public class RecipeIngredient {
     @JoinColumn(name = "ingredient_id")
     private Ingredient ingredient;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(nullable = false, precision = 10, scale = 4)
     private BigDecimal quantity;
 
     @Enumerated(EnumType.STRING)

@@ -37,6 +37,10 @@ public class CreateRecipeRequest {
     @Valid
     private List<CreateRecipeStepRequest> steps;
 
+    @NotEmpty
+    @Valid
+    private List<CreateRecipeIngredientRequest> ingredients;
+
 }
 
 //    @NotEmpty
