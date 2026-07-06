@@ -1,16 +1,11 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
-import io.github.kristenyarbrough.edit_eats.domain.Ingredient;
-import io.github.kristenyarbrough.edit_eats.domain.Recipe;
-import io.github.kristenyarbrough.edit_eats.domain.RecipeIngredient;
-import io.github.kristenyarbrough.edit_eats.domain.RecipeStep;
+import io.github.kristenyarbrough.edit_eats.domain.*;
+import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeCategoryRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeIngredientRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeStepRequest;
-import io.github.kristenyarbrough.edit_eats.repository.IngredientRepository;
-import io.github.kristenyarbrough.edit_eats.repository.RecipeIngredientRepository;
-import io.github.kristenyarbrough.edit_eats.repository.RecipeRepository;
-import io.github.kristenyarbrough.edit_eats.repository.RecipeStepRepository;
+import io.github.kristenyarbrough.edit_eats.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,6 +23,8 @@ public class RecipeService {
     private final RecipeStepRepository recipeStepRepository;
     private final IngredientRepository ingredientRepository;
     private final RecipeIngredientRepository recipeIngredientRepository;
+    private final RecipeCategoryAssignmentRepository recipeCategoryAssignmentRepository;
+    private final RecipeCategoryRepository recipeCategoryRepository;
 
     @Transactional
     public Recipe createRecipe(CreateRecipeRequest request) {
@@ -87,6 +84,26 @@ public class RecipeService {
         }
 
         recipeStepRepository.saveAll(steps);
+
+        List<RecipeCategoryAssignment> categoryAssignments = new ArrayList<>();
+
+        for (CreateRecipeCategoryRequest recipeCategoryRequest : request.getCategories()) {
+
+            RecipeCategory recipeCategory =
+                    recipeCategoryRepository.findById(recipeCategoryRequest.getRecipeCategoryId())
+                            .orElseThrow(() -> new ResponseStatusException(
+                                    HttpStatus.NOT_FOUND,
+                                    "Recipe category not found: " + recipeCategoryRequest.getRecipeCategoryId()));
+
+            RecipeCategoryAssignment recipeCategoryAssignment = RecipeCategoryAssignment.builder()
+                    .recipe(recipe)
+                    .recipeCategory(recipeCategory)
+                    .build();
+
+            categoryAssignments.add(recipeCategoryAssignment);
+        }
+
+        recipeCategoryAssignmentRepository.saveAll(categoryAssignments);
 
         return recipe;
     }

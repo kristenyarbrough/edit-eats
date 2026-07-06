@@ -32,15 +32,15 @@
 ## Sprint 2 - Complete Recipe Creation Workflow
 
 ### Recipes
-- [ ] Update RecipeIngredient entity
-- [ ] Create RecipeCategory entity (supporting multiple categories per recipe)
-- [ ] Create their repositories
-- [ ] Extend CreateRecipeRequest to include ingredients and categories
-- [ ] Update RecipeService.createRecipe() to save:
-  - [ ] the recipe
-  - [ ] the categories
-  - [ ] all ingredients
-  - [ ] all steps
+- [x] Update RecipeIngredient entity
+- [x] Create RecipeCategory entity (supporting multiple categories per recipe)
+- [x] Create their repositories
+- [x] Extend CreateRecipeRequest to include ingredients and categories
+- [x] Update RecipeService.createRecipe() to save:
+  - [x] the recipe
+  - [x] the categories
+  - [x] all ingredients
+  - [x] all steps
   - in a single transaction
 
 ## Next Sprint
@@ -154,6 +154,7 @@ Relationships:
 - [ ] Upload image to Recipe
 - [ ] Update recipe
 - [ ] Add createdBy to Recipe
+- [ ] Allow adding ingredient by name (search by name)
 
 ---
 

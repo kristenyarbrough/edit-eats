@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -41,20 +42,7 @@ public class CreateRecipeRequest {
     @Valid
     private List<CreateRecipeIngredientRequest> ingredients;
 
-}
+    @Valid
+    private List<CreateRecipeCategoryRequest> categories = new ArrayList<>();
 
-//    @NotEmpty
-//    @Valid
-//    private List<RecipeIngredientRequest> recipeIngredientRequests;
-//
-//    @Data
-//    public static class RecipeIngredientRequest {
-//        @NotBlank
-//        private String name;
-//
-//        private BigDecimal quantity;
-//        private Unit unit;
-//        private String preparation;
-//        private Boolean optional = false;
-//    }
-//}
+}
