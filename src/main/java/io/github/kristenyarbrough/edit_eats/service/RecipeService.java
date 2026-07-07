@@ -5,6 +5,10 @@ import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeCategoryRequ
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeIngredientRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeStepRequest;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeCategoryResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeIngredientResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeStepResponse;
 import io.github.kristenyarbrough.edit_eats.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -106,6 +110,68 @@ public class RecipeService {
         recipeCategoryAssignmentRepository.saveAll(categoryAssignments);
 
         return recipe;
+    }
+
+    public RecipeResponse getRecipe(Long recipeId) {
+
+        Recipe recipe = recipeRepository.findById(recipeId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Recipe not found: " + recipeId));
+
+        List<RecipeIngredient> recipeIngredients = recipeIngredientRepository.findByRecipeId(recipeId);
+
+        List<RecipeStep> recipeSteps = recipeStepRepository.findByRecipeIdOrderByStepNumber(recipeId);
+
+        List<RecipeCategoryAssignment> categoryAssignments = recipeCategoryAssignmentRepository.findByRecipeId(recipeId);
+
+        List<RecipeIngredientResponse> ingredientResponses =
+                recipeIngredients.stream()
+                        .map(recipeIngredient -> RecipeIngredientResponse.builder()
+                                .ingredientId(recipeIngredient.getIngredient().getId())
+                                .ingredientName(recipeIngredient.getIngredient().getName())
+                                .quantity(recipeIngredient.getQuantity())
+                                .unit(recipeIngredient.getUnit())
+                                .preparation(recipeIngredient.getPreparation())
+                                .optional(recipeIngredient.getOptional())
+                                .build())
+                        .toList();
+
+        List<RecipeStepResponse> stepResponses =
+                recipeSteps.stream()
+                        .map(step -> RecipeStepResponse.builder()
+                                .stepNumber(step.getStepNumber())
+                                .instruction(step.getInstruction())
+                                .build())
+                        .toList();
+
+        List<RecipeCategoryResponse> categoryResponses =
+                categoryAssignments.stream()
+                        .map(assignment -> RecipeCategoryResponse.builder()
+                                .id(assignment.getRecipeCategory().getId())
+                                .name(assignment.getRecipeCategory().getName())
+                                .build())
+                        .toList();
+
+        return RecipeResponse.builder()
+                .id(recipe.getId())
+                .name(recipe.getName())
+                .prepMinutes(recipe.getPrepMinutes())
+                .cookMinutes(recipe.getCookMinutes())
+                .totalMinutes(recipe.getTotalMinutes())
+                .formattedTotalMinutes(recipe.getFormattedTotalTime())
+                .servings(recipe.getServings())
+                .difficulty(recipe.getDifficulty())
+                .sourceUrl(recipe.getSourceUrl())
+                .imageUrl(recipe.getImageUrl())
+                .storageInstructions(recipe.getStorageInstructions())
+                .freezerInstructions(recipe.getFreezerInstructions())
+                .createdAt(recipe.getCreatedAt())
+                .lastModifiedAt(recipe.getLastModifiedAt())
+                .ingredients(ingredientResponses)
+                .steps(stepResponses)
+                .categories(categoryResponses)
+                .build();
     }
 }
 //

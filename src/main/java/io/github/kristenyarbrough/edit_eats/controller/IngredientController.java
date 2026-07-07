@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/ingredients")
 @RequiredArgsConstructor
@@ -22,5 +24,16 @@ public class IngredientController {
 
         return ingredientService.createIngredient(request);
 
+    }
+
+    @GetMapping
+    public List<Ingredient> getIngredients(
+            @RequestParam(required = false) String name) {
+
+        if (name == null || name.isBlank()) {
+            return ingredientService.getAllIngredients();
+        }
+
+        return ingredientService.findIngredients(name);
     }
 }

@@ -2,6 +2,7 @@ package io.github.kristenyarbrough.edit_eats.controller;
 
 import io.github.kristenyarbrough.edit_eats.domain.Recipe;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeRequest;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeResponse;
 import io.github.kristenyarbrough.edit_eats.service.RecipeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,16 +23,17 @@ public class RecipeController {
         return recipeService.createRecipe(request);
     }
 
+    @GetMapping("/{id}")
+    public RecipeResponse getRecipe(@PathVariable Long id) {
+        return recipeService.getRecipe(id);
+    }
+
 //    @GetMapping
 //    public Page<Recipe> getAll(@RequestParam(defaultValue = "0") int page,
 //                               @RequestParam(defaultValue = "20") int size) {
 //        return repository.findAll(PageRequest.of(page, size, Sort.by("createdAt").descending()));
 //    }
 //
-//    @GetMapping("/{id}")
-//    public Recipe getById(@PathVariable Long id) {
-//        return recipeService.getById(id);
-//    }
 //
 //    @DeleteMapping("/{id}")
 //    @ResponseStatus(HttpStatus.NO_CONTENT)

@@ -5,9 +5,12 @@ import io.github.kristenyarbrough.edit_eats.domain.IngredientCategory;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateIngredientRequest;
 import io.github.kristenyarbrough.edit_eats.repository.IngredientCategoryRepository;
 import io.github.kristenyarbrough.edit_eats.repository.IngredientRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 @Service
 public class IngredientService {
@@ -44,5 +47,14 @@ public class IngredientService {
 
         return ingredientRepository.save(ingredient);
 
+    }
+
+    public List<Ingredient> getAllIngredients() {
+        return ingredientRepository.findAll(
+                Sort.by(Sort.Direction.ASC, "name"));
+    }
+
+    public List<Ingredient> findIngredients(String name) {
+        return ingredientRepository.findTop20ByNameContainingIgnoreCase(name);
     }
 }
