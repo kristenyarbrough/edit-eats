@@ -163,10 +163,10 @@ Relationships:
 ### Phase 1 — Core recipe management (where we are now)
 - [x] ✅ Ingredient
 - [x] ✅ IngredientCategory
-- [ ] 🚧 Recipe
-- [ ] 🚧 RecipeStep
-- [ ] 🚧 RecipeIngredient
-- [ ] ⏳ RecipeCategory
+- [x] 🚧 Recipe
+- [x] 🚧 RecipeStep
+- [x] 🚧 RecipeIngredient
+- [x] ⏳ RecipeCategory
 
 ### Phase 2 — Retrieval
 - [ ] Get recipe by ID
