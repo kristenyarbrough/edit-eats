@@ -1,5 +1,9 @@
 # Edit Eats 🍲🗓️
 
+*Current implementation includes ingredient management, recipe creation with reusable
+ingredients and ordered steps, and recipe categorisation. Meal planning and shopping list
+generation are currently under development.*
+
 ![Java](https://img.shields.io/badge/Java-17-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0-brightgreen)
 ![Database](https://img.shields.io/badge/Database-H2-blue)
@@ -17,6 +21,34 @@ testing, while continuing to evolve with new features.
 
 ---
 
+## Swagger UI
+
+The application exposes a REST API documented using OpenAPI.
+
+![Swagger UI](docs/images/swagger-ui.png)
+
+Interactive documentation:
+
+http://localhost:8080/swagger-ui/index.html
+
+---
+
+## Quick Start
+
+```bash
+git clone https://github.com/kristenyarbrough/edit-eats.git
+cd edit-eats
+mvn spring-boot:run
+```
+
+Then open:
+
+```
+http://localhost:8080/swagger-ui/index.html
+```
+
+---
+
 ## Why Edit Eats?
 
 Recipe applications often treat ingredients and instructions as simple text. Edit Eats
@@ -27,7 +59,8 @@ into web and mobile applications.
 ---
 
 ## Project Status
-🚧 This project is under active development with new features being added regularly.
+🚧 This project is under active development. New features, tests and design improvements
+are added regularly as the application evolves.
 
 ---
 
@@ -124,13 +157,20 @@ into web and mobile applications.
 The project follows a layered architecture.
 
 ```
-Controller
-    ↓
-Service
-    ↓
-Repository
-    ↓
-Database
+            HTTP
+              │
+              ▼
+      RecipeController
+              │
+              ▼
+       RecipeService
+       /      |      \
+      ▼       ▼       ▼
+Ingredient  Step   Category
+Repository Repository Repository
+      \       |       /
+              ▼
+             H2
 ```
 
 ### Controller
@@ -225,24 +265,6 @@ Key relationships include:
 
 [//]: # ()
 [//]: # (---)
-
-## API Documentation
-
-Interactive Swagger UI is available while the application is running:
-
-```
-http://localhost:8080/swagger-ui/index.html
-```
-
-OpenAPI documentation:
-
-```
-http://localhost:8080/v3/api-docs
-```
-
-![Swagger UI](docs/images/swagger-ui.png)
-
----
 
 ## API
 ### Ingredients
@@ -390,7 +412,7 @@ Planned improvements include:
 
 ---
 
-## Technical Concepts Demonstrated
+## Technical Highlights
 
 This project demonstrates:
 
