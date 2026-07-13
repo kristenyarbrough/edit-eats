@@ -7,6 +7,7 @@ import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeStepRequest;
 import io.github.kristenyarbrough.edit_eats.repository.*;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
@@ -17,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,21 +49,9 @@ import java.util.Optional;
     @Test
     void shouldThrowWhenIngredientDoesNotExist() {
 
-        CreateRecipeRequest request = new CreateRecipeRequest();
+        CreateRecipeRequest request = createValidRequest();
 
-        request.setName("Toast");
-        request.setPrepMinutes(2);
-        request.setCookMinutes(3);
-        request.setServings(1);
-        request.setDifficulty(Difficulty.EASY);
-
-        CreateRecipeIngredientRequest ingredientRequest = new CreateRecipeIngredientRequest();
-
-        ingredientRequest.setIngredientId(1L);
-        ingredientRequest.setQuantity(new BigDecimal("2"));
-        ingredientRequest.setUnit(Unit.EACH);
-        ingredientRequest.setPreparation(null);
-        ingredientRequest.setOptional(false);
+        CreateRecipeIngredientRequest ingredientRequest = createIngredientRequest();
 
         request.setIngredients(List.of(ingredientRequest));
 
@@ -80,45 +70,17 @@ import java.util.Optional;
     @Test
     void shouldCreateRecipe() {
 
-        CreateRecipeRequest request = new CreateRecipeRequest();
+        CreateRecipeRequest request = createValidRequest();
 
-        request.setName("Scrambled Eggs");
-        request.setPrepMinutes(2);
-        request.setCookMinutes(5);
-        request.setServings(2);
-        request.setDifficulty(Difficulty.EASY);
+        Ingredient ingredient = createIngredient();
 
-        Ingredient ingredient = Ingredient.builder()
-                .id(1L)
-                .name("Eggs")
-                .defaultUnit(Unit.EACH)
-                .build();
+        request.setIngredients(List.of(createIngredientRequest()));
 
-        CreateRecipeIngredientRequest ingredientRequest = new CreateRecipeIngredientRequest();
+        request.setSteps(List.of(createStepRequest()));
 
-        ingredientRequest.setIngredientId(1L);
-        ingredientRequest.setQuantity(new BigDecimal("4"));
-        ingredientRequest.setUnit(Unit.EACH);
-        ingredientRequest.setOptional(false);
+        RecipeCategory category = createCategory();
 
-        request.setIngredients(List.of(ingredientRequest));
-
-        CreateRecipeStepRequest step = new CreateRecipeStepRequest();
-
-        step.setInstruction("Whisk eggs.");
-
-        request.setSteps(List.of(step));
-
-        RecipeCategory category = RecipeCategory.builder()
-                .id(1L)
-                .name("Breakfast")
-                .build();
-
-        CreateRecipeCategoryRequest categoryRequest = new CreateRecipeCategoryRequest();
-
-        categoryRequest.setRecipeCategoryId(1L);
-
-        request.setCategories(List.of(categoryRequest));
+        request.setCategories(List.of(createCategoryRequest()));
 
         when(ingredientRepository.findById(1L))
                 .thenReturn(Optional.of(ingredient));
@@ -133,6 +95,166 @@ import java.util.Optional;
                     return recipe;
                 });
 
+        mockSaveAllRepositories();
+
+        Recipe recipe = recipeService.createRecipe(request);
+
+        assertAll("created recipe",
+                () -> assertNotNull(recipe),
+                () -> assertEquals(1L, recipe.getId()),
+                () -> assertEquals("Scrambled Eggs", recipe.getName()),
+                () -> assertEquals(2, recipe.getServings()),
+                () -> assertEquals(Difficulty.EASY, recipe.getDifficulty())
+        );
+
+        ArgumentCaptor<Recipe> recipeCaptor = ArgumentCaptor.forClass(Recipe.class);
+
+        verify(recipeRepository).save(recipeCaptor.capture());
+
+        Recipe savedRecipe = recipeCaptor.getValue();
+
+        assertAll("recipe",
+                () -> assertEquals("Scrambled Eggs", savedRecipe.getName()),
+                () -> assertEquals(2, savedRecipe.getServings()),
+                () -> assertEquals(Difficulty.EASY, savedRecipe.getDifficulty())
+        );
+
+        verify(ingredientRepository).findById(1L);
+        verify(recipeCategoryRepository).findById(1L);
+
+        ArgumentCaptor<Iterable<RecipeIngredient>> ingredientCaptor =
+                ArgumentCaptor.forClass(Iterable.class);
+
+        verify(recipeIngredientRepository).saveAll(ingredientCaptor.capture());
+
+        List<RecipeIngredient> savedIngredients = new ArrayList<>();
+        ingredientCaptor.getValue().forEach(savedIngredients::add);
+
+        assertEquals(1, savedIngredients.size());
+
+        RecipeIngredient savedIngredient = savedIngredients.get(0);
+
+        assertAll("recipe ingredient",
+                () -> assertEquals(new BigDecimal("4"), savedIngredient.getQuantity()),
+                () -> assertEquals(Unit.EACH, savedIngredient.getUnit()),
+                () -> assertFalse(savedIngredient.getOptional()),
+                () -> assertEquals(ingredient, savedIngredient.getIngredient()),
+                () -> assertEquals(recipe, savedIngredient.getRecipe())
+        );
+
+        verify(recipeStepRepository).saveAll(any());
+        verify(recipeCategoryAssignmentRepository).saveAll(any());
+
+        ArgumentCaptor<Iterable<RecipeStep>> stepCaptor =
+                ArgumentCaptor.forClass(Iterable.class);
+
+        verify(recipeStepRepository).saveAll(stepCaptor.capture());
+
+        List<RecipeStep> savedSteps = new ArrayList<>();
+        stepCaptor.getValue().forEach(savedSteps::add);
+
+        assertEquals(1, savedSteps.size());
+
+        RecipeStep savedStep = savedSteps.get(0);
+
+        assertAll("recipe step",
+                () -> assertEquals(1, savedStep.getStepNumber()),
+                () -> assertEquals("Whisk eggs.", savedStep.getInstruction()),
+                () -> assertEquals(recipe, savedStep.getRecipe())
+        );
+
+        ArgumentCaptor<Iterable<RecipeCategoryAssignment>> categoryCaptor =
+                ArgumentCaptor.forClass(Iterable.class);
+
+        verify(recipeCategoryAssignmentRepository).saveAll(categoryCaptor.capture());
+
+        List<RecipeCategoryAssignment> assignments = new ArrayList<>();
+        categoryCaptor.getValue().forEach(assignments::add);
+
+        assertEquals(1, assignments.size());
+
+        RecipeCategoryAssignment assignment = assignments.get(0);
+
+        assertAll("category assignment",
+                () -> assertEquals(category, assignment.getRecipeCategory()),
+                () -> assertEquals(recipe, assignment.getRecipe())
+        );
+
+        verifyNoMoreInteractions(
+                recipeRepository,
+                ingredientRepository,
+                recipeIngredientRepository,
+                recipeStepRepository,
+                recipeCategoryRepository,
+                recipeCategoryAssignmentRepository
+        );
+
+    }
+
+    private CreateRecipeRequest createValidRequest() {
+
+        CreateRecipeRequest request = new CreateRecipeRequest();
+
+        request.setName("Scrambled Eggs");
+        request.setPrepMinutes(2);
+        request.setCookMinutes(5);
+        request.setServings(2);
+        request.setDifficulty(Difficulty.EASY);
+
+        return request;
+
+    }
+
+    private Ingredient createIngredient() {
+
+        return Ingredient.builder()
+                .id(1L)
+                .name("Eggs")
+                .defaultUnit(Unit.EACH)
+                .build();
+
+    }
+
+    private RecipeCategory createCategory() {
+
+        return RecipeCategory.builder()
+                .id(1L)
+                .name("Breakfast")
+                .build();
+
+    }
+
+    private CreateRecipeIngredientRequest createIngredientRequest() {
+
+        CreateRecipeIngredientRequest request = new CreateRecipeIngredientRequest();
+        request.setIngredientId(1L);
+        request.setQuantity(new BigDecimal("4"));
+        request.setUnit(Unit.EACH);
+        request.setOptional(false);
+
+        return request;
+
+    }
+
+    private CreateRecipeStepRequest createStepRequest() {
+
+        CreateRecipeStepRequest request = new CreateRecipeStepRequest();
+        request.setInstruction("Whisk eggs.");
+
+        return request;
+
+    }
+
+    private CreateRecipeCategoryRequest createCategoryRequest() {
+
+        CreateRecipeCategoryRequest request = new CreateRecipeCategoryRequest();
+        request.setRecipeCategoryId(1L);
+
+        return request;
+    }
+
+    private void mockSaveAllRepositories() {
+
         when(recipeIngredientRepository.saveAll(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -142,22 +264,39 @@ import java.util.Optional;
         when(recipeCategoryAssignmentRepository.saveAll(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Recipe recipe = recipeService.createRecipe(request);
+    }
 
-        assertNotNull(recipe);
-        assertEquals(1L, recipe.getId());
-        assertEquals("Scrambled Eggs", recipe.getName());
-        assertEquals(2, recipe.getServings());
-        assertEquals(Difficulty.EASY, recipe.getDifficulty());
+    @Test
+    void shouldThrowWhenRecipeCategoryDoesNotExist() {
 
-        verify(recipeRepository).save(any(Recipe.class));
+        CreateRecipeRequest request = createValidRequest();
+
+        request.setIngredients(List.of(createIngredientRequest()));
+        request.setSteps(List.of(createStepRequest()));
+        request.setCategories(List.of(createCategoryRequest()));
+
+        Ingredient ingredient = createIngredient();
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(ingredient));
+
+        when(recipeCategoryRepository.findById(1L))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> recipeService.createRecipe(request)
+        );
+
+        assertEquals("Recipe category not found: 1", exception.getReason());
 
         verify(ingredientRepository).findById(1L);
         verify(recipeCategoryRepository).findById(1L);
 
-        verify(recipeIngredientRepository).saveAll(any());
-        verify(recipeStepRepository).saveAll(any());
-        verify(recipeCategoryAssignmentRepository).saveAll(any());
+        verify(recipeRepository, never()).save(any());
+        verify(recipeIngredientRepository, never()).saveAll(any());
+        verify(recipeStepRepository, never()).saveAll(any());
+        verify(recipeCategoryAssignmentRepository, never()).saveAll(any());
 
     }
 }
