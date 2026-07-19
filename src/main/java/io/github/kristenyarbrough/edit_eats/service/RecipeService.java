@@ -32,6 +32,19 @@ public class RecipeService {
 
     @Transactional
     public Recipe createRecipe(CreateRecipeRequest request) {
+
+        if (request.getIngredients() == null || request.getIngredients().isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Recipe must contain at least one ingredient");
+        }
+
+        if (request.getSteps() == null || request.getSteps().isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Recipe must contain at least one step");
+        }
+
         LocalDateTime now = LocalDateTime.now();
 
         Recipe recipe = Recipe.builder()
@@ -48,29 +61,31 @@ public class RecipeService {
                 .lastModifiedAt(now)
                 .build();
 
-        recipe = recipeRepository.save(recipe);
-
+        // Validate ingredients before saving recipe
         List<RecipeIngredient> recipeIngredients = new ArrayList<>();
 
         for (CreateRecipeIngredientRequest ingredientRequest : request.getIngredients()) {
-            Ingredient ingredient = ingredientRepository.findById(ingredientRequest.getIngredientId())
+
+            Ingredient ingredient = ingredientRepository.findById(
+                    ingredientRequest.getIngredientId())
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.NOT_FOUND,
                             "Ingredient not found: " + ingredientRequest.getIngredientId()));
-            RecipeIngredient recipeIngredient = RecipeIngredient.builder()
-                    .recipe(recipe)
-                    .ingredient(ingredient)
-                    .quantity(ingredientRequest.getQuantity())
-                    .unit(ingredientRequest.getUnit())
-                    .preparation(ingredientRequest.getPreparation())
-                    .optional(ingredientRequest.getOptional())
-                    .build();
 
-            recipeIngredients.add(recipeIngredient);
+            recipeIngredients.add(
+                    RecipeIngredient.builder()
+                            .recipe(recipe)
+                            .ingredient(ingredient)
+                            .quantity(ingredientRequest.getQuantity())
+                            .unit(ingredientRequest.getUnit())
+                            .preparation(ingredientRequest.getPreparation())
+                            .optional(ingredientRequest.getOptional())
+                            .build()
+            );
+
         }
 
-        recipeIngredientRepository.saveAll(recipeIngredients);
-
+        // Add steps to the recipe
         List<RecipeStep> steps = new ArrayList<>();
 
         for (int i = 0; i < request.getSteps().size(); i++) {
@@ -87,29 +102,43 @@ public class RecipeService {
 
         }
 
-        recipeStepRepository.saveAll(steps);
-
+        // Validate categories before saving recipe
         List<RecipeCategoryAssignment> categoryAssignments = new ArrayList<>();
 
-        for (CreateRecipeCategoryRequest recipeCategoryRequest : request.getCategories()) {
+        if (request.getCategories() != null) {
 
-            RecipeCategory recipeCategory =
-                    recipeCategoryRepository.findById(recipeCategoryRequest.getRecipeCategoryId())
-                            .orElseThrow(() -> new ResponseStatusException(
-                                    HttpStatus.NOT_FOUND,
-                                    "Recipe category not found: " + recipeCategoryRequest.getRecipeCategoryId()));
+            for (CreateRecipeCategoryRequest recipeCategoryRequest : request.getCategories()) {
 
-            RecipeCategoryAssignment recipeCategoryAssignment = RecipeCategoryAssignment.builder()
-                    .recipe(recipe)
-                    .recipeCategory(recipeCategory)
-                    .build();
+                RecipeCategory recipeCategory =
+                        recipeCategoryRepository.findById(recipeCategoryRequest.getRecipeCategoryId())
+                                .orElseThrow(() -> new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Recipe category not found: " + recipeCategoryRequest.getRecipeCategoryId()));
 
-            categoryAssignments.add(recipeCategoryAssignment);
+                categoryAssignments.add(
+                        RecipeCategoryAssignment.builder()
+                                .recipe(recipe)
+                                .recipeCategory(recipeCategory)
+                                .build()
+                );
+
+            }
+
         }
 
-        recipeCategoryAssignmentRepository.saveAll(categoryAssignments);
+        // Save after all validation has passed
+        recipe = recipeRepository.save(recipe);
+        recipeIngredientRepository.saveAll(recipeIngredients);
+        recipeStepRepository.saveAll(steps);
+
+        if (!categoryAssignments.isEmpty()) {
+
+            recipeCategoryAssignmentRepository.saveAll(categoryAssignments);
+
+        }
 
         return recipe;
+
     }
 
     public RecipeResponse getRecipe(Long recipeId) {

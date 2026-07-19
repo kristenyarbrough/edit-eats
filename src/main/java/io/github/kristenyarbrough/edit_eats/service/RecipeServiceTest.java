@@ -51,20 +51,22 @@ import java.util.Optional;
 
         CreateRecipeRequest request = createValidRequest();
 
-        CreateRecipeIngredientRequest ingredientRequest = createIngredientRequest();
-
-        request.setIngredients(List.of(ingredientRequest));
+        request.setIngredients(List.of(createIngredientRequest()));
+        request.setSteps(List.of(createStepRequest()));
+        request.setCategories(List.of(createCategoryRequest()));
 
         when(ingredientRepository.findById(1L))
                 .thenReturn(Optional.empty());
 
-        ResponseStatusException exception =  assertThrows(ResponseStatusException.class,
+        ResponseStatusException exception =  assertThrows(
+                ResponseStatusException.class,
                 () -> recipeService.createRecipe(request));
 
         assertEquals("Ingredient not found: 1", exception.getReason());
 
         verify(ingredientRepository).findById(1L);
         verify(recipeIngredientRepository, never()).saveAll(any());
+
     }
 
     @Test
@@ -88,16 +90,7 @@ import java.util.Optional;
         when(recipeCategoryRepository.findById(1L))
                 .thenReturn(Optional.of(category));
 
-        when(recipeRepository.save(any(Recipe.class)))
-                .thenAnswer(invocation -> {
-                    Recipe recipe = invocation.getArgument(0);
-                    recipe.setId(1L);
-                    return recipe;
-                });
-
-        mockSaveAllRepositories();
-
-        Recipe recipe = recipeService.createRecipe(request);
+        Recipe recipe = createRecipe(request, true);
 
         assertAll("created recipe",
                 () -> assertNotNull(recipe),
@@ -122,13 +115,7 @@ import java.util.Optional;
         verify(ingredientRepository).findById(1L);
         verify(recipeCategoryRepository).findById(1L);
 
-        ArgumentCaptor<Iterable<RecipeIngredient>> ingredientCaptor =
-                ArgumentCaptor.forClass(Iterable.class);
-
-        verify(recipeIngredientRepository).saveAll(ingredientCaptor.capture());
-
-        List<RecipeIngredient> savedIngredients = new ArrayList<>();
-        ingredientCaptor.getValue().forEach(savedIngredients::add);
+        List<RecipeIngredient> savedIngredients = captureSavedIngredients();
 
         assertEquals(1, savedIngredients.size());
 
@@ -142,16 +129,7 @@ import java.util.Optional;
                 () -> assertEquals(recipe, savedIngredient.getRecipe())
         );
 
-        verify(recipeStepRepository).saveAll(any());
-        verify(recipeCategoryAssignmentRepository).saveAll(any());
-
-        ArgumentCaptor<Iterable<RecipeStep>> stepCaptor =
-                ArgumentCaptor.forClass(Iterable.class);
-
-        verify(recipeStepRepository).saveAll(stepCaptor.capture());
-
-        List<RecipeStep> savedSteps = new ArrayList<>();
-        stepCaptor.getValue().forEach(savedSteps::add);
+        List<RecipeStep> savedSteps = captureSavedSteps();
 
         assertEquals(1, savedSteps.size());
 
@@ -163,13 +141,7 @@ import java.util.Optional;
                 () -> assertEquals(recipe, savedStep.getRecipe())
         );
 
-        ArgumentCaptor<Iterable<RecipeCategoryAssignment>> categoryCaptor =
-                ArgumentCaptor.forClass(Iterable.class);
-
-        verify(recipeCategoryAssignmentRepository).saveAll(categoryCaptor.capture());
-
-        List<RecipeCategoryAssignment> assignments = new ArrayList<>();
-        categoryCaptor.getValue().forEach(assignments::add);
+        List<RecipeCategoryAssignment> assignments = captureSavedCategories();
 
         assertEquals(1, assignments.size());
 
@@ -257,16 +229,7 @@ import java.util.Optional;
         when(recipeCategoryRepository.findById(1L))
                 .thenReturn(Optional.of(category));
 
-        when(recipeRepository.save(any(Recipe.class)))
-                .thenAnswer(invocation -> {
-                    Recipe recipe = invocation.getArgument(0);
-                    recipe.setId(1L);
-                    return recipe;
-                });
-
-        mockSaveAllRepositories();
-
-        Recipe recipe = recipeService.createRecipe(request);
+        Recipe recipe = createRecipe(request, true);
 
         assertAll("created recipe",
                 () -> assertNotNull(recipe),
@@ -291,13 +254,7 @@ import java.util.Optional;
         verify(ingredientRepository).findById(1L);
         verify(recipeCategoryRepository).findById(1L);
 
-        ArgumentCaptor<Iterable<RecipeIngredient>> ingredientCaptor =
-                ArgumentCaptor.forClass(Iterable.class);
-
-        verify(recipeIngredientRepository).saveAll(ingredientCaptor.capture());
-
-        List<RecipeIngredient> savedIngredients = new ArrayList<>();
-        ingredientCaptor.getValue().forEach(savedIngredients::add);
+        List<RecipeIngredient> savedIngredients = captureSavedIngredients();
 
         assertEquals(2, savedIngredients.size());
 
@@ -319,16 +276,7 @@ import java.util.Optional;
         verify(ingredientRepository).findById(1L);
         verify(ingredientRepository).findById(2L);
 
-        verify(recipeStepRepository).saveAll(any());
-        verify(recipeCategoryAssignmentRepository).saveAll(any());
-
-        ArgumentCaptor<Iterable<RecipeStep>> stepCaptor =
-                ArgumentCaptor.forClass(Iterable.class);
-
-        verify(recipeStepRepository).saveAll(stepCaptor.capture());
-
-        List<RecipeStep> savedSteps = new ArrayList<>();
-        stepCaptor.getValue().forEach(savedSteps::add);
+        List<RecipeStep> savedSteps = captureSavedSteps();
 
         assertEquals(1, savedSteps.size());
 
@@ -340,13 +288,7 @@ import java.util.Optional;
                 () -> assertEquals(recipe, savedStep.getRecipe())
         );
 
-        ArgumentCaptor<Iterable<RecipeCategoryAssignment>> categoryCaptor =
-                ArgumentCaptor.forClass(Iterable.class);
-
-        verify(recipeCategoryAssignmentRepository).saveAll(categoryCaptor.capture());
-
-        List<RecipeCategoryAssignment> assignments = new ArrayList<>();
-        categoryCaptor.getValue().forEach(assignments::add);
+        List<RecipeCategoryAssignment> assignments = captureSavedCategories();
 
         assertEquals(1, assignments.size());
 
@@ -393,16 +335,7 @@ import java.util.Optional;
         when(recipeCategoryRepository.findById(1L))
                 .thenReturn(Optional.of(category));
 
-        when(recipeRepository.save(any(Recipe.class)))
-                .thenAnswer(invocation -> {
-                    Recipe recipe = invocation.getArgument(0);
-                    recipe.setId(1L);
-                    return recipe;
-                });
-
-        mockSaveAllRepositories();
-
-        Recipe recipe = recipeService.createRecipe(request);
+        Recipe recipe = createRecipe(request, true);
 
         assertAll("created recipe",
                 () -> assertNotNull(recipe),
@@ -427,13 +360,7 @@ import java.util.Optional;
         verify(ingredientRepository).findById(1L);
         verify(recipeCategoryRepository).findById(1L);
 
-        ArgumentCaptor<Iterable<RecipeIngredient>> ingredientCaptor =
-                ArgumentCaptor.forClass(Iterable.class);
-
-        verify(recipeIngredientRepository).saveAll(ingredientCaptor.capture());
-
-        List<RecipeIngredient> savedIngredients = new ArrayList<>();
-        ingredientCaptor.getValue().forEach(savedIngredients::add);
+        List<RecipeIngredient> savedIngredients = captureSavedIngredients();
 
         assertEquals(1, savedIngredients.size());
 
@@ -447,16 +374,7 @@ import java.util.Optional;
                 () -> assertEquals(recipe, savedIngredient.getRecipe())
         );
 
-        verify(recipeStepRepository).saveAll(any());
-        verify(recipeCategoryAssignmentRepository).saveAll(any());
-
-        ArgumentCaptor<Iterable<RecipeStep>> stepCaptor =
-                ArgumentCaptor.forClass(Iterable.class);
-
-        verify(recipeStepRepository).saveAll(stepCaptor.capture());
-
-        List<RecipeStep> savedSteps = new ArrayList<>();
-        stepCaptor.getValue().forEach(savedSteps::add);
+        List<RecipeStep> savedSteps = captureSavedSteps();
 
         assertEquals(3, savedSteps.size());
 
@@ -482,13 +400,7 @@ import java.util.Optional;
                 () -> assertEquals(recipe, savedStep3.getRecipe())
         );
 
-        ArgumentCaptor<Iterable<RecipeCategoryAssignment>> categoryCaptor =
-                ArgumentCaptor.forClass(Iterable.class);
-
-        verify(recipeCategoryAssignmentRepository).saveAll(categoryCaptor.capture());
-
-        List<RecipeCategoryAssignment> assignments = new ArrayList<>();
-        categoryCaptor.getValue().forEach(assignments::add);
+        List<RecipeCategoryAssignment> assignments = captureSavedCategories();
 
         assertEquals(1, assignments.size());
 
@@ -528,7 +440,7 @@ import java.util.Optional;
                 .name("Vegetarian")
                 .build();
 
-        RecipeCategory qm = RecipeCategory.builder()
+        RecipeCategory quickMeals = RecipeCategory.builder()
                 .id(3L)
                 .name("Quick Meals")
                 .build();
@@ -549,18 +461,9 @@ import java.util.Optional;
                 .thenReturn(Optional.of(vege));
 
         when(recipeCategoryRepository.findById(3L))
-                .thenReturn(Optional.of(qm));
+                .thenReturn(Optional.of(quickMeals));
 
-        when(recipeRepository.save(any(Recipe.class)))
-                .thenAnswer(invocation -> {
-                    Recipe recipe = invocation.getArgument(0);
-                    recipe.setId(1L);
-                    return recipe;
-                });
-
-        mockSaveAllRepositories();
-
-        Recipe recipe = recipeService.createRecipe(request);
+        Recipe recipe = createRecipe(request, true);
 
         assertAll("created recipe",
                 () -> assertNotNull(recipe),
@@ -587,13 +490,7 @@ import java.util.Optional;
         verify(recipeCategoryRepository).findById(2L);
         verify(recipeCategoryRepository).findById(3L);
 
-        ArgumentCaptor<Iterable<RecipeIngredient>> ingredientCaptor =
-                ArgumentCaptor.forClass(Iterable.class);
-
-        verify(recipeIngredientRepository).saveAll(ingredientCaptor.capture());
-
-        List<RecipeIngredient> savedIngredients = new ArrayList<>();
-        ingredientCaptor.getValue().forEach(savedIngredients::add);
+        List<RecipeIngredient> savedIngredients = captureSavedIngredients();
 
         assertEquals(1, savedIngredients.size());
 
@@ -607,16 +504,7 @@ import java.util.Optional;
                 () -> assertEquals(recipe, savedIngredient.getRecipe())
         );
 
-        verify(recipeStepRepository).saveAll(any());
-        verify(recipeCategoryAssignmentRepository).saveAll(any());
-
-        ArgumentCaptor<Iterable<RecipeStep>> stepCaptor =
-                ArgumentCaptor.forClass(Iterable.class);
-
-        verify(recipeStepRepository).saveAll(stepCaptor.capture());
-
-        List<RecipeStep> savedSteps = new ArrayList<>();
-        stepCaptor.getValue().forEach(savedSteps::add);
+        List<RecipeStep> savedSteps = captureSavedSteps();
 
         assertEquals(1, savedSteps.size());
 
@@ -628,13 +516,7 @@ import java.util.Optional;
                 () -> assertEquals(recipe, savedStep.getRecipe())
         );
 
-        ArgumentCaptor<Iterable<RecipeCategoryAssignment>> categoryCaptor =
-                ArgumentCaptor.forClass(Iterable.class);
-
-        verify(recipeCategoryAssignmentRepository).saveAll(categoryCaptor.capture());
-
-        List<RecipeCategoryAssignment> assignments = new ArrayList<>();
-        categoryCaptor.getValue().forEach(assignments::add);
+        List<RecipeCategoryAssignment> assignments = captureSavedCategories();
 
         assertEquals(3, assignments.size());
 
@@ -653,7 +535,7 @@ import java.util.Optional;
         );
 
         assertAll("category assignment 3",
-                () -> assertEquals(qm, assignQm.getRecipeCategory()),
+                () -> assertEquals(quickMeals, assignQm.getRecipeCategory()),
                 () -> assertEquals(recipe, assignQm.getRecipe())
         );
 
@@ -665,6 +547,96 @@ import java.util.Optional;
                 recipeCategoryRepository,
                 recipeCategoryAssignmentRepository
         );
+
+    }
+
+            @Test
+            void shouldCreateRecipeWithoutCategories() {
+
+                CreateRecipeRequest request = createValidRequest();
+
+                Ingredient ingredient = createIngredient();
+
+                request.setIngredients(List.of(createIngredientRequest()));
+
+                request.setSteps(List.of(createStepRequest()));
+
+                when(ingredientRepository.findById(1L))
+                        .thenReturn(Optional.of(ingredient));
+
+                Recipe recipe = createRecipe(request, false);
+
+                assertAll("created recipe",
+                        () -> assertNotNull(recipe),
+                        () -> assertEquals(1L, recipe.getId()),
+                        () -> assertEquals("Scrambled Eggs", recipe.getName()),
+                        () -> assertEquals(2, recipe.getServings()),
+                        () -> assertEquals(Difficulty.EASY, recipe.getDifficulty())
+                );
+
+                ArgumentCaptor<Recipe> recipeCaptor = ArgumentCaptor.forClass(Recipe.class);
+
+                verify(recipeRepository).save(recipeCaptor.capture());
+
+                Recipe savedRecipe = recipeCaptor.getValue();
+
+                assertAll("recipe",
+                        () -> assertEquals("Scrambled Eggs", savedRecipe.getName()),
+                        () -> assertEquals(2, savedRecipe.getServings()),
+                        () -> assertEquals(Difficulty.EASY, savedRecipe.getDifficulty())
+                );
+
+                verify(ingredientRepository).findById(1L);
+
+                List<RecipeIngredient> savedIngredients = captureSavedIngredients();
+
+                assertEquals(1, savedIngredients.size());
+
+                RecipeIngredient savedIngredient = savedIngredients.get(0);
+
+                assertAll("recipe ingredient",
+                        () -> assertEquals(new BigDecimal("4"), savedIngredient.getQuantity()),
+                        () -> assertEquals(Unit.EACH, savedIngredient.getUnit()),
+                        () -> assertFalse(savedIngredient.getOptional()),
+                        () -> assertEquals(ingredient, savedIngredient.getIngredient()),
+                        () -> assertEquals(recipe, savedIngredient.getRecipe())
+                );
+
+                List<RecipeStep> savedSteps = captureSavedSteps();
+
+                assertEquals(1, savedSteps.size());
+
+                RecipeStep savedStep = savedSteps.get(0);
+
+                assertAll("recipe step",
+                        () -> assertEquals(1, savedStep.getStepNumber()),
+                        () -> assertEquals("Whisk eggs.", savedStep.getInstruction()),
+                        () -> assertEquals(recipe, savedStep.getRecipe())
+                );
+
+                verifyNoMoreInteractions(
+                        recipeRepository,
+                        ingredientRepository,
+                        recipeIngredientRepository,
+                        recipeStepRepository,
+                        recipeCategoryRepository,
+                        recipeCategoryAssignmentRepository
+                );
+
+            }
+
+    @Test
+    void shouldThrowWhenRecipeHasNoIngredients() {
+
+        CreateRecipeRequest request = createValidRequest();
+
+        ResponseStatusException exception =  assertThrows(ResponseStatusException.class,
+                () -> recipeService.createRecipe(request));
+
+        assertEquals("Recipe must contain at least one ingredient", exception.getReason());
+
+        verifyNoInteractions(ingredientRepository);
+        verify(recipeIngredientRepository, never()).saveAll(any());
 
     }
 
@@ -730,13 +702,17 @@ import java.util.Optional;
         return request;
     }
 
-    private void mockSaveAllRepositories() {
+    private void mockSaveRepositories() {
 
         when(recipeIngredientRepository.saveAll(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         when(recipeStepRepository.saveAll(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+
+    }
+
+    private void mockCategoryRepositorySave() {
 
         when(recipeCategoryAssignmentRepository.saveAll(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -776,6 +752,69 @@ import java.util.Optional;
         request.setRecipeCategoryId(categoryId);
 
         return request;
+
+    }
+
+    private Recipe createRecipe(CreateRecipeRequest request, boolean withCategories) {
+
+        when(recipeRepository.save(any(Recipe.class)))
+                .thenAnswer(invocation -> {
+                    Recipe recipe = invocation.getArgument(0);
+                    recipe.setId(1L);
+                    return recipe;
+                });
+
+        mockSaveRepositories();
+
+        if (withCategories) {
+
+            mockCategoryRepositorySave();
+
+        }
+
+        return recipeService.createRecipe(request);
+
+    }
+
+    private List<RecipeIngredient> captureSavedIngredients() {
+
+        ArgumentCaptor<Iterable<RecipeIngredient>> ingredientCaptor =
+                ArgumentCaptor.forClass(Iterable.class);
+
+        verify(recipeIngredientRepository).saveAll(ingredientCaptor.capture());
+
+        List<RecipeIngredient> list = new ArrayList<>();
+        ingredientCaptor.getValue().forEach(list::add);
+
+        return list;
+
+    }
+
+    private List<RecipeStep> captureSavedSteps() {
+
+        ArgumentCaptor<Iterable<RecipeStep>> stepCaptor =
+                ArgumentCaptor.forClass(Iterable.class);
+
+        verify(recipeStepRepository).saveAll(stepCaptor.capture());
+
+        List<RecipeStep> list = new ArrayList<>();
+        stepCaptor.getValue().forEach(list::add);
+
+        return list;
+
+    }
+
+    private List<RecipeCategoryAssignment> captureSavedCategories() {
+
+        ArgumentCaptor<Iterable<RecipeCategoryAssignment>> categoryCaptor =
+                ArgumentCaptor.forClass(Iterable.class);
+
+        verify(recipeCategoryAssignmentRepository).saveAll(categoryCaptor.capture());
+
+        List<RecipeCategoryAssignment> list = new ArrayList<>();
+        categoryCaptor.getValue().forEach(list::add);
+
+        return list;
 
     }
 
