@@ -188,7 +188,7 @@ public class RecipeService {
                 .prepMinutes(recipe.getPrepMinutes())
                 .cookMinutes(recipe.getCookMinutes())
                 .totalMinutes(recipe.getTotalMinutes())
-                .formattedTotalMinutes(recipe.getFormattedTotalTime())
+                .formattedTotalTime(recipe.getFormattedTotalTime())
                 .servings(recipe.getServings())
                 .difficulty(recipe.getDifficulty())
                 .sourceUrl(recipe.getSourceUrl())

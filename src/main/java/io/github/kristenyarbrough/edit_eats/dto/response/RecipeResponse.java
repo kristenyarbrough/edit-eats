@@ -18,7 +18,7 @@ public class RecipeResponse {
     private Integer prepMinutes;
     private Integer cookMinutes;
     private Integer totalMinutes;
-    private String formattedTotalMinutes;
+    private String formattedTotalTime;
 
     private Integer servings;
 

@@ -48,7 +48,8 @@ public class Recipe {
 
     @Transient
     public int getTotalMinutes() {
-        return prepMinutes + cookMinutes;
+        return (prepMinutes == null ? 0 : prepMinutes)
+                + (cookMinutes == null ? 0 : cookMinutes);
     }
 
     @Transient
