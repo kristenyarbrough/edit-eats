@@ -2,6 +2,7 @@ package io.github.kristenyarbrough.edit_eats.controller;
 
 import io.github.kristenyarbrough.edit_eats.domain.Ingredient;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateIngredientRequest;
+import io.github.kristenyarbrough.edit_eats.dto.response.IngredientResponse;
 import io.github.kristenyarbrough.edit_eats.service.IngredientService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,5 +36,12 @@ public class IngredientController {
         }
 
         return ingredientService.findIngredients(name);
+    }
+
+    @GetMapping("/{id}")
+    public IngredientResponse getIngredient(@PathVariable Long id) {
+
+        return ingredientService.getIngredient(id);
+
     }
 }
