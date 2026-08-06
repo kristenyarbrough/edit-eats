@@ -3,6 +3,7 @@ package io.github.kristenyarbrough.edit_eats.service;
 import io.github.kristenyarbrough.edit_eats.domain.Ingredient;
 import io.github.kristenyarbrough.edit_eats.domain.IngredientCategory;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateIngredientRequest;
+import io.github.kristenyarbrough.edit_eats.dto.response.IngredientResponse;
 import io.github.kristenyarbrough.edit_eats.repository.IngredientCategoryRepository;
 import io.github.kristenyarbrough.edit_eats.repository.IngredientRepository;
 import org.springframework.data.domain.Sort;
@@ -56,5 +57,20 @@ public class IngredientService {
 
     public List<Ingredient> findIngredients(String name) {
         return ingredientRepository.findTop20ByNameContainingIgnoreCase(name);
+    }
+
+    public IngredientResponse getIngredient(Long id) {
+
+        Ingredient ingredient = ingredientRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Ingredient not found: " + id));
+
+        return IngredientResponse.builder()
+                .id(ingredient.getId())
+                .name(ingredient.getName())
+                .defaultUnit(ingredient.getDefaultUnit())
+                .ingredientCategory(ingredient.getIngredientCategory())
+                .build();
     }
 }

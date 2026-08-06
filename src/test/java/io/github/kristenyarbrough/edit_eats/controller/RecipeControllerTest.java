@@ -24,13 +24,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 @WebMvcTest(RecipeController.class)
 class RecipeControllerTest {
@@ -70,7 +68,9 @@ class RecipeControllerTest {
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.name").value("Scrambled Eggs"))
                 .andExpect(jsonPath("$.servings").value(2))
-                .andExpect(jsonPath("$.difficulty").value("EASY"));
+                .andExpect(jsonPath("$.difficulty").value("EASY"))
+                .andExpect(jsonPath("$.prepMinutes").value(2))
+                .andExpect(jsonPath("$.cookMinutes").value(5));
 
         verify(recipeService).createRecipe(any(CreateRecipeRequest.class));
 
@@ -123,6 +123,164 @@ class RecipeControllerTest {
         verify(recipeService).getRecipe(99L);
     }
 
+    @Test
+    void shouldReturn400WhenNameIsBlank() throws Exception {
+
+        CreateRecipeRequest request = createRequest();
+        request.setName("");
+
+        assertInvalidRequest(request);
+
+    }
+
+    @Test
+    void shouldReturn400WhenNameIsWhitespace() throws Exception {
+
+        CreateRecipeRequest request = createRequest();
+        request.setName("  ");
+
+        assertInvalidRequest(request);
+
+    }
+
+    @Test
+    void shouldReturn400WhenPrepMinutesIsNull() throws Exception {
+
+        CreateRecipeRequest request = createRequest();
+        request.setPrepMinutes(null);
+
+        assertInvalidRequest(request);
+
+    }
+
+    @Test
+    void shouldReturn400WhenCookMinutesIsNull() throws Exception {
+
+        CreateRecipeRequest request = createRequest();
+        request.setCookMinutes(null);
+
+        assertInvalidRequest(request);
+
+    }
+
+    @Test
+    void shouldReturn400WhenServingsIsLessThan1() throws Exception {
+
+        CreateRecipeRequest request = createRequest();
+        request.setServings(0);
+
+        assertInvalidRequest(request);
+
+    }
+
+    @Test
+    void shouldReturn400WhenDifficultyIsNull() throws Exception {
+
+        CreateRecipeRequest request = createRequest();
+        request.setDifficulty(null);
+
+        assertInvalidRequest(request);
+
+    }
+
+    @Test
+    void shouldReturn400WhenIngredientsIsEmpty() throws Exception {
+
+        CreateRecipeRequest request = createRequest();
+        request.setIngredients(List.of());
+
+        assertInvalidRequest(request);
+
+    }
+
+    @Test
+    void shouldReturn400WhenStepsIsEmpty() throws Exception {
+
+        CreateRecipeRequest request = createRequest();
+        request.setSteps(List.of());
+
+        assertInvalidRequest(request);
+
+    }
+
+    @Test
+    void shouldReturn400WhenIngredientQuantityIsNull() throws Exception {
+
+        CreateRecipeRequest request = createRequest();
+
+        CreateRecipeIngredientRequest ingredient = createIngredient();
+        ingredient.setQuantity(null);
+
+        request.setIngredients(List.of(ingredient));
+
+        assertInvalidRequest(request);
+    }
+
+    @Test
+    void shouldReturn400WhenIngredientIdIsNull() throws Exception {
+
+        CreateRecipeRequest request = createRequest();
+
+        CreateRecipeIngredientRequest ingredient = createIngredient();
+        ingredient.setIngredientId(null);
+
+        request.setIngredients(List.of(ingredient));
+
+        assertInvalidRequest(request);
+    }
+
+    @Test
+    void shouldReturn400WhenIngredientUnitIsNull() throws Exception {
+
+        CreateRecipeRequest request = createRequest();
+
+        CreateRecipeIngredientRequest ingredient = createIngredient();
+        ingredient.setUnit(null);
+
+        request.setIngredients(List.of(ingredient));
+
+        assertInvalidRequest(request);
+    }
+
+    @Test
+    void shouldReturn400WhenIngredientQuantityIsZero() throws Exception {
+
+        CreateRecipeRequest request = createRequest();
+
+        CreateRecipeIngredientRequest ingredient = createIngredient();
+        ingredient.setQuantity(BigDecimal.ZERO);
+
+        request.setIngredients(List.of(ingredient));
+
+        assertInvalidRequest(request);
+    }
+
+    @Test
+    void shouldReturn400WhenIngredientQuantityIsNegative() throws Exception {
+
+        CreateRecipeRequest request = createRequest();
+
+        CreateRecipeIngredientRequest ingredient = createIngredient();
+        ingredient.setQuantity(new BigDecimal("-1"));
+
+        request.setIngredients(List.of(ingredient));
+
+        assertInvalidRequest(request);
+    }
+
+    @Test
+    void shouldReturn400WhenStepInstructionIsBlank() throws Exception {
+
+        CreateRecipeRequest request = createRequest();
+
+        CreateRecipeStepRequest step = createStep();
+        step.setInstruction("");
+
+        request.setSteps(List.of(step));
+
+        assertInvalidRequest(request);
+    }
+
     private CreateRecipeRequest createRequest() {
 
         CreateRecipeRequest request = new CreateRecipeRequest();
@@ -159,6 +317,17 @@ class RecipeControllerTest {
         request.setInstruction("Whisk eggs.");
 
         return request;
+
+    }
+
+    private void assertInvalidRequest(CreateRecipeRequest request) throws Exception {
+
+        mockMvc.perform(post("/api/recipes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verify(recipeService, never()).createRecipe(any());
 
     }
 

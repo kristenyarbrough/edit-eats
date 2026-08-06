@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
- class RecipeServiceTest {
+class RecipeServiceTest {
 
     @Mock
     private RecipeRepository recipeRepository;
@@ -549,11 +549,9 @@ import java.util.Optional;
         );
 
     }
-
-            @Test
-            void shouldCreateRecipeWithoutCategories() {
-
-                CreateRecipeRequest request = createValidRequest();
+    @Test
+    void shouldCreateRecipeWithoutCategories() {
+        CreateRecipeRequest request = createValidRequest();
 
                 Ingredient ingredient = createIngredient();
 
