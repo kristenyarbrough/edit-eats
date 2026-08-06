@@ -49,9 +49,14 @@
 
 - [ ] Design meal plan model
 - [ ] Create MealPlan entity
+- [ ] Create MealType enum
 - [ ] Create MealPlanEntry entity
 - [ ] CRUD endpoints
-
+  - [ ] DTOs
+  - [ ] Repository
+  - [ ] Service
+  - [ ] Controller
+- [ ] Tests
 ---
 
 ## Future Features

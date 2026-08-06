@@ -19,7 +19,7 @@ public class IngredientCategoryService {
         ingredientCategoryRepository.findByName(request.getName())
                 .ifPresent(category -> {
                     throw new IllegalArgumentException(
-                            "Category '" + request.getName() + "'already exists.");
+                            "Category '" + request.getName() + "' already exists.");
                 });
 
         IngredientCategory category = IngredientCategory.builder()

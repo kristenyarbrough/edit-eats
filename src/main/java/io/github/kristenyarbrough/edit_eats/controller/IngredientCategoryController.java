@@ -1,27 +1,26 @@
-package io.github.kristenyarbrough.edit_eats.controller;
+    package io.github.kristenyarbrough.edit_eats.controller;
 
-import io.github.kristenyarbrough.edit_eats.domain.IngredientCategory;
-import io.github.kristenyarbrough.edit_eats.dto.request.CreateIngredientCategoryRequest;
-import io.github.kristenyarbrough.edit_eats.service.IngredientCategoryService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+    import io.github.kristenyarbrough.edit_eats.domain.IngredientCategory;
+    import io.github.kristenyarbrough.edit_eats.dto.request.CreateIngredientCategoryRequest;
+    import io.github.kristenyarbrough.edit_eats.service.IngredientCategoryService;
+    import jakarta.validation.Valid;
+    import lombok.RequiredArgsConstructor;
+    import org.springframework.http.HttpStatus;
+    import org.springframework.web.bind.annotation.*;
 
-@RestController
-@RequestMapping("/api/ingredient-categories")
-@RequiredArgsConstructor
-public class IngredientCategoryController {
+    @RestController
+    @RequestMapping("/api/ingredient-categories")
+    @RequiredArgsConstructor
+    public class IngredientCategoryController {
 
-    private final IngredientCategoryService ingredientCategoryService;
+        private final IngredientCategoryService ingredientCategoryService;
 
-    @PostMapping
-    public IngredientCategory createIngredientCategory(
-            @Valid @RequestBody CreateIngredientCategoryRequest request) {
+        @PostMapping
+        @ResponseStatus(HttpStatus.CREATED)
+        public IngredientCategory createIngredientCategory(
+                @Valid @RequestBody CreateIngredientCategoryRequest request) {
 
-        return ingredientCategoryService.createIngredientCategory(request);
+            return ingredientCategoryService.createIngredientCategory(request);
 
+        }
     }
-}

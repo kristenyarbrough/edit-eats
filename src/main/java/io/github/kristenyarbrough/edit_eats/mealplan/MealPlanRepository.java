@@ -1,5 +1,6 @@
 package io.github.kristenyarbrough.edit_eats.mealplan;
 
+import io.github.kristenyarbrough.edit_eats.domain.MealPlan;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
