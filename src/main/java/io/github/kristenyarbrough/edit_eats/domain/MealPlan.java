@@ -34,9 +34,11 @@ public class MealPlan {
     @Column(nullable = false)
     private LocalDateTime lastModifiedAt;
 
-//    @ElementCollection
-//    @CollectionTable(name = "meal_plan_recipe_ids", joinColumns = @JoinColumn(name = "meal_plan_id"))
-//    @Column(name = "recipe_id", nullable = false)
-//    @Builder.Default
-//    private List<Long> recipeIds = new ArrayList<>();
+    @OneToMany(mappedBy = "mealPlan",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    @OrderBy("mealDate ASC, mealType ASC")
+    @Builder.Default
+    private List<MealPlanRecipe> mealPlanRecipes = new ArrayList<>();
+
 }

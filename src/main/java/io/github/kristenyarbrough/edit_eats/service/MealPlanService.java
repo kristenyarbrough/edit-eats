@@ -52,4 +52,10 @@ public class MealPlanService {
                 .build();
 
     }
+
+    public List<MealPlan> findMealPlans(String name) {
+
+        return mealPlanRepository.findByNameContainingIgnoreCase(name);
+
+    }
 }

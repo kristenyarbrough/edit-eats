@@ -139,6 +139,43 @@ public class MealPlanControllerTest {
         assertInvalidRequest(request);
     }
 
+    @Test
+    void shouldSearchMealPlansByName() throws Exception {
+
+        MealPlan mealPlan = createMealPlan();
+
+        when(mealPlanService.findMealPlans("family"))
+                .thenReturn(List.of(mealPlan));
+
+        mockMvc.perform(get("/api/meal-plans")
+                        .param("name", "family"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("Weekly Family Meals"));
+
+        verify(mealPlanService).findMealPlans("family");
+        verify(mealPlanService, never()).getMealPlans();
+
+    }
+
+    @Test
+    void shouldReturnAllMealPlansWhenNameIsBlank() throws Exception {
+
+        MealPlan mealPlan = createMealPlan();
+
+        when(mealPlanService.getMealPlans())
+                .thenReturn(List.of(mealPlan));
+
+        mockMvc.perform(get("/api/meal-plans")
+                    .param("name", ""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+
+        verify(mealPlanService).getMealPlans();
+        verify(mealPlanService, never()).findMealPlans(anyString());
+
+    }
+
     private CreateMealPlanRequest createRequest() {
 
         CreateMealPlanRequest request = new CreateMealPlanRequest();

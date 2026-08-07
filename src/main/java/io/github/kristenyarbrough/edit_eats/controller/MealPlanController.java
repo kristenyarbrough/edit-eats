@@ -27,14 +27,23 @@ public class MealPlanController {
         return mealPlanService.createMealPlan(request);
     }
 
-    @GetMapping
-    public List<MealPlan> getMealPlans() {
-        return mealPlanService.getMealPlans();
-    }
-
     @GetMapping("/{id}")
     public MealPlanResponse getMealPlan(@PathVariable Long id) {
         return mealPlanService.getMealPlan(id);
+    }
+
+    @GetMapping
+    public List<MealPlan> getMealPlans(
+            @RequestParam(required = false) String name) {
+
+        if (name == null || name.isBlank()) {
+
+            return mealPlanService.getMealPlans();
+
+        }
+
+        return mealPlanService.findMealPlans(name);
+
     }
 
 //    @GetMapping("/{weekStarting}/shopping-list")
