@@ -1,9 +1,13 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
-import io.github.kristenyarbrough.edit_eats.domain.MealPlan;
+import io.github.kristenyarbrough.edit_eats.domain.*;
+import io.github.kristenyarbrough.edit_eats.dto.request.AddMealPlanRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateMealPlanRequest;
+import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanRecipeResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanResponse;
+import io.github.kristenyarbrough.edit_eats.repository.MealPlanRecipeRepository;
 import io.github.kristenyarbrough.edit_eats.repository.MealPlanRepository;
+import io.github.kristenyarbrough.edit_eats.repository.RecipeRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,11 +21,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class MealPlanServiceTest {
@@ -29,13 +31,19 @@ class MealPlanServiceTest {
     @Mock
     private MealPlanRepository mealPlanRepository;
 
+    @Mock
+    private MealPlanRecipeRepository mealPlanRecipeRepository;
+
+    @Mock
+    private RecipeRepository recipeRepository;
+
     @InjectMocks
     private MealPlanService mealPlanService;
 
     @Test
     void shouldCreateMealPlan() {
 
-        CreateMealPlanRequest request = createRequest();
+        CreateMealPlanRequest request = createMealPlanRequest();
 
         MealPlan savedMealPlan = createMealPlan();
 
@@ -112,7 +120,164 @@ class MealPlanServiceTest {
 
     }
 
-    private CreateMealPlanRequest createRequest() {
+    @Test
+    void shouldAddRecipeToMealPlan() {
+
+        MealPlan mealPlan = createMealPlan();
+
+        Recipe recipe = createRecipe();
+
+        AddMealPlanRecipeRequest request = createMealPlanRecipeRequest();
+
+        when(mealPlanRepository.findById(1L))
+                .thenReturn(Optional.of(mealPlan));
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        MealPlanRecipe savedMeal = MealPlanRecipe.builder()
+                .id(1L)
+                .mealPlan(mealPlan)
+                .recipe(recipe)
+                .mealDate(request.getMealDate())
+                .mealType(request.getMealType())
+                .servings(request.getServings())
+                .build();
+
+        when(mealPlanRecipeRepository.save(any(MealPlanRecipe.class)))
+                .thenReturn(savedMeal);
+
+        MealPlanRecipe result = mealPlanService.addRecipeToMealPlan(1L, request);
+
+        assertAll(
+                () -> assertEquals(1L, result.getId()),
+                () -> assertEquals(recipe, result.getRecipe()),
+                () -> assertEquals(mealPlan, result.getMealPlan()),
+                () -> assertEquals(LocalDate.of(2026, 8, 3), result.getMealDate()),
+                () -> assertEquals(MealType.DINNER, result.getMealType()),
+                () -> assertEquals(4, result.getServings()));
+
+        verify(mealPlanRepository).findById(1L);
+        verify(recipeRepository).findById(1L);
+        verify(mealPlanRecipeRepository).save(any(MealPlanRecipe.class));
+
+    }
+
+    @Test
+    void shouldThrowWhenMealPlanDoesNotExist() {
+
+        AddMealPlanRecipeRequest request = createMealPlanRecipeRequest();
+
+        when(mealPlanRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> mealPlanService.addRecipeToMealPlan(99L, request)
+        );
+
+        assertEquals("Meal plan not found: 99", exception.getReason());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+
+        verify(mealPlanRepository).findById(99L);
+        verifyNoInteractions(recipeRepository);
+        verify(mealPlanRecipeRepository, never()).save(any());
+
+    }
+
+    @Test
+    void shouldThrowWhenRecipeDoesNotExist() {
+
+        MealPlan mealPlan = createMealPlan();
+
+        AddMealPlanRecipeRequest request = createMealPlanRecipeRequest();
+
+        when(mealPlanRepository.findById(1L))
+                .thenReturn(Optional.of(mealPlan));
+
+        when(recipeRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        request.setRecipeId(99L);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> mealPlanService.addRecipeToMealPlan(1L, request)
+        );
+
+        assertEquals("Recipe not found: 99", exception.getReason());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+
+        verify(mealPlanRepository).findById(1L);
+        verify(recipeRepository).findById(99L);
+        verify(mealPlanRecipeRepository, never()).save(any());
+
+    }
+
+    @Test
+    void shouldGetMealPlanWithMeals() {
+
+        MealPlan mealPlan = createMealPlan();
+        Recipe recipe = createRecipe();
+
+        MealPlanRecipe mealPlanRecipe = MealPlanRecipe.builder()
+                .id(1L)
+                .mealPlan(mealPlan)
+                .recipe(recipe)
+                .mealDate(LocalDate.of(2026, 8, 3))
+                .mealType(MealType.DINNER)
+                .servings(4)
+                .build();
+
+        when(mealPlanRepository.findById(1L))
+                .thenReturn(Optional.of(mealPlan));
+
+        when(mealPlanRecipeRepository.findByMealPlanIdOrderByMealDateAscMealTypeAsc(1L))
+                .thenReturn(List.of(mealPlanRecipe));
+
+        MealPlanResponse response = mealPlanService.getMealPlan(1L);
+
+        assertEquals(1L, response.getId());
+        assertEquals("Weekly Family Meals", response.getName());
+        assertEquals(1, response.getMeals().size());
+
+        MealPlanRecipeResponse meal = response.getMeals().get(0);
+
+        assertEquals(1L, meal.getId());
+        assertEquals(1L, meal.getRecipeId());
+        assertEquals("Lasagne", meal.getRecipeName());
+        assertEquals(LocalDate.of(2026, 8, 3), meal.getMealDate());
+        assertEquals(MealType.DINNER, meal.getMealType());
+        assertEquals(4, meal.getServings());
+
+        verify(mealPlanRepository).findById(1L);
+        verify(mealPlanRecipeRepository).findByMealPlanIdOrderByMealDateAscMealTypeAsc(1L);
+
+    }
+
+    @Test
+    void shouldGetMealPlanWithNoMeals() {
+
+        MealPlan mealPlan = createMealPlan();
+
+        when(mealPlanRepository.findById(1L))
+                .thenReturn(Optional.of(mealPlan));
+
+        when(mealPlanRecipeRepository.findByMealPlanIdOrderByMealDateAscMealTypeAsc(1L))
+                .thenReturn(List.of());
+
+        MealPlanResponse response = mealPlanService.getMealPlan(1L);
+
+        assertEquals(1L, response.getId());
+        assertNotNull(response.getMeals());
+        assertTrue(response.getMeals().isEmpty());
+
+        verify(mealPlanRepository).findById(1L);
+        verify(mealPlanRecipeRepository).findByMealPlanIdOrderByMealDateAscMealTypeAsc(1L);
+
+    }
+
+    private CreateMealPlanRequest createMealPlanRequest() {
 
         CreateMealPlanRequest request = new CreateMealPlanRequest();
         request.setName("Weekly Family Meals");
@@ -133,4 +298,29 @@ class MealPlanServiceTest {
                 .build();
 
     }
+
+    private Recipe createRecipe() {
+
+        return Recipe.builder()
+                .id(1L)
+                .name("Lasagne")
+                .servings(4)
+                .difficulty(Difficulty.EASY)
+                .build();
+
+    }
+
+    private AddMealPlanRecipeRequest createMealPlanRecipeRequest() {
+
+        AddMealPlanRecipeRequest request = new AddMealPlanRecipeRequest();
+
+        request.setRecipeId(1L);
+        request.setMealDate(LocalDate.of(2026, 8, 3));
+        request.setMealType(MealType.DINNER);
+        request.setServings(4);
+
+        return request;
+
+    }
+
 }

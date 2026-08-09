@@ -1,7 +1,9 @@
 package io.github.kristenyarbrough.edit_eats.controller;
 
-import io.github.kristenyarbrough.edit_eats.domain.MealPlan;
+import io.github.kristenyarbrough.edit_eats.domain.*;
+import io.github.kristenyarbrough.edit_eats.dto.request.AddMealPlanRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateMealPlanRequest;
+import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanRecipeResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanResponse;
 import io.github.kristenyarbrough.edit_eats.service.MealPlanService;
 import org.junit.jupiter.api.Test;
@@ -85,12 +87,22 @@ public class MealPlanControllerTest {
     @Test
     void shouldGetMealPlan() throws Exception {
 
+        MealPlanRecipeResponse meal = MealPlanRecipeResponse.builder()
+                .id(1L)
+                .recipeId(1L)
+                .recipeName("Lasagne")
+                .mealDate(LocalDate.of(2026, 8, 3))
+                .mealType(MealType.DINNER)
+                .servings(4)
+                .build();
+
         MealPlanResponse response = MealPlanResponse.builder()
                 .id(1L)
                 .name("Weekly Family Meals")
                 .weekStarting(LocalDate.of(2026, 8, 3))
                 .createdAt(LocalDateTime.now())
                 .lastModifiedAt(LocalDateTime.now())
+                .meals(List.of(meal))
                 .build();
 
         when(mealPlanService.getMealPlan(1L))
@@ -99,7 +111,38 @@ public class MealPlanControllerTest {
         mockMvc.perform(get("/api/meal-plans/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("Weekly Family Meals"));
+                .andExpect(jsonPath("$.name").value("Weekly Family Meals"))
+                .andExpect(jsonPath("$.meals.length()").value(1))
+                .andExpect(jsonPath("@.meals[0].recipeId").value(1))
+                .andExpect(jsonPath("$.meals[0].recipeName").value("Lasagne"))
+                .andExpect(jsonPath("$.meals[0].mealDate").value("2026-08-03"))
+                .andExpect(jsonPath("$.meals[0].mealType").value("DINNER"))
+                .andExpect(jsonPath("$.meals[0].servings").value(4));
+
+        verify(mealPlanService).getMealPlan(1L);
+
+    }
+
+    @Test
+    void shouldReturnMealPlanWithNoMeals() throws Exception{
+
+        MealPlanResponse response = MealPlanResponse.builder()
+                .id(1L)
+                .name("Weekly Family Meals")
+                .weekStarting(LocalDate.of(2026, 8, 3))
+                .createdAt(LocalDateTime.now())
+                .lastModifiedAt(LocalDateTime.now())
+                .meals(List.of())
+                .build();
+
+        when(mealPlanService.getMealPlan(1L))
+                .thenReturn(response);
+
+        mockMvc.perform(get("/api/meal-plans/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.meals").isArray())
+                .andExpect(jsonPath("$.meals.length()").value(0));
 
         verify(mealPlanService).getMealPlan(1L);
 
@@ -176,6 +219,103 @@ public class MealPlanControllerTest {
 
     }
 
+    @Test
+    void shouldAddRecipeToMealPlan() throws Exception {
+
+        MealPlan mealPlan = createMealPlan();
+        Recipe recipe = createRecipe();
+
+        MealPlanRecipe mealPlanRecipe = MealPlanRecipe.builder()
+                .id(1L)
+                .mealPlan(mealPlan)
+                .recipe(recipe)
+                .mealDate(LocalDate.of(2026, 8, 3))
+                .mealType(MealType.DINNER)
+                .servings(4)
+                .build();
+
+        when(mealPlanService.addRecipeToMealPlan(
+                eq(1L),
+                any(AddMealPlanRecipeRequest.class)))
+                .thenReturn(mealPlanRecipe);
+
+        mockMvc.perform(post("/api/meal-plans/1/recipes")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                                "recipeId": 1,
+                                "mealDate": "2026-08-03",
+                                "mealType": "DINNER",
+                                "servings": 4
+                            }
+                            """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.recipe.id").value(1))
+                .andExpect(jsonPath("$.mealDate").value("2026-08-03"))
+                .andExpect(jsonPath("$.mealType").value("DINNER"))
+                .andExpect(jsonPath("$.servings").value(4));
+
+        verify(mealPlanService).addRecipeToMealPlan(
+                eq(1L),
+                any(AddMealPlanRecipeRequest.class));
+
+    }
+
+    @Test
+    void shouldReturn400WhenRecipeIdIsMissing() throws  Exception {
+
+        mockMvc.perform(post("/api/meal-plans/1/recipes")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                                "mealDate": "2026-08-03",
+                                "mealType": "DINNER",
+                                "servings": 4
+                            }
+                            """))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(mealPlanService);
+
+    }
+
+    @Test
+    void shouldReturn400WhenServingsIsZero() throws Exception {
+
+        mockMvc.perform(post("/api/meal-plans/1/recipes")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                                "recipeId": 1,
+                                "mealDate": "2026-08-03",
+                                "mealType": "DINNER",
+                                "servings": 0
+                            }
+                            """))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(mealPlanService);
+
+    }
+
+    @Test
+    void shouldReturn400WhenMealDateIsMissing() throws Exception {
+
+        mockMvc.perform(post("/api/meal-plans/1/recipes")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                                "recipeId": 1,
+                                "mealType": "DINNER",
+                                "servings": 4
+                            }
+                            """))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(mealPlanService);
+    }
+
     private CreateMealPlanRequest createRequest() {
 
         CreateMealPlanRequest request = new CreateMealPlanRequest();
@@ -208,4 +348,19 @@ public class MealPlanControllerTest {
         verify(mealPlanService, never()).createMealPlan(any());
 
     }
+
+    private Recipe createRecipe() {
+
+        return Recipe.builder()
+                .id(1L)
+                .name("Lasagne")
+                .prepMinutes(20)
+                .cookMinutes(50)
+                .servings(6)
+                .difficulty(Difficulty.EASY)
+                .createdAt(LocalDateTime.now())
+                .lastModifiedAt(LocalDateTime.now())
+                .build();
+    }
+
 }

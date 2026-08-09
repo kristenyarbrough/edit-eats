@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -15,5 +16,6 @@ public class MealPlanResponse {
     private LocalDate weekStarting;
     private LocalDateTime createdAt;
     private LocalDateTime lastModifiedAt;
+    private List<MealPlanRecipeResponse> meals;
 
 }

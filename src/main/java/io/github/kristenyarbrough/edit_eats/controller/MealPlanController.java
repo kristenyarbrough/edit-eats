@@ -1,6 +1,8 @@
 package io.github.kristenyarbrough.edit_eats.controller;
 
 import io.github.kristenyarbrough.edit_eats.domain.MealPlan;
+import io.github.kristenyarbrough.edit_eats.domain.MealPlanRecipe;
+import io.github.kristenyarbrough.edit_eats.dto.request.AddMealPlanRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateMealPlanRequest;
 import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanResponse;
 import io.github.kristenyarbrough.edit_eats.service.MealPlanService;
@@ -44,6 +46,16 @@ public class MealPlanController {
 
         return mealPlanService.findMealPlans(name);
 
+    }
+
+    @PostMapping("/{mealPlanId}/recipes")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MealPlanRecipe addRecipeToMealPlan(
+            @PathVariable Long mealPlanId,
+            @Valid @RequestBody AddMealPlanRecipeRequest request) {
+
+        return mealPlanService.addRecipeToMealPlan(mealPlanId, request);
+        
     }
 
 //    @GetMapping("/{weekStarting}/shopping-list")

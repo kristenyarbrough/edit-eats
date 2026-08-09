@@ -1,12 +1,19 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.MealPlan;
+import io.github.kristenyarbrough.edit_eats.domain.MealPlanRecipe;
+import io.github.kristenyarbrough.edit_eats.domain.Recipe;
+import io.github.kristenyarbrough.edit_eats.dto.request.AddMealPlanRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateMealPlanRequest;
+import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanRecipeResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanResponse;
+import io.github.kristenyarbrough.edit_eats.repository.MealPlanRecipeRepository;
 import io.github.kristenyarbrough.edit_eats.repository.MealPlanRepository;
+import io.github.kristenyarbrough.edit_eats.repository.RecipeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -17,6 +24,34 @@ import java.util.List;
 public class MealPlanService {
 
     private final MealPlanRepository mealPlanRepository;
+    private final MealPlanRecipeRepository mealPlanRecipeRepository;
+    private final RecipeRepository recipeRepository;
+
+    @Transactional
+    public MealPlanRecipe addRecipeToMealPlan(
+            Long mealPlanId, AddMealPlanRecipeRequest request) {
+
+        MealPlan mealPlan = mealPlanRepository.findById(mealPlanId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Meal plan not found: " + mealPlanId));
+
+        Recipe recipe = recipeRepository.findById(request.getRecipeId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Recipe not found: " + request.getRecipeId()));
+
+        MealPlanRecipe mealPlanRecipe = MealPlanRecipe.builder()
+                .mealPlan(mealPlan)
+                .recipe(recipe)
+                .mealDate(request.getMealDate())
+                .mealType(request.getMealType())
+                .servings(request.getServings())
+                .build();
+
+        return mealPlanRecipeRepository.save(mealPlanRecipe);
+
+    }
 
     public MealPlan createMealPlan(CreateMealPlanRequest request) {
 
@@ -43,12 +78,26 @@ public class MealPlanService {
                         HttpStatus.NOT_FOUND,
                         "Meal plan not found: " + id));
 
+        List<MealPlanRecipeResponse> meals = mealPlanRecipeRepository
+                .findByMealPlanIdOrderByMealDateAscMealTypeAsc(id)
+                .stream()
+                .map(meal -> MealPlanRecipeResponse.builder()
+                        .id(meal.getId())
+                        .recipeId(meal.getRecipe().getId())
+                        .recipeName(meal.getRecipe().getName())
+                        .mealDate(meal.getMealDate())
+                        .mealType(meal.getMealType())
+                        .servings(meal.getServings())
+                        .build())
+                .toList();
+
         return MealPlanResponse.builder()
                 .id(mealPlan.getId())
                 .name(mealPlan.getName())
                 .weekStarting(mealPlan.getWeekStarting())
                 .createdAt(mealPlan.getCreatedAt())
                 .lastModifiedAt(mealPlan.getLastModifiedAt())
+                .meals(meals)
                 .build();
 
     }
