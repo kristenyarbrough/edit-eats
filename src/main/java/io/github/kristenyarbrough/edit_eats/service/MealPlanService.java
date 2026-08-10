@@ -79,6 +79,22 @@ public class MealPlanService {
 
     }
 
+    @Transactional
+    public void deleteMealPlanRecipe(Long mealPlanRecipeId) {
+
+        MealPlanRecipe mealPlanRecipe = mealPlanRecipeRepository.findById(mealPlanRecipeId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Meal plan recipe not found: " + mealPlanRecipeId));
+
+        MealPlan mealPlan = mealPlanRecipe.getMealPlan();
+
+        mealPlanRecipeRepository.delete(mealPlanRecipe);
+
+        mealPlan.setLastModifiedAt(LocalDateTime.now());
+
+    }
+
     public MealPlan createMealPlan(CreateMealPlanRequest request) {
 
         MealPlan mealPlan = MealPlan.builder()

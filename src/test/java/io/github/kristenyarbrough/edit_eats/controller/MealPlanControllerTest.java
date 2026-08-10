@@ -390,6 +390,36 @@ public class MealPlanControllerTest {
 
     }
 
+    @Test
+    void shouldDeleteMealPlanRecipe() throws Exception {
+
+        doNothing()
+                .when(mealPlanService)
+                .deleteMealPlanRecipe(1L);
+
+        mockMvc.perform(delete("/api/meal-plans/recipes/1"))
+                .andExpect(status().isNoContent());
+
+        verify(mealPlanService).deleteMealPlanRecipe(1L);
+
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenDeletingNonExistentMealPlanRecipe() throws Exception {
+
+        doThrow(new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Meal plan recipe not found: 99"))
+                .when(mealPlanService)
+                .deleteMealPlanRecipe(99L);
+
+        mockMvc.perform(delete("/api/meal-plans/recipes/99"))
+                .andExpect(status().isNotFound());
+
+        verify(mealPlanService).deleteMealPlanRecipe(99L);
+
+    }
+
     private CreateMealPlanRequest createRequest() {
 
         CreateMealPlanRequest request = new CreateMealPlanRequest();

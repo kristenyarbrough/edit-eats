@@ -70,6 +70,15 @@ public class MealPlanController {
 
     }
 
+    @DeleteMapping("/recipes/{mealPlanRecipeId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteMealPlanRecipe(
+            @PathVariable Long mealPlanRecipeId) {
+
+        mealPlanService.deleteMealPlanRecipe(mealPlanRecipeId);
+
+    }
+
 //    @GetMapping("/{weekStarting}/shopping-list")
 //    public List<ShoppingListItem> shoppingList(@PathVariable String weekStarting) {
 //        LocalDate date = LocalDate.parse(weekStarting);
