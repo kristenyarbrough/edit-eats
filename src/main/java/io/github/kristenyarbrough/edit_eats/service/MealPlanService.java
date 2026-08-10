@@ -5,6 +5,7 @@ import io.github.kristenyarbrough.edit_eats.domain.MealPlanRecipe;
 import io.github.kristenyarbrough.edit_eats.domain.Recipe;
 import io.github.kristenyarbrough.edit_eats.dto.request.AddMealPlanRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateMealPlanRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.UpdateMealPlanRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanRecipeResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanResponse;
 import io.github.kristenyarbrough.edit_eats.repository.MealPlanRecipeRepository;
@@ -48,6 +49,31 @@ public class MealPlanService {
                 .mealType(request.getMealType())
                 .servings(request.getServings())
                 .build();
+
+        return mealPlanRecipeRepository.save(mealPlanRecipe);
+
+    }
+
+    @Transactional
+    public MealPlanRecipe updateMealPlanRecipe(Long mealPlanRecipeId, UpdateMealPlanRecipeRequest request) {
+
+        MealPlanRecipe mealPlanRecipe = mealPlanRecipeRepository.findById(mealPlanRecipeId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Meal plan recipe not found: " + mealPlanRecipeId));
+
+        Recipe recipe = recipeRepository.findById(request.getRecipeId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Recipe not found: " + request.getRecipeId()));
+
+        mealPlanRecipe.setRecipe(recipe);
+        mealPlanRecipe.setMealDate(request.getMealDate());
+        mealPlanRecipe.setMealType(request.getMealType());
+        mealPlanRecipe.setServings(request.getServings());
+
+        mealPlanRecipe.getMealPlan()
+                .setLastModifiedAt(LocalDateTime.now());
 
         return mealPlanRecipeRepository.save(mealPlanRecipe);
 

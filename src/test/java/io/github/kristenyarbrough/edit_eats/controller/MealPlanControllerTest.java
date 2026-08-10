@@ -3,6 +3,7 @@ package io.github.kristenyarbrough.edit_eats.controller;
 import io.github.kristenyarbrough.edit_eats.domain.*;
 import io.github.kristenyarbrough.edit_eats.dto.request.AddMealPlanRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateMealPlanRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.UpdateMealPlanRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanRecipeResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanResponse;
 import io.github.kristenyarbrough.edit_eats.service.MealPlanService;
@@ -22,8 +23,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -314,6 +314,80 @@ public class MealPlanControllerTest {
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(mealPlanService);
+    }
+
+    @Test
+    void shouldUpdateMealPlanRecipe() throws Exception {
+
+        MealPlanRecipe updatedMeal = MealPlanRecipe.builder()
+                .id(1L)
+                .mealDate(LocalDate.of(2026, 8, 5))
+                .mealType(MealType.LUNCH)
+                .servings(6)
+                .build();
+
+        when(mealPlanService.updateMealPlanRecipe(
+                eq(1L),
+                any(UpdateMealPlanRecipeRequest.class)))
+                .thenReturn(updatedMeal);
+
+        mockMvc.perform(put("/api/meal-plans/recipes/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                                "recipeId": 2,
+                                "mealDate": "2026-08-05",
+                                "mealType": "LUNCH",
+                                "servings": 6
+                            }
+                            """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.mealDate").value("2026-08-05"))
+                .andExpect(jsonPath("$.mealType").value("LUNCH"))
+                .andExpect(jsonPath("$.servings").value(6));
+
+        verify(mealPlanService).updateMealPlanRecipe(
+                eq(1L),
+                any(UpdateMealPlanRecipeRequest.class));
+
+    }
+
+    @Test
+    void shouldRejectUpdateWhenRecipeIdIsMissing() throws Exception {
+
+        mockMvc.perform(put("/api/meal-plans/recipes/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                                "mealDate": "2026-08-05",
+                                "mealType": "LUNCH",
+                                "servings": 6
+                            }
+                            """))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(mealPlanService);
+
+    }
+
+    @Test
+    void shouldRejectUpdateWhenServingsIsZero() throws Exception {
+
+        mockMvc.perform(put("/api/meal-plans/recipes/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                                "recipeId": 2,
+                                "mealDate": "2026-08-05",
+                                "mealType": "LUNCH",
+                                "servings": 0
+                            }
+                            """))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(mealPlanService);
+
     }
 
     private CreateMealPlanRequest createRequest() {
