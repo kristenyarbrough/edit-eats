@@ -1,10 +1,7 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.*;
-import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeCategoryRequest;
-import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeIngredientRequest;
-import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeRequest;
-import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeStepRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.*;
 import io.github.kristenyarbrough.edit_eats.dto.response.RecipeCategoryResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.RecipeIngredientResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.RecipeResponse;
@@ -202,6 +199,40 @@ public class RecipeService {
                 .categories(categoryResponses)
                 .build();
     }
+
+    public Recipe updateRecipe(Long id, UpdateRecipeRequest request) {
+
+        Recipe recipe = recipeRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Recipe not found: " + id));
+
+        recipe.setName(request.getName());
+        recipe.setPrepMinutes(request.getPrepMinutes());
+        recipe.setCookMinutes(request.getCookMinutes());
+        recipe.setServings(request.getServings());
+        recipe.setDifficulty(request.getDifficulty());
+        recipe.setSourceUrl(request.getSourceUrl());
+        recipe.setImageUrl(request.getImageUrl());
+        recipe.setStorageInstructions(request.getStorageInstructions());
+        recipe.setFreezerInstructions(request.getFreezerInstructions());
+        recipe.setLastModifiedAt(LocalDateTime.now());
+
+        return recipeRepository.save(recipe);
+
+    }
+
+    public void deleteRecipe(Long id) {
+
+        Recipe recipe = recipeRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Recipe not found: " + id));
+
+        recipeRepository.delete(recipe);
+
+    }
+
 }
 //
 //    @Transactional(readOnly = true)

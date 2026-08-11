@@ -1,10 +1,7 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.*;
-import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeCategoryRequest;
-import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeIngredientRequest;
-import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeRequest;
-import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeStepRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.*;
 import io.github.kristenyarbrough.edit_eats.repository.*;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -15,6 +12,7 @@ import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -635,6 +633,128 @@ class RecipeServiceTest {
 
         verifyNoInteractions(ingredientRepository);
         verify(recipeIngredientRepository, never()).saveAll(any());
+
+    }
+
+    @Test
+    void shouldUpdateRecipe() {
+
+        Recipe recipe = Recipe.builder()
+                .id(1L)
+                .name("Scrambled Eggs")
+                .prepMinutes(2)
+                .cookMinutes(5)
+                .servings(2)
+                .difficulty(Difficulty.EASY)
+                .createdAt(java.time.LocalDateTime.now().minusDays(1))
+                .lastModifiedAt(java.time.LocalDateTime.now().minusHours(1))
+                .build();
+
+        UpdateRecipeRequest request = new UpdateRecipeRequest();
+
+        request.setName("Creamy Scrambled Eggs");
+        request.setPrepMinutes(5);
+        request.setCookMinutes(10);
+        request.setServings(4);
+        request.setDifficulty(Difficulty.MEDIUM);
+        request.setSourceUrl("https://example.com/eggs");
+        request.setImageUrl("https://example.com/eggs.jpg");
+        request.setStorageInstructions("Store in the fridge.");
+        request.setFreezerInstructions("Not recommended.");
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(recipeRepository.save(recipe))
+                .thenReturn(recipe);
+
+        Recipe result = recipeService.updateRecipe(1L, request);
+
+        assertAll(
+                () -> assertEquals(1L, result.getId()),
+                () -> assertEquals("Creamy Scrambled Eggs", result.getName()),
+                () -> assertEquals(5, result.getPrepMinutes()),
+                () -> assertEquals(10, result.getCookMinutes()),
+                () -> assertEquals(4, result.getServings()),
+                () -> assertEquals(Difficulty.MEDIUM, result.getDifficulty()),
+                () -> assertEquals("https://example.com/eggs", result.getSourceUrl()),
+                () -> assertEquals("https://example.com/eggs.jpg", result.getImageUrl()),
+                () -> assertEquals("Store in the fridge.", result.getStorageInstructions()),
+                () -> assertEquals("Not recommended.", result.getFreezerInstructions())
+        );
+
+        assertNotNull(result.getLastModifiedAt());
+
+        verify(recipeRepository).findById(1L);
+        verify(recipeRepository).save(recipe);
+
+    }
+
+    @Test
+    void shouldThrowWhenRecipeDoesNotExist() {
+
+        UpdateRecipeRequest request = new UpdateRecipeRequest();
+
+        request.setName("Updated Recipe");
+        request.setPrepMinutes(5);
+        request.setCookMinutes(10);
+        request.setServings(4);
+        request.setDifficulty(Difficulty.EASY);
+
+        when(recipeRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> recipeService.updateRecipe(99L, request)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertEquals("Recipe not found: 99", exception.getReason());
+
+        verify(recipeRepository).findById(99L);
+        verify(recipeRepository, never()).save(any());
+
+    }
+
+    @Test
+    void shouldDeleteRecipe() {
+
+        Recipe recipe = Recipe.builder()
+                .id(1L)
+                .name("Scrambled Eggs")
+                .prepMinutes(2)
+                .cookMinutes(5)
+                .servings(2)
+                .difficulty(Difficulty.EASY)
+                .build();
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        recipeService.deleteRecipe(1L);
+
+        verify(recipeRepository).findById(1L);
+        verify(recipeRepository).delete(recipe);
+
+    }
+
+    @Test
+    void shouldThrowWhenDeletingNonExistentRecipe() {
+
+        when(recipeRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> recipeService.deleteRecipe(99L)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertEquals("Recipe not found: 99", exception.getReason());
+
+        verify(recipeRepository).findById(99L);
+        verify(recipeRepository, never()).delete(any());
 
     }
 

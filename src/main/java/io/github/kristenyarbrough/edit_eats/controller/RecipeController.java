@@ -28,6 +28,12 @@ public class RecipeController {
         return recipeService.getRecipe(id);
     }
 
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+        recipeService.deleteRecipe(id);
+    }
+
 //    @GetMapping
 //    public Page<Recipe> getAll(@RequestParam(defaultValue = "0") int page,
 //                               @RequestParam(defaultValue = "20") int size) {
@@ -35,11 +41,6 @@ public class RecipeController {
 //    }
 //
 //
-//    @DeleteMapping("/{id}")
-//    @ResponseStatus(HttpStatus.NO_CONTENT)
-//    public void delete(@PathVariable Long id) {
-//        recipeService.delete(id);
-//    }
 //
 //    @PutMapping("/{id}")
 //    public Recipe update(@PathVariable Long id,

@@ -25,10 +25,9 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @WebMvcTest(RecipeController.class)
 class RecipeControllerTest {
@@ -279,6 +278,36 @@ class RecipeControllerTest {
         request.setSteps(List.of(step));
 
         assertInvalidRequest(request);
+    }
+
+    @Test
+    void shouldDeleteRecipe() throws Exception {
+
+        doNothing()
+                .when(recipeService)
+                .deleteRecipe(1L);
+
+        mockMvc.perform(delete("/api/recipes/1"))
+                .andExpect(status().isNoContent());
+
+        verify(recipeService).deleteRecipe(1L);
+
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenDeletingNonExistentRecipe() throws Exception {
+
+        doThrow(new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Recipe not found: 99"))
+                .when(recipeService)
+                .deleteRecipe(99L);
+
+        mockMvc.perform(delete("/api/recipes/99"))
+                .andExpect(status().isNotFound());
+
+        verify(recipeService).deleteRecipe(99L);
+
     }
 
     private CreateRecipeRequest createRequest() {
