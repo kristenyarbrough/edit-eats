@@ -8,4 +8,7 @@ import java.util.List;
 public interface RecipeCategoryAssignmentRepository extends JpaRepository<RecipeCategoryAssignment, Long> {
 
     List<RecipeCategoryAssignment> findByRecipeId(Long recipeId);
+
+    void deleteByRecipeId(Long recipeId);
+
 }

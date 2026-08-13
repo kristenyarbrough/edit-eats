@@ -10,14 +10,38 @@ generation are currently under development.*
 ![Build](https://img.shields.io/badge/Build-Maven-red)
 ![Tests](https://img.shields.io/badge/Tests-JUnit%205%20%7C%20Mockito-success)
 
-Edit Eats is a backend-focused Java application for managing recipes, meal planning and
-shopping lists. I've wanted to build a recipe management application for some time, both
-as a personal project and as an opportunity to explore modern backend software engineering
-practices. Built with Java and Spring Boot, the project demonstrates RESTful API design,
-layered architecture, JPA/Hibernate, validation, transactional business logic and automated
-testing, while continuing to evolve with new features.
+Edit Eats is a backend-focused Java application for recipe management, meal planning and
+shopping list generation. It started as a personal project to solve a problem I regularly encountered when 
+planning meals and managing recipes. I wanted to build something practical while developing my backend software engineering skills in Java and Spring Boot.
+
+The project gave me an opportunity to apply software engineering concepts to a real-world problem, including designing a relational data model, building RESTful APIs, implementing business logic, handling unit conversions and calculations, validating user input, and writing automated tests.
+
+I continue to develop Edit Eats as a portfolio project, with the longer-term goal of evolving it into a web and mobile application.
 
 [//]: # (A Spring Boot + Java 17 backend for storing recipes, planning meals, and generating a combined shopping list with unit conversions.)
+
+---
+
+## Technology stack
+
+| Technology | Purpose |
+|------------|---------|
+| Java 17 | Programming language|
+| Spring Boot | Backend framework |
+| Spring Web | REST API |
+| Spring Data JPA | Data access |
+| Hibernate | ORM |
+| H2 Database | Development database |
+| Maven | Dependency management |
+| Lombok | Boilerplate reduction |
+| Spring Validation | Request validation |
+| Springdoc OpenAPI | Swagger documentation |
+| JUnit 5 | Unit testing |
+| Mockito | Service layer testing |
+| OpenAPI/Swagger | API Documentation |
+| Git | Version control |
+
+[//]: # (- Spring Web &#40;REST&#41;)
 
 ---
 
@@ -128,27 +152,6 @@ are added regularly as the application evolves.
 [//]: # (    - cup ↔ ml)
 
 [//]: # (    - Shopping list totals are converted + summed correctly)
-
----
-
-## Technology stack
-
-| Technology | Purpose |
-|------------|---------|
-| Java 17 | Programming language|
-| Spring Boot | Backend framework |
-| Spring Web | REST API |
-| Spring Data JPA | Data access |
-| Hibernate | ORM |
-| H2 Database | Development database |
-| Maven | Dependency management |
-| Lombok | Boilerplate reduction |
-| Spring Validation | Request validation |
-| Springdoc OpenAPI | Swagger documentation |
-| JUnit 5 | Unit testing |
-| Mockito | Service layer testing |
-
-[//]: # (- Spring Web &#40;REST&#41;)
 
 ---
 

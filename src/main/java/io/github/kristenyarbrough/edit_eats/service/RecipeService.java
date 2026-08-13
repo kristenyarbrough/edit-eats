@@ -218,6 +218,29 @@ public class RecipeService {
         recipe.setFreezerInstructions(request.getFreezerInstructions());
         recipe.setLastModifiedAt(LocalDateTime.now());
 
+        recipeIngredientRepository.deleteByRecipeId(id);
+
+        for (CreateRecipeIngredientRequest ingredientRequest : request.getIngredients()) {
+
+            Ingredient ingredient = ingredientRepository.findById(ingredientRequest.getIngredientId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Ingredient not found: " + ingredientRequest.getIngredientId()
+            ));
+
+            RecipeIngredient recipeIngredient = RecipeIngredient.builder()
+                    .recipe(recipe)
+                    .ingredient(ingredient)
+                    .quantity(ingredientRequest.getQuantity())
+                    .unit(ingredientRequest.getUnit())
+                    .preparation(ingredientRequest.getPreparation())
+                    .optional(ingredientRequest.getOptional())
+                    .build();
+
+            recipeIngredientRepository.save(recipeIngredient);
+
+        }
+
         return recipeRepository.save(recipe);
 
     }

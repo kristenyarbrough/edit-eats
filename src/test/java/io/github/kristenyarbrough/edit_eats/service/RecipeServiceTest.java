@@ -661,6 +661,7 @@ class RecipeServiceTest {
         request.setImageUrl("https://example.com/eggs.jpg");
         request.setStorageInstructions("Store in the fridge.");
         request.setFreezerInstructions("Not recommended.");
+        request.setIngredients(List.of());
 
         when(recipeRepository.findById(1L))
                 .thenReturn(Optional.of(recipe));
@@ -755,6 +756,63 @@ class RecipeServiceTest {
 
         verify(recipeRepository).findById(99L);
         verify(recipeRepository, never()).delete(any());
+
+    }
+
+    @Test
+    void shouldReplaceRecipeIngredientWhenUpdatingRecipe() {
+
+        Recipe recipe = Recipe.builder()
+                .id(1L)
+                .name("Scrambled Eggs")
+                .prepMinutes(2)
+                .cookMinutes(5)
+                .servings(2)
+                .difficulty(Difficulty.EASY)
+                .build();
+
+        UpdateRecipeRequest request = new UpdateRecipeRequest();
+
+        request.setName("Scrambled Eggs");
+        request.setPrepMinutes(2);
+        request.setCookMinutes(5);
+        request.setServings(2);
+        request.setDifficulty(Difficulty.EASY);
+
+        CreateRecipeIngredientRequest ingredientRequest = new CreateRecipeIngredientRequest();
+
+        ingredientRequest.setIngredientId(2L);
+        ingredientRequest.setQuantity(new BigDecimal("250"));
+        ingredientRequest.setUnit(Unit.G);
+        ingredientRequest.setPreparation("chopped");
+        ingredientRequest.setOptional(false);
+
+        request.setIngredients(List.of(ingredientRequest));
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        Ingredient ingredient = Ingredient.builder()
+                .id(2L)
+                .name("Butter")
+                .build();
+
+        when(ingredientRepository.findById(2L))
+                .thenReturn(Optional.of(ingredient));
+
+        recipeService.updateRecipe(1L, request);
+
+        verify(recipeIngredientRepository).deleteByRecipeId(1L);
+
+        verify(recipeIngredientRepository)
+                .save(argThat(recipeIngredient ->
+                        recipeIngredient.getRecipe() == recipe
+                        && recipeIngredient.getIngredient() == ingredient
+                        && recipeIngredient.getQuantity().equals(new BigDecimal("250"))
+                        && recipeIngredient.getUnit() == Unit.G
+                        && "chopped".equals(recipeIngredient.getPreparation())
+                        && Boolean.FALSE.equals(recipeIngredient.getOptional())
+                ));
 
     }
 
