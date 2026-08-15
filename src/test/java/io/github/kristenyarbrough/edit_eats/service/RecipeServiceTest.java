@@ -639,16 +639,9 @@ class RecipeServiceTest {
     @Test
     void shouldUpdateRecipe() {
 
-        Recipe recipe = Recipe.builder()
-                .id(1L)
-                .name("Scrambled Eggs")
-                .prepMinutes(2)
-                .cookMinutes(5)
-                .servings(2)
-                .difficulty(Difficulty.EASY)
-                .createdAt(java.time.LocalDateTime.now().minusDays(1))
-                .lastModifiedAt(java.time.LocalDateTime.now().minusHours(1))
-                .build();
+        Recipe recipe = createRecipe();
+        recipe.setCreatedAt(java.time.LocalDateTime.now().minusDays(1));
+        recipe.setLastModifiedAt(java.time.LocalDateTime.now().minusHours(1));
 
         UpdateRecipeRequest request = new UpdateRecipeRequest();
 
@@ -721,14 +714,7 @@ class RecipeServiceTest {
     @Test
     void shouldDeleteRecipe() {
 
-        Recipe recipe = Recipe.builder()
-                .id(1L)
-                .name("Scrambled Eggs")
-                .prepMinutes(2)
-                .cookMinutes(5)
-                .servings(2)
-                .difficulty(Difficulty.EASY)
-                .build();
+        Recipe recipe = createRecipe();
 
         when(recipeRepository.findById(1L))
                 .thenReturn(Optional.of(recipe));
@@ -762,22 +748,9 @@ class RecipeServiceTest {
     @Test
     void shouldReplaceRecipeIngredientWhenUpdatingRecipe() {
 
-        Recipe recipe = Recipe.builder()
-                .id(1L)
-                .name("Scrambled Eggs")
-                .prepMinutes(2)
-                .cookMinutes(5)
-                .servings(2)
-                .difficulty(Difficulty.EASY)
-                .build();
+        Recipe recipe = createRecipe();
 
-        UpdateRecipeRequest request = new UpdateRecipeRequest();
-
-        request.setName("Scrambled Eggs");
-        request.setPrepMinutes(2);
-        request.setCookMinutes(5);
-        request.setServings(2);
-        request.setDifficulty(Difficulty.EASY);
+        UpdateRecipeRequest request = updateValidRequest();
 
         CreateRecipeIngredientRequest ingredientRequest = new CreateRecipeIngredientRequest();
 
@@ -816,9 +789,173 @@ class RecipeServiceTest {
 
     }
 
+    @Test
+    void  shouldThrowWhenUpdatingRecipeWithNonExistingIngredient() {
+
+        Recipe recipe = createRecipe();
+
+        UpdateRecipeRequest request = updateValidRequest();
+
+        CreateRecipeIngredientRequest ingredientRequest = new CreateRecipeIngredientRequest();
+
+        ingredientRequest.setIngredientId(99L);
+        ingredientRequest.setQuantity(new BigDecimal("250"));
+        ingredientRequest.setUnit(Unit.G);
+        ingredientRequest.setOptional(false);
+
+        request.setIngredients(List.of(ingredientRequest));
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(ingredientRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> recipeService.updateRecipe(1L, request)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertEquals("Ingredient not found: 99", exception.getReason());
+
+        verify(recipeRepository).findById(1L);
+        verify(ingredientRepository).findById(99l);
+        verify(recipeIngredientRepository, never()).deleteByRecipeId(anyLong());
+        verify(recipeIngredientRepository, never()).save(any());
+        verifyNoMoreInteractions(recipeIngredientRepository);
+
+    }
+
+    @Test
+    void shouldReplaceRecipeStepsWhenUpdatingRecipes() {
+
+        Recipe recipe = createRecipe();
+
+        UpdateRecipeRequest request = updateValidRequest();
+        request.setIngredients(List.of());
+
+        CreateRecipeStepRequest firstStep = new CreateRecipeStepRequest();
+        firstStep.setInstruction("Crack the eggs into a bowl.");
+
+        CreateRecipeStepRequest secondStep = new CreateRecipeStepRequest();
+        secondStep.setInstruction("Whisk the eggs.");
+
+        request.setSteps(List.of(firstStep, secondStep));
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        recipeService.updateRecipe(1L, request);
+
+        verify(recipeStepRepository).deleteByRecipeId(1L);
+        verify(recipeStepRepository).save(argThat(step ->
+                step.getRecipe() == recipe
+                && step.getStepNumber() == 1
+                && "Crack the eggs into a bowl.".equals(step.getInstruction())
+        ));
+
+        verify(recipeStepRepository).save(argThat(step ->
+                step.getRecipe() == recipe
+                && step.getStepNumber() == 2
+                && "Whisk the eggs.".equals(step.getInstruction())
+        ));
+
+    }
+
+    @Test
+    void shouldReplaceRecipeCategoriesWhenUpdatingRecipe() {
+
+        Recipe recipe = createRecipe();
+
+        UpdateRecipeRequest request = updateValidRequest();
+        request.setIngredients(List.of());
+        request.setSteps(List.of());
+
+        CreateRecipeCategoryRequest categoryRequest = new CreateRecipeCategoryRequest();
+
+        categoryRequest.setRecipeCategoryId(2L);
+
+        request.setCategories(List.of(categoryRequest));
+
+        RecipeCategory category = RecipeCategory.builder()
+                .id(2L)
+                .name("Breakfast")
+                .build();
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(recipeCategoryRepository.findById(2L))
+                .thenReturn(Optional.of(category));
+
+        recipeService.updateRecipe(1L, request);
+
+        verify(recipeCategoryAssignmentRepository)
+                .deleteByRecipeId(1L);
+
+        verify(recipeCategoryAssignmentRepository).save(argThat(assignement ->
+                assignement.getRecipe() == recipe
+                && assignement.getRecipeCategory() == category
+        ));
+
+    }
+
+    @Test
+    void shouldThrowWhenUpdatingRecipeWithNonExistingCategory() {
+
+        Recipe recipe = createRecipe();
+
+        UpdateRecipeRequest request = updateValidRequest();
+        request.setIngredients(List.of());
+        request.setSteps(List.of());
+
+        CreateRecipeCategoryRequest categoryRequest = new CreateRecipeCategoryRequest();
+
+        categoryRequest.setRecipeCategoryId(99L);
+
+        request.setCategories(List.of(categoryRequest));
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(recipeCategoryRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> recipeService.updateRecipe(1L, request)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+
+        verify(recipeCategoryRepository).findById(99L);
+
+        verify(recipeCategoryAssignmentRepository, never())
+                .deleteByRecipeId(1L);
+
+        verify(recipeCategoryAssignmentRepository, never())
+                .save(any(RecipeCategoryAssignment.class));
+
+    }
+
     private CreateRecipeRequest createValidRequest() {
 
         CreateRecipeRequest request = new CreateRecipeRequest();
+
+        request.setName("Scrambled Eggs");
+        request.setPrepMinutes(2);
+        request.setCookMinutes(5);
+        request.setServings(2);
+        request.setDifficulty(Difficulty.EASY);
+
+        return request;
+
+    }
+
+    private UpdateRecipeRequest updateValidRequest() {
+
+        UpdateRecipeRequest request = new UpdateRecipeRequest();
 
         request.setName("Scrambled Eggs");
         request.setPrepMinutes(2);
@@ -949,6 +1086,19 @@ class RecipeServiceTest {
         }
 
         return recipeService.createRecipe(request);
+
+    }
+
+    private Recipe createRecipe() {
+
+        return Recipe.builder()
+                .id(1L)
+                .name("Scrambled Eggs")
+                .prepMinutes(2)
+                .cookMinutes(5)
+                .servings(2)
+                .difficulty(Difficulty.EASY)
+                .build();
 
     }
 

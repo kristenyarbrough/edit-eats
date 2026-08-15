@@ -200,6 +200,7 @@ public class RecipeService {
                 .build();
     }
 
+    @Transactional
     public Recipe updateRecipe(Long id, UpdateRecipeRequest request) {
 
         Recipe recipe = recipeRepository.findById(id)
@@ -218,7 +219,7 @@ public class RecipeService {
         recipe.setFreezerInstructions(request.getFreezerInstructions());
         recipe.setLastModifiedAt(LocalDateTime.now());
 
-        recipeIngredientRepository.deleteByRecipeId(id);
+        List<Ingredient> ingredients = new ArrayList<>();
 
         for (CreateRecipeIngredientRequest ingredientRequest : request.getIngredients()) {
 
@@ -228,9 +229,19 @@ public class RecipeService {
                             "Ingredient not found: " + ingredientRequest.getIngredientId()
             ));
 
+            ingredients.add(ingredient);
+
+        }
+
+        recipeIngredientRepository.deleteByRecipeId(id);
+
+        for (int i = 0; i < request.getIngredients().size(); i++) {
+
+            CreateRecipeIngredientRequest ingredientRequest = request.getIngredients().get(i);
+
             RecipeIngredient recipeIngredient = RecipeIngredient.builder()
                     .recipe(recipe)
-                    .ingredient(ingredient)
+                    .ingredient(ingredients.get(i))
                     .quantity(ingredientRequest.getQuantity())
                     .unit(ingredientRequest.getUnit())
                     .preparation(ingredientRequest.getPreparation())
@@ -238,6 +249,54 @@ public class RecipeService {
                     .build();
 
             recipeIngredientRepository.save(recipeIngredient);
+
+        }
+
+        recipeStepRepository.deleteByRecipeId(id);
+
+        List<CreateRecipeStepRequest> steps = request.getSteps();
+
+        for (int i = 0; i < steps.size(); i++) {
+
+            CreateRecipeStepRequest stepRequest = steps.get(i);
+
+            RecipeStep recipeStep = RecipeStep.builder()
+                    .recipe(recipe)
+                    .stepNumber(i + 1)
+                    .instruction(stepRequest.getInstruction())
+                    .build();
+
+            recipeStepRepository.save(recipeStep);
+
+        }
+
+        List<RecipeCategory> categories = new ArrayList<>();
+
+        for (CreateRecipeCategoryRequest categoryRequest : request.getCategories()) {
+
+            RecipeCategory category = recipeCategoryRepository.findById(
+                    categoryRequest.getRecipeCategoryId()
+            ).orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Recipe category not found: " + categoryRequest.getRecipeCategoryId()
+            ));
+
+            categories.add(category);
+
+        }
+
+        recipeCategoryAssignmentRepository.deleteByRecipeId(id);
+
+        for (int i = 0; i < request.getCategories().size(); i++) {
+
+            CreateRecipeCategoryRequest categoryRequest = request.getCategories().get(i);
+
+            RecipeCategoryAssignment assignment = RecipeCategoryAssignment.builder()
+                    .recipe(recipe)
+                    .recipeCategory(categories.get(i))
+                    .build();
+
+            recipeCategoryAssignmentRepository.save(assignment);
 
         }
 

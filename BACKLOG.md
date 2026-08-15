@@ -182,7 +182,7 @@ Relationships:
 - [ ] Sort
 
 ### Phase 3 — Editing
-- [ ] Update recipe
+- [x] Update recipe
 - [ ] Add/remove ingredients
 - [ ] Reorder steps
 - [ ] Delete recipe

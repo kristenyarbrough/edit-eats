@@ -1,5 +1,6 @@
 package io.github.kristenyarbrough.edit_eats.controller;
 
+import io.github.kristenyarbrough.edit_eats.dto.request.UpdateRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.response.RecipeResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -281,7 +282,7 @@ class RecipeControllerTest {
     }
 
     @Test
-    void shouldDeleteRecipe() throws Exception {
+    void shouldDeleteRecipeRecipe() throws Exception {
 
         doNothing()
                 .when(recipeService)
@@ -307,6 +308,99 @@ class RecipeControllerTest {
                 .andExpect(status().isNotFound());
 
         verify(recipeService).deleteRecipe(99L);
+
+    }
+
+    @Test
+    void shouldUpdateRecipe() throws Exception {
+
+        UpdateRecipeRequest request = updateValidRequest();
+
+        Recipe recipe = createRecipe();
+
+        recipe.setName("Creamy Scrambled Eggs");
+        recipe.setPrepMinutes(5);
+        recipe.setCookMinutes(10);
+        recipe.setServings(4);
+        recipe.setDifficulty(Difficulty.MEDIUM);
+
+        when(recipeService.updateRecipe(
+                eq(1L),
+                any(UpdateRecipeRequest.class)))
+                .thenReturn(recipe);
+
+        mockMvc.perform(put("/api/recipes/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Creamy Scrambled Eggs"))
+                .andExpect(jsonPath("$.prepMinutes").value(5))
+                .andExpect(jsonPath("$.cookMinutes").value(10))
+                .andExpect(jsonPath("$.servings").value(4))
+                .andExpect(jsonPath("$.difficulty").value("MEDIUM"));
+
+        verify(recipeService).updateRecipe(
+                eq(1L),
+                any(UpdateRecipeRequest.class));
+
+    }
+
+    @Test
+    void shouldReturn404WhenUpdatingRecipeDoesNotExist() throws Exception {
+
+        UpdateRecipeRequest request = updateValidRequest();
+
+        when(recipeService.updateRecipe(
+                eq(99L),
+                any(UpdateRecipeRequest.class)))
+                .thenThrow(new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Recipe not found: 99"));
+
+        mockMvc.perform(put("/api/recipes/99")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+
+        verify(recipeService).updateRecipe(
+                eq(99L),
+                any(UpdateRecipeRequest.class));
+
+    }
+
+    @Test
+    void shouldReturn400WhenUpdatingRecipeWithBlankName() throws Exception {
+
+        UpdateRecipeRequest request = updateValidRequest();
+        request.setName("");
+
+        mockMvc.perform(put("/api/recipes/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(recipeService);
+
+    }
+
+    @Test
+    void shouldReturn400WhenUpdatingRecipeWithInvalidRequest() throws Exception {
+
+        UpdateRecipeRequest request = new UpdateRecipeRequest();
+
+        request.setName("");
+        request.setPrepMinutes(5);
+        request.setCookMinutes(10);
+        request.setServings(4);
+        request.setDifficulty(Difficulty.MEDIUM);
+
+        mockMvc.perform(put("/api/recipes/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(recipeService);
 
     }
 
@@ -357,6 +451,48 @@ class RecipeControllerTest {
                 .andExpect(status().isBadRequest());
 
         verify(recipeService, never()).createRecipe(any());
+
+    }
+
+    private UpdateRecipeRequest updateValidRequest() {
+
+        UpdateRecipeRequest request = new UpdateRecipeRequest();
+
+        request.setName("Creamy Scrambled Eggs");
+        request.setPrepMinutes(5);
+        request.setCookMinutes(10);
+        request.setServings(4);
+        request.setDifficulty(Difficulty.MEDIUM);
+
+        CreateRecipeStepRequest step = new CreateRecipeStepRequest();
+        step.setInstruction("Cook the eggs.");
+
+        request.setSteps(List.of(step));
+
+        CreateRecipeIngredientRequest ingredient = new CreateRecipeIngredientRequest();
+
+        ingredient.setIngredientId(1L);
+        ingredient.setQuantity(new BigDecimal("2"));
+        ingredient.setUnit(Unit.EACH);
+
+        request.setIngredients(List.of(ingredient));
+
+        request.setCategories(List.of());
+
+        return request;
+
+    }
+
+    private Recipe createRecipe() {
+
+        return Recipe.builder()
+                .id(1L)
+                .name("Creamy Scrambled Eggs")
+                .prepMinutes(5)
+                .cookMinutes(10)
+                .servings(4)
+                .difficulty(Difficulty.MEDIUM)
+                .build();
 
     }
 
