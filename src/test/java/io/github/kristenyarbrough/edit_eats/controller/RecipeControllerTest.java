@@ -282,7 +282,7 @@ class RecipeControllerTest {
     }
 
     @Test
-    void shouldDeleteRecipeRecipe() throws Exception {
+    void shouldDeleteRecipe() throws Exception {
 
         doNothing()
                 .when(recipeService)

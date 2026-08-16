@@ -547,6 +547,7 @@ class RecipeServiceTest {
         );
 
     }
+
     @Test
     void shouldCreateRecipeWithoutCategories() {
         CreateRecipeRequest request = createValidRequest();
@@ -741,7 +742,7 @@ class RecipeServiceTest {
         assertEquals("Recipe not found: 99", exception.getReason());
 
         verify(recipeRepository).findById(99L);
-        verify(recipeRepository, never()).delete(any());
+        verify(recipeRepository, never()).delete(any(Recipe.class));
 
     }
 
@@ -790,7 +791,7 @@ class RecipeServiceTest {
     }
 
     @Test
-    void  shouldThrowWhenUpdatingRecipeWithNonExistingIngredient() {
+    void shouldThrowWhenUpdatingRecipeWithNonExistingIngredient() {
 
         Recipe recipe = createRecipe();
 
@@ -937,6 +938,49 @@ class RecipeServiceTest {
         verify(recipeCategoryAssignmentRepository, never())
                 .save(any(RecipeCategoryAssignment.class));
 
+    }
+
+    @Test
+    void shouldDeleteRecipeAndItsRelatedData() {
+
+        Recipe recipe = createRecipe();
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        recipeService.deleteRecipe(1L);
+
+        verify(recipeRepository).findById(1L);
+        verify(recipeIngredientRepository).deleteByRecipeId(1L);
+        verify(recipeStepRepository).deleteByRecipeId(1L);
+        verify(recipeCategoryAssignmentRepository).deleteByRecipeId(1L);
+        verify(recipeRepository).delete(recipe);
+
+    }
+
+    @Test
+    void shouldNotDeleteRelatedDataWhenRecipeDoesNotExist() {
+
+        when(recipeRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                ResponseStatusException.class,
+                () -> recipeService.deleteRecipe(99L)
+        );
+
+        verify(recipeIngredientRepository, never())
+                .deleteByRecipeId(99L);
+
+        verify(recipeStepRepository, never())
+                .deleteByRecipeId(99L);
+
+        verify(recipeCategoryAssignmentRepository, never())
+                .deleteByRecipeId(99L);
+
+        verify(recipeRepository, never())
+                .delete(any(Recipe.class));
+        
     }
 
     private CreateRecipeRequest createValidRequest() {

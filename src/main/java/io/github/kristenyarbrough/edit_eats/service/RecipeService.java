@@ -304,12 +304,17 @@ public class RecipeService {
 
     }
 
+    @Transactional
     public void deleteRecipe(Long id) {
 
         Recipe recipe = recipeRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Recipe not found: " + id));
+
+        recipeIngredientRepository.deleteByRecipeId(id);
+        recipeStepRepository.deleteByRecipeId(id);
+        recipeCategoryAssignmentRepository.deleteByRecipeId(id);
 
         recipeRepository.delete(recipe);
 
