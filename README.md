@@ -2,7 +2,7 @@
 
 *Current implementation includes ingredient management, recipe creation with reusable
 ingredients and ordered steps, and recipe categorisation. Meal planning and shopping list
-generation are currently under development.*
+generation are currently under development. *
 
 ![Java](https://img.shields.io/badge/Java-17-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0-brightgreen)
