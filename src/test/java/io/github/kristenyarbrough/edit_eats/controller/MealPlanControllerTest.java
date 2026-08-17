@@ -1,9 +1,10 @@
 package io.github.kristenyarbrough.edit_eats.controller;
 
 import io.github.kristenyarbrough.edit_eats.domain.*;
-import io.github.kristenyarbrough.edit_eats.dto.request.AddMealPlanRecipeRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.CreateMealPlanRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateMealPlanRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.UpdateMealPlanRecipeRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.UpdateMealPlanRequest;
 import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanRecipeResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanResponse;
 import io.github.kristenyarbrough.edit_eats.service.MealPlanService;
@@ -236,7 +237,7 @@ public class MealPlanControllerTest {
 
         when(mealPlanService.addRecipeToMealPlan(
                 eq(1L),
-                any(AddMealPlanRecipeRequest.class)))
+                any(CreateMealPlanRecipeRequest.class)))
                 .thenReturn(mealPlanRecipe);
 
         mockMvc.perform(post("/api/meal-plans/1/recipes")
@@ -258,7 +259,7 @@ public class MealPlanControllerTest {
 
         verify(mealPlanService).addRecipeToMealPlan(
                 eq(1L),
-                any(AddMealPlanRecipeRequest.class));
+                any(CreateMealPlanRecipeRequest.class));
 
     }
 
@@ -417,6 +418,81 @@ public class MealPlanControllerTest {
                 .andExpect(status().isNotFound());
 
         verify(mealPlanService).deleteMealPlanRecipe(99L);
+
+    }
+
+    @Test
+    void shouldUpdateMealPlan() throws Exception {
+
+        UpdateMealPlanRequest request = new UpdateMealPlanRequest();
+        request.setName("Updated Family Meals");
+        request.setWeekStarting(LocalDate.of(2026, 8, 10));
+
+        MealPlan mealPlan = MealPlan.builder()
+                .id(1L)
+                .name("Updated Family Meals")
+                .weekStarting(LocalDate.of(2026, 8, 10))
+                .createdAt(LocalDateTime.now().minusDays(1))
+                .lastModifiedAt(LocalDateTime.now())
+                .build();
+
+        when(mealPlanService.updateMealPlan(eq(1L), any(UpdateMealPlanRequest.class)))
+                .thenReturn(mealPlan);
+
+        mockMvc.perform(put("/api/meal-plans/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Updated Family Meals"))
+                .andExpect(jsonPath("$.weekStarting").value("2026-08-10"));
+
+        verify(mealPlanService).updateMealPlan(
+                eq(1L),
+                any(UpdateMealPlanRequest.class)
+        );
+
+    }
+
+    @Test
+    void shouldReturn404WhenUpdatingNonExistingMealPlan() throws Exception {
+
+        UpdateMealPlanRequest request = new UpdateMealPlanRequest();
+        request.setName("Updated Family Meals");
+        request.setWeekStarting(LocalDate.of(2026, 8, 10));
+
+        when(mealPlanService.updateMealPlan(
+                eq(99L),
+                any(UpdateMealPlanRequest.class)))
+                .thenThrow(new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Meal plan not found: 99"));
+
+        mockMvc.perform(put("/api/meal-plans/99")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+
+        verify(mealPlanService).updateMealPlan(
+                eq(99L),
+                any(UpdateMealPlanRequest.class)
+        );
+
+    }
+
+    @Test
+    void shouldReturn400WhenUpdatingMealPlanWithInvalidRequest() throws Exception {
+
+        UpdateMealPlanRequest request = new UpdateMealPlanRequest();
+        request.setName("");
+        request.setWeekStarting(null);
+
+        mockMvc.perform(put("/api/meal-plans/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(mealPlanService);
 
     }
 

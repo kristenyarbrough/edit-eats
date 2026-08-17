@@ -3,9 +3,10 @@ package io.github.kristenyarbrough.edit_eats.service;
 import io.github.kristenyarbrough.edit_eats.domain.MealPlan;
 import io.github.kristenyarbrough.edit_eats.domain.MealPlanRecipe;
 import io.github.kristenyarbrough.edit_eats.domain.Recipe;
-import io.github.kristenyarbrough.edit_eats.dto.request.AddMealPlanRecipeRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.CreateMealPlanRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateMealPlanRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.UpdateMealPlanRecipeRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.UpdateMealPlanRequest;
 import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanRecipeResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanResponse;
 import io.github.kristenyarbrough.edit_eats.repository.MealPlanRecipeRepository;
@@ -30,7 +31,7 @@ public class MealPlanService {
 
     @Transactional
     public MealPlanRecipe addRecipeToMealPlan(
-            Long mealPlanId, AddMealPlanRecipeRequest request) {
+            Long mealPlanId, CreateMealPlanRecipeRequest request) {
 
         MealPlan mealPlan = mealPlanRepository.findById(mealPlanId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -149,4 +150,21 @@ public class MealPlanService {
         return mealPlanRepository.findByNameContainingIgnoreCase(name);
 
     }
+
+    @Transactional
+    public MealPlan updateMealPlan(Long id, UpdateMealPlanRequest request) {
+
+        MealPlan mealPlan = mealPlanRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Meal plan not found: " + id));
+
+        mealPlan.setName(request.getName());
+        mealPlan.setWeekStarting(request.getWeekStarting());
+        mealPlan.setLastModifiedAt(LocalDateTime.now());
+
+        return mealPlanRepository.save(mealPlan);
+
+    }
+
 }

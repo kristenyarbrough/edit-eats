@@ -2,18 +2,17 @@ package io.github.kristenyarbrough.edit_eats.controller;
 
 import io.github.kristenyarbrough.edit_eats.domain.MealPlan;
 import io.github.kristenyarbrough.edit_eats.domain.MealPlanRecipe;
-import io.github.kristenyarbrough.edit_eats.dto.request.AddMealPlanRecipeRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.CreateMealPlanRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateMealPlanRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.UpdateMealPlanRecipeRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.UpdateMealPlanRequest;
 import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanResponse;
 import io.github.kristenyarbrough.edit_eats.service.MealPlanService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -53,7 +52,7 @@ public class MealPlanController {
     @ResponseStatus(HttpStatus.CREATED)
     public MealPlanRecipe addRecipeToMealPlan(
             @PathVariable Long mealPlanId,
-            @Valid @RequestBody AddMealPlanRecipeRequest request) {
+            @Valid @RequestBody CreateMealPlanRecipeRequest request) {
 
         return mealPlanService.addRecipeToMealPlan(mealPlanId, request);
 
@@ -76,6 +75,15 @@ public class MealPlanController {
             @PathVariable Long mealPlanRecipeId) {
 
         mealPlanService.deleteMealPlanRecipe(mealPlanRecipeId);
+
+    }
+
+    @PutMapping("/{id}")
+    public MealPlan updateMealPlan(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateMealPlanRequest request) {
+
+        return mealPlanService.updateMealPlan(id, request);
 
     }
 

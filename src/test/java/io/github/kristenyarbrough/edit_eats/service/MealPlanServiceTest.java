@@ -1,9 +1,10 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.*;
-import io.github.kristenyarbrough.edit_eats.dto.request.AddMealPlanRecipeRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.CreateMealPlanRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateMealPlanRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.UpdateMealPlanRecipeRequest;
+import io.github.kristenyarbrough.edit_eats.dto.request.UpdateMealPlanRequest;
 import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanRecipeResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.MealPlanResponse;
 import io.github.kristenyarbrough.edit_eats.repository.MealPlanRecipeRepository;
@@ -128,7 +129,7 @@ class MealPlanServiceTest {
 
         Recipe recipe = createRecipe();
 
-        AddMealPlanRecipeRequest request = createMealPlanRecipeRequest();
+        CreateMealPlanRecipeRequest request = createMealPlanRecipeRequest();
 
         when(mealPlanRepository.findById(1L))
                 .thenReturn(Optional.of(mealPlan));
@@ -167,7 +168,7 @@ class MealPlanServiceTest {
     @Test
     void shouldThrowWhenMealPlanDoesNotExist() {
 
-        AddMealPlanRecipeRequest request = createMealPlanRecipeRequest();
+        CreateMealPlanRecipeRequest request = createMealPlanRecipeRequest();
 
         when(mealPlanRepository.findById(99L))
                 .thenReturn(Optional.empty());
@@ -191,7 +192,7 @@ class MealPlanServiceTest {
 
         MealPlan mealPlan = createMealPlan();
 
-        AddMealPlanRecipeRequest request = createMealPlanRecipeRequest();
+        CreateMealPlanRecipeRequest request = createMealPlanRecipeRequest();
 
         when(mealPlanRepository.findById(1L))
                 .thenReturn(Optional.of(mealPlan));
@@ -452,6 +453,95 @@ class MealPlanServiceTest {
 
     }
 
+    @Test
+    void shouldUpdateMealPlan() {
+
+        MealPlan mealPlan = MealPlan.builder()
+                .id(1L)
+                .name("Weekly Family Meals")
+                .weekStarting(LocalDate.of(2026, 8, 3))
+                .createdAt(LocalDateTime.now().minusDays(1))
+                .lastModifiedAt(LocalDateTime.now().minusHours(1))
+                .build();
+
+        UpdateMealPlanRequest request = new UpdateMealPlanRequest();
+        request.setName("Updated Family Meals");
+        request.setWeekStarting(LocalDate.of(2026, 8, 10));
+
+        when(mealPlanRepository.findById(1L))
+                .thenReturn(Optional.of(mealPlan));
+
+        when(mealPlanRepository.save(mealPlan))
+                .thenReturn(mealPlan);
+
+        MealPlan result = mealPlanService.updateMealPlan(1L, request);
+
+        assertAll(
+                () -> assertEquals(1L, result.getId()),
+                () -> assertEquals("Updated Family Meals", result.getName()),
+                () -> assertEquals(
+                        LocalDate.of(2026, 8, 10),
+                        result.getWeekStarting()
+                )
+        );
+
+        assertNotNull(result.getLastModifiedAt());
+
+        verify(mealPlanRepository).findById(1L);
+        verify(mealPlanRepository).save(mealPlan);
+
+    }
+
+    @Test
+    void shouldThrowWhenUpdatingNonExistingMealPlan() {
+
+        UpdateMealPlanRequest request = new UpdateMealPlanRequest();
+        request.setName("Update Family Meals");
+        request.setWeekStarting(LocalDate.of(2026, 8, 10));
+
+        when(mealPlanRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> mealPlanService.updateMealPlan(99L, request)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertEquals("Meal plan not found: 99", exception.getReason());
+
+        verify(mealPlanRepository).findById(99L);
+        verify(mealPlanRepository, never()).save(any(MealPlan.class));
+
+    }
+
+    @Test
+    void shouldNotModifyMealPlanRecipesWhenUpdatingMealPlan() {
+
+        MealPlan mealPlan = MealPlan.builder()
+                .id(1L)
+                .name("Weekly Family Meals")
+                .weekStarting(LocalDate.of(2026, 8, 3))
+                .createdAt(LocalDateTime.now().minusDays(1))
+                .lastModifiedAt(LocalDateTime.now().minusHours(1))
+                .build();
+
+        UpdateMealPlanRequest request = new UpdateMealPlanRequest();
+        request.setName("Updated Family Meals");
+        request.setWeekStarting(LocalDate.of(2026, 8, 10));
+
+        when(mealPlanRepository.findById(1L))
+                .thenReturn(Optional.of(mealPlan));
+
+        when(mealPlanRepository.save(mealPlan))
+                .thenReturn(mealPlan);
+
+        mealPlanService.updateMealPlan(1L, request);
+
+        verifyNoInteractions(mealPlanRecipeRepository);
+
+    }
+
     private CreateMealPlanRequest createMealPlanRequest() {
 
         CreateMealPlanRequest request = new CreateMealPlanRequest();
@@ -485,9 +575,9 @@ class MealPlanServiceTest {
 
     }
 
-    private AddMealPlanRecipeRequest createMealPlanRecipeRequest() {
+    private CreateMealPlanRecipeRequest createMealPlanRecipeRequest() {
 
-        AddMealPlanRecipeRequest request = new AddMealPlanRecipeRequest();
+        CreateMealPlanRecipeRequest request = new CreateMealPlanRecipeRequest();
 
         request.setRecipeId(1L);
         request.setMealDate(LocalDate.of(2026, 8, 3));

@@ -43,7 +43,7 @@
   - [x] all steps
   - in a single transaction
 
-## Next Sprint
+## Sprint 3 - Add meal plan functionality
 
 ### Meal Planning
 
@@ -57,6 +57,19 @@
   - [x] Service
   - [x] Controller
 - [x] Tests
+
+## Next Sprint - Complete Meal Plan Workflow
+
+### Update and Delete Meal Plans
+
+- [x] UpdateMealPlanRequest
+- [x] MealPlanService.updateMealPlan()
+- [x] Tests for Update
+- [ ] PUT controller endpoint + tests
+- [ ] Delete MealPlan + its MealPlanRecipes
+- [ ] Tests for Delete
+- [ ] DELETE controller endpoint + tests
+
 ---
 
 ## Future Features
@@ -185,7 +198,7 @@ Relationships:
 - [x] Update recipe
 - [ ] Add/remove ingredients
 - [ ] Reorder steps
-- [ ] Delete recipe
+- [x] Delete recipe
 
 ### Phase 4 — The exciting features
 - [ ] Recipe import from URL
