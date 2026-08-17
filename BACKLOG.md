@@ -65,10 +65,10 @@
 - [x] UpdateMealPlanRequest
 - [x] MealPlanService.updateMealPlan()
 - [x] Tests for Update
-- [ ] PUT controller endpoint + tests
-- [ ] Delete MealPlan + its MealPlanRecipes
-- [ ] Tests for Delete
-- [ ] DELETE controller endpoint + tests
+- [x] PUT controller endpoint + tests
+- [x] Delete MealPlan + its MealPlanRecipes
+- [x] Tests for Delete
+- [x] DELETE controller endpoint + tests
 
 ---
 

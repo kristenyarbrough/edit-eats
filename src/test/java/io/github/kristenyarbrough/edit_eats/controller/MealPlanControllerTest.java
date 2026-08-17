@@ -496,6 +496,36 @@ public class MealPlanControllerTest {
 
     }
 
+    @Test
+    void shouldDeleteMealPlan() throws Exception {
+
+        doNothing()
+                .when(mealPlanService)
+                .deleteMealPlan(1L);
+
+        mockMvc.perform(delete("/api/meal-plans/1"))
+                .andExpect(status().isNoContent());
+
+        verify(mealPlanService).deleteMealPlan(1L);
+
+    }
+
+    @Test
+    void shouldReturn404WhenDeletingNonExistentMealPlan() throws Exception {
+
+        doThrow(new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Meal plan not found: 99"))
+                .when(mealPlanService)
+                .deleteMealPlan(99L);
+
+        mockMvc.perform(delete("/api/meal-plans/99"))
+                .andExpect(status().isNotFound());
+
+        verify(mealPlanService).deleteMealPlan(99L);
+
+    }
+
     private CreateMealPlanRequest createRequest() {
 
         CreateMealPlanRequest request = new CreateMealPlanRequest();

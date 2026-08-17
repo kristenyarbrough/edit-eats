@@ -542,6 +542,47 @@ class MealPlanServiceTest {
 
     }
 
+    @Test
+    void shouldDeleteMealPlan() {
+
+        MealPlan mealPlan = MealPlan.builder()
+                .id(1L)
+                .name("Weekly Meals")
+                .weekStarting(LocalDate.of(2026, 8, 10))
+                .createdAt(LocalDateTime.now().minusDays(2))
+                .lastModifiedAt(LocalDateTime.now().minusDays(1))
+                .build();
+
+        when(mealPlanRepository.findById(1L))
+                .thenReturn(Optional.of(mealPlan));
+
+        mealPlanService.deleteMealPlan(1L);
+
+        verify(mealPlanRepository).findById(1L);
+        verify(mealPlanRecipeRepository).deleteByMealPlanId(1L);
+        verify(mealPlanRepository).delete(mealPlan);
+
+    }
+
+    @Test
+    void shouldThrowWhenDeletingNonExistentMealPlan() {
+
+        when(mealPlanRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> mealPlanService.deleteMealPlan(99L)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertEquals("Meal plan not found: 99", exception.getReason());
+
+        verify(mealPlanRepository).findById(99L);
+        verify(mealPlanRecipeRepository, never()).deleteByMealPlanId(anyLong());
+        verify(mealPlanRepository, never()).delete(any(MealPlan.class));
+
+    }
     private CreateMealPlanRequest createMealPlanRequest() {
 
         CreateMealPlanRequest request = new CreateMealPlanRequest();

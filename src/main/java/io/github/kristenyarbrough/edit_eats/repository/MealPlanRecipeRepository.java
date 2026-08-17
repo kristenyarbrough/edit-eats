@@ -11,4 +11,6 @@ public interface MealPlanRecipeRepository extends JpaRepository<MealPlanRecipe, 
 
     List<MealPlanRecipe> findByMealPlanIdOrderByMealDateAscMealTypeAsc(Long mealPlanId);
 
+    void deleteByMealPlanId(Long mealPlanId);
+
 }

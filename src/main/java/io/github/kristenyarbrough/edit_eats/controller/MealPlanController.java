@@ -87,6 +87,14 @@ public class MealPlanController {
 
     }
 
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteMealPlan(@PathVariable Long id) {
+
+        mealPlanService.deleteMealPlan(id);
+
+    }
+
 //    @GetMapping("/{weekStarting}/shopping-list")
 //    public List<ShoppingListItem> shoppingList(@PathVariable String weekStarting) {
 //        LocalDate date = LocalDate.parse(weekStarting);

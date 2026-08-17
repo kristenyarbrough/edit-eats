@@ -167,4 +167,16 @@ public class MealPlanService {
 
     }
 
+    @Transactional
+    public void deleteMealPlan(Long id) {
+
+        MealPlan mealPlan = mealPlanRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Meal plan not found: " + id));
+
+        mealPlanRecipeRepository.deleteByMealPlanId(id);
+        mealPlanRepository.delete(mealPlan);
+
+    }
 }
