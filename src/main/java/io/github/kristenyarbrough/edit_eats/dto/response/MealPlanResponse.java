@@ -13,7 +13,8 @@ public class MealPlanResponse {
 
     private Long id;
     private String name;
-    private LocalDate weekStarting;
+    private LocalDate startDate;
+    private Integer durationDays;
     private LocalDateTime createdAt;
     private LocalDateTime lastModifiedAt;
     private List<MealPlanRecipeResponse> meals;

@@ -1,6 +1,8 @@
 package io.github.kristenyarbrough.edit_eats.domain;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -26,7 +28,11 @@ public class MealPlan {
 
     // We store the Monday (or chosen start date) for the plan
     @Column(nullable = false)
-    private LocalDate weekStarting;
+    private LocalDate startDate;
+
+    @NotNull
+    @Min(1)
+    private Integer durationDays;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

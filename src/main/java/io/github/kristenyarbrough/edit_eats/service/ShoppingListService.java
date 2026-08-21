@@ -1,0 +1,122 @@
+package io.github.kristenyarbrough.edit_eats.service;
+
+import io.github.kristenyarbrough.edit_eats.domain.MealPlanRecipe;
+import io.github.kristenyarbrough.edit_eats.domain.Recipe;
+import io.github.kristenyarbrough.edit_eats.domain.RecipeIngredient;
+import io.github.kristenyarbrough.edit_eats.domain.Unit;
+import io.github.kristenyarbrough.edit_eats.dto.response.ShoppingListItemResponse;
+import io.github.kristenyarbrough.edit_eats.repository.MealPlanRecipeRepository;
+import io.github.kristenyarbrough.edit_eats.repository.RecipeIngredientRepository;
+import io.github.kristenyarbrough.edit_eats.util.ConvertedQuantity;
+import io.github.kristenyarbrough.edit_eats.util.UnitConverter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+public class ShoppingListService {
+
+    private final MealPlanRecipeRepository mealPlanRecipeRepository;
+    private final RecipeIngredientRepository recipeIngredientRepository;
+
+    public List<ShoppingListItemResponse> generateShoppingList(Long mealPlanId) {
+
+        List<MealPlanRecipe> meals =
+                mealPlanRecipeRepository.findByMealPlanId(mealPlanId);
+
+        Map<String, ShoppingListItemResponse> shoppingList =
+                new LinkedHashMap<>();
+
+        for (MealPlanRecipe meal : meals) {
+
+            int recipeServings = meal.getRecipe().getServings();
+            int mealServings = meal.getServings();
+
+            BigDecimal scalingFactor = BigDecimal.valueOf(mealServings)
+                    .divide(
+                            BigDecimal.valueOf(recipeServings),
+                            10,
+                            RoundingMode.HALF_UP
+                    );
+
+            List<RecipeIngredient> recipeIngredients =
+                    recipeIngredientRepository.findByRecipeId(
+                            meal.getRecipe().getId());
+
+            for (RecipeIngredient recipeIngredient : recipeIngredients) {
+
+                BigDecimal scaledQuantity =
+                        recipeIngredient.getQuantity()
+                                .multiply(scalingFactor);
+
+                String key = String.valueOf(recipeIngredient.getIngredient().getId());
+
+                ShoppingListItemResponse existing = shoppingList.get(key);
+
+                if (existing == null) {
+
+                    shoppingList.put(
+                            key,
+                            ShoppingListItemResponse.builder()
+                                    .ingredientId(
+                                            recipeIngredient.getIngredient().getId())
+                                    .ingredientName(
+                                            recipeIngredient.getIngredient().getName())
+                                    .quantity(scaledQuantity)
+                                    .unit(recipeIngredient.getUnit())
+                                    .build()
+                    );
+
+                } else {
+
+                    BigDecimal convertedQuantity =
+                            UnitConverter.convert(
+                                    scaledQuantity,
+                                    recipeIngredient.getUnit(),
+                                    existing.getUnit()
+                            );
+
+                    existing.setQuantity(
+                            existing.getQuantity()
+                                    .add(convertedQuantity)
+                    );
+
+                }
+
+            }
+        }
+
+        List<ShoppingListItemResponse> result = new ArrayList<>(shoppingList.values());
+
+        for (ShoppingListItemResponse item : result) {
+
+            ConvertedQuantity normalised =
+                    UnitConverter.normalise(
+                            item.getQuantity(),
+                            item.getUnit());
+
+            item.setQuantity(normalised.quantity());
+            item.setUnit(normalised.unit());
+
+        }
+
+        return result;
+
+    }
+
+    private List<RecipeIngredient> getRecipeIngredients(Recipe recipe) {
+
+        return List.of();
+
+    }
+
+}

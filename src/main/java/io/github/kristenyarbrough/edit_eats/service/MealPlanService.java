@@ -100,7 +100,7 @@ public class MealPlanService {
 
         MealPlan mealPlan = MealPlan.builder()
                 .name(request.getName())
-                .weekStarting(request.getWeekStarting())
+                .startDate(request.getStartDate())
                 .createdAt(LocalDateTime.now())
                 .lastModifiedAt(LocalDateTime.now())
                 .build();
@@ -137,7 +137,7 @@ public class MealPlanService {
         return MealPlanResponse.builder()
                 .id(mealPlan.getId())
                 .name(mealPlan.getName())
-                .weekStarting(mealPlan.getWeekStarting())
+                .startDate(mealPlan.getStartDate())
                 .createdAt(mealPlan.getCreatedAt())
                 .lastModifiedAt(mealPlan.getLastModifiedAt())
                 .meals(meals)
@@ -160,7 +160,7 @@ public class MealPlanService {
                         "Meal plan not found: " + id));
 
         mealPlan.setName(request.getName());
-        mealPlan.setWeekStarting(request.getWeekStarting());
+        mealPlan.setStartDate(request.getStartDate());
         mealPlan.setLastModifiedAt(LocalDateTime.now());
 
         return mealPlanRepository.save(mealPlan);

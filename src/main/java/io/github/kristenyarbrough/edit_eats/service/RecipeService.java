@@ -327,53 +327,7 @@ public class RecipeService {
 //        return recipeRepository.findAllByOrderByCreatedAtDesc();
 //    }
 //
-//    @Transactional(readOnly = true)
-//    public Recipe getById(Long id) {
-//        return recipeRepository.findById(id)
-//                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Recipe not found"));
-//    }
 //
-//    @Transactional
-//    public void delete(Long id) {
-//        if (!recipeRepository.existsById(id)) {
-//            throw new ResponseStatusException(NOT_FOUND, "Recipe not found");
-//        }
-//        recipeRepository.deleteById(id);
-//    }
-//
-//    @Transactional
-//    public Recipe update(Long id, CreateRecipeRequest req) {
-//        Recipe recipe = recipeRepository.findById(id)
-//                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Recipe not found"));
-//
-//        recipe.setName(req.getName());
-//        recipe.setMethod(req.getMethod());
-//        recipe.setSourceUrl(req.getSourceUrl());
-//        recipe.setPhotoUrl(req.getPhotoUrl());
-//        recipe.setStorageInstructions(req.getStorageInstructions());
-//        recipe.setFreezerInstructions(req.getFreezerInstructions());
-//        recipe.setServings(req.getServings());
-//        recipe.setPrepMinutes(req.getPrepMinutes());
-//        recipe.setCookMinutes(req.getCookMinutes());
-//
-//        // clear old ingredients
-//        recipe.getIngredients().clear();
-//
-//        for (var ing : req.getRecipeIngredientRequests()) {
-//            recipe.getIngredients().add(
-//                    RecipeIngredient.builder()
-//                            .name(ing.getName())
-//                            .quantity(ing.getQuantity())
-//                            .unit(ing.getUnit())
-//                            .notes(ing.getPreparation())
-//                            .recipe(recipe)
-//                            .build()
-//            );
-//        }
-
-//        return recipeRepository.save(recipe);
-//    }
-
 //    @Transactional(readOnly = true)
 //    public List<ShoppingListItem> generateShoppingList(ShoppingListRequest req) {
 //

@@ -69,7 +69,7 @@ public class MealPlanControllerTest {
         MealPlan second = MealPlan.builder()
                 .id(2L)
                 .name("Camping Weekend")
-                .weekStarting(LocalDate.of(2026, 8, 10))
+                .startDate(LocalDate.of(2026, 8, 10))
                 .build();
 
         when(mealPlanService.getMealPlans())
@@ -100,7 +100,7 @@ public class MealPlanControllerTest {
         MealPlanResponse response = MealPlanResponse.builder()
                 .id(1L)
                 .name("Weekly Family Meals")
-                .weekStarting(LocalDate.of(2026, 8, 3))
+                .startDate(LocalDate.of(2026, 8, 3))
                 .createdAt(LocalDateTime.now())
                 .lastModifiedAt(LocalDateTime.now())
                 .meals(List.of(meal))
@@ -130,7 +130,7 @@ public class MealPlanControllerTest {
         MealPlanResponse response = MealPlanResponse.builder()
                 .id(1L)
                 .name("Weekly Family Meals")
-                .weekStarting(LocalDate.of(2026, 8, 3))
+                .startDate(LocalDate.of(2026, 8, 3))
                 .createdAt(LocalDateTime.now())
                 .lastModifiedAt(LocalDateTime.now())
                 .meals(List.of())
@@ -175,12 +175,22 @@ public class MealPlanControllerTest {
     }
 
     @Test
-    void shouldReturn400WhenWeekStartingIsNull() throws Exception {
+    void shouldReturn400WhenStartDateIsNull() throws Exception {
 
         CreateMealPlanRequest request = createRequest();
-        request.setWeekStarting(null);
+        request.setStartDate(null);
 
         assertInvalidRequest(request);
+    }
+
+    @Test
+    void shouldReturn400WhenDurationDaysIsZero() throws Exception {
+
+        CreateMealPlanRequest request = createRequest();
+        request.setDurationDays(0);
+
+        assertInvalidRequest(request);
+
     }
 
     @Test
@@ -426,12 +436,14 @@ public class MealPlanControllerTest {
 
         UpdateMealPlanRequest request = new UpdateMealPlanRequest();
         request.setName("Updated Family Meals");
-        request.setWeekStarting(LocalDate.of(2026, 8, 10));
+        request.setStartDate(LocalDate.of(2026, 8, 10));
+        request.setDurationDays(14);
 
         MealPlan mealPlan = MealPlan.builder()
                 .id(1L)
                 .name("Updated Family Meals")
-                .weekStarting(LocalDate.of(2026, 8, 10))
+                .startDate(LocalDate.of(2026, 8, 10))
+                .durationDays(14)
                 .createdAt(LocalDateTime.now().minusDays(1))
                 .lastModifiedAt(LocalDateTime.now())
                 .build();
@@ -445,7 +457,8 @@ public class MealPlanControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.name").value("Updated Family Meals"))
-                .andExpect(jsonPath("$.weekStarting").value("2026-08-10"));
+                .andExpect(jsonPath("$.startDate").value("2026-08-10"))
+                .andExpect(jsonPath("$.durationDays").value(14));
 
         verify(mealPlanService).updateMealPlan(
                 eq(1L),
@@ -459,7 +472,8 @@ public class MealPlanControllerTest {
 
         UpdateMealPlanRequest request = new UpdateMealPlanRequest();
         request.setName("Updated Family Meals");
-        request.setWeekStarting(LocalDate.of(2026, 8, 10));
+        request.setStartDate(LocalDate.of(2026, 8, 10));
+        request.setDurationDays(14);
 
         when(mealPlanService.updateMealPlan(
                 eq(99L),
@@ -485,7 +499,7 @@ public class MealPlanControllerTest {
 
         UpdateMealPlanRequest request = new UpdateMealPlanRequest();
         request.setName("");
-        request.setWeekStarting(null);
+        request.setStartDate(null);
 
         mockMvc.perform(put("/api/meal-plans/1")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -530,7 +544,8 @@ public class MealPlanControllerTest {
 
         CreateMealPlanRequest request = new CreateMealPlanRequest();
         request.setName("Weekly Family Meals");
-        request.setWeekStarting(LocalDate.of(2026, 8, 3));
+        request.setStartDate(LocalDate.of(2026, 8, 3));
+        request.setDurationDays(7);
 
         return request;
 
@@ -541,7 +556,8 @@ public class MealPlanControllerTest {
         return MealPlan.builder()
                 .id(1L)
                 .name("Weekly Family Meals")
-                .weekStarting(LocalDate.of(2026, 8, 3))
+                .startDate(LocalDate.of(2026, 8, 3))
+                .durationDays(7)
                 .createdAt(LocalDateTime.now())
                 .lastModifiedAt(LocalDateTime.now())
                 .build();

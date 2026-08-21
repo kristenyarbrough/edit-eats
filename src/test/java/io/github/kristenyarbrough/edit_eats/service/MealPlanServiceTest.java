@@ -56,7 +56,7 @@ class MealPlanServiceTest {
 
         assertEquals(1L, mealPlan.getId());
         assertEquals("Weekly Family Meals", mealPlan.getName());
-        assertEquals(LocalDate.of(2026, 8, 3), mealPlan.getWeekStarting());
+        assertEquals(LocalDate.of(2026, 8, 3), mealPlan.getStartDate());
 
         verify(mealPlanRepository).save(any(MealPlan.class));
 
@@ -74,7 +74,7 @@ class MealPlanServiceTest {
 
         assertEquals(1L, response.getId());
         assertEquals("Weekly Family Meals", response.getName());
-        assertEquals(LocalDate.of(2026, 8, 3), response.getWeekStarting());
+        assertEquals(LocalDate.of(2026, 8, 3), response.getStartDate());
 
         verify(mealPlanRepository).findById(1L);
 
@@ -106,7 +106,7 @@ class MealPlanServiceTest {
         MealPlan second = MealPlan.builder()
                 .id(2L)
                 .name("Camping Weekend")
-                .weekStarting(LocalDate.of(2026, 8, 10))
+                .startDate(LocalDate.of(2026, 8, 10))
                 .build();
 
         when(mealPlanRepository.findAll())
@@ -459,14 +459,14 @@ class MealPlanServiceTest {
         MealPlan mealPlan = MealPlan.builder()
                 .id(1L)
                 .name("Weekly Family Meals")
-                .weekStarting(LocalDate.of(2026, 8, 3))
+                .startDate(LocalDate.of(2026, 8, 3))
                 .createdAt(LocalDateTime.now().minusDays(1))
                 .lastModifiedAt(LocalDateTime.now().minusHours(1))
                 .build();
 
         UpdateMealPlanRequest request = new UpdateMealPlanRequest();
         request.setName("Updated Family Meals");
-        request.setWeekStarting(LocalDate.of(2026, 8, 10));
+        request.setStartDate(LocalDate.of(2026, 8, 10));
 
         when(mealPlanRepository.findById(1L))
                 .thenReturn(Optional.of(mealPlan));
@@ -481,7 +481,7 @@ class MealPlanServiceTest {
                 () -> assertEquals("Updated Family Meals", result.getName()),
                 () -> assertEquals(
                         LocalDate.of(2026, 8, 10),
-                        result.getWeekStarting()
+                        result.getStartDate()
                 )
         );
 
@@ -497,7 +497,7 @@ class MealPlanServiceTest {
 
         UpdateMealPlanRequest request = new UpdateMealPlanRequest();
         request.setName("Update Family Meals");
-        request.setWeekStarting(LocalDate.of(2026, 8, 10));
+        request.setStartDate(LocalDate.of(2026, 8, 10));
 
         when(mealPlanRepository.findById(99L))
                 .thenReturn(Optional.empty());
@@ -521,14 +521,14 @@ class MealPlanServiceTest {
         MealPlan mealPlan = MealPlan.builder()
                 .id(1L)
                 .name("Weekly Family Meals")
-                .weekStarting(LocalDate.of(2026, 8, 3))
+                .startDate(LocalDate.of(2026, 8, 3))
                 .createdAt(LocalDateTime.now().minusDays(1))
                 .lastModifiedAt(LocalDateTime.now().minusHours(1))
                 .build();
 
         UpdateMealPlanRequest request = new UpdateMealPlanRequest();
         request.setName("Updated Family Meals");
-        request.setWeekStarting(LocalDate.of(2026, 8, 10));
+        request.setStartDate(LocalDate.of(2026, 8, 10));
 
         when(mealPlanRepository.findById(1L))
                 .thenReturn(Optional.of(mealPlan));
@@ -548,7 +548,7 @@ class MealPlanServiceTest {
         MealPlan mealPlan = MealPlan.builder()
                 .id(1L)
                 .name("Weekly Meals")
-                .weekStarting(LocalDate.of(2026, 8, 10))
+                .startDate(LocalDate.of(2026, 8, 10))
                 .createdAt(LocalDateTime.now().minusDays(2))
                 .lastModifiedAt(LocalDateTime.now().minusDays(1))
                 .build();
@@ -587,7 +587,7 @@ class MealPlanServiceTest {
 
         CreateMealPlanRequest request = new CreateMealPlanRequest();
         request.setName("Weekly Family Meals");
-        request.setWeekStarting(LocalDate.of(2026, 8, 3));
+        request.setStartDate(LocalDate.of(2026, 8, 3));
 
         return request;
 
@@ -598,7 +598,7 @@ class MealPlanServiceTest {
         return MealPlan.builder()
                 .id(1L)
                 .name("Weekly Family Meals")
-                .weekStarting(LocalDate.of(2026, 8, 3))
+                .startDate(LocalDate.of(2026, 8, 3))
                 .createdAt(LocalDateTime.now())
                 .lastModifiedAt(LocalDateTime.now())
                 .build();

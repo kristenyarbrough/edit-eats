@@ -8,6 +8,7 @@ import java.math.RoundingMode;
 public class UnitConverter {
 
     public static BigDecimal convert(BigDecimal qty, Unit from, Unit to) {
+
         if (from == to) return qty;
 
         // weight conversions
@@ -43,5 +44,36 @@ public class UnitConverter {
         }
 
         throw new IllegalArgumentException("Unsupported conversion: " + from + " to " + to);
+
     }
+
+    public static ConvertedQuantity normalise(
+            BigDecimal quantity,
+            Unit unit) {
+
+        if (unit == Unit.ML && quantity.compareTo(BigDecimal.valueOf(1000)) >= 0) {
+
+            return new ConvertedQuantity(
+
+                    quantity.divide(BigDecimal.valueOf(1000), 3,
+                            RoundingMode.HALF_UP), Unit.L
+            );
+
+        }
+
+        if (unit == Unit.G && quantity.compareTo(BigDecimal.valueOf(1000)) >= 0) {
+
+            return new ConvertedQuantity(
+
+                    quantity.divide(BigDecimal.valueOf(1000), 3,
+                            RoundingMode.HALF_UP),
+                    Unit.KG
+            );
+
+        }
+
+        return new ConvertedQuantity(quantity, unit);
+
+    }
+
 }

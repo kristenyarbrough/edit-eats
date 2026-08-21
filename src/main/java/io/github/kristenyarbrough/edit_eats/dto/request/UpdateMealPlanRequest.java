@@ -1,5 +1,6 @@
 package io.github.kristenyarbrough.edit_eats.dto.request;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -13,6 +14,10 @@ public class UpdateMealPlanRequest {
     private String name;
 
     @NotNull
-    private LocalDate weekStarting;
+    private LocalDate startDate;
+
+    @NotNull
+    @Min(1)
+    private Integer durationDays;
 
 }
