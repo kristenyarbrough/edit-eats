@@ -1,7 +1,9 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.*;
+import io.github.kristenyarbrough.edit_eats.dto.response.ShoppingListCategoryResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.ShoppingListItemResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.ShoppingListResponse;
 import io.github.kristenyarbrough.edit_eats.repository.MealPlanRecipeRepository;
 import io.github.kristenyarbrough.edit_eats.repository.MealPlanRepository;
 import io.github.kristenyarbrough.edit_eats.repository.RecipeIngredientRepository;
@@ -70,12 +72,16 @@ class ShoppingListServiceTest {
         when(recipeIngredientRepository.findByRecipeId(1L))
                 .thenReturn(List.of(recipeIngredient));
 
-        List<ShoppingListItemResponse> result =
+        ShoppingListResponse result =
                 shoppingListService.generateShoppingList(1L);
 
-        assertEquals(1, result.size());
+        assertEquals(1, result.getCategories().size());
 
-        ShoppingListItemResponse item = result.get(0);
+        ShoppingListCategoryResponse category = result.getCategories().get(0);
+
+        assertEquals(1, category.getItems().size());
+
+        ShoppingListItemResponse item = category.getItems().get(0);
 
         assertEquals(1L, item.getIngredientId());
         assertEquals("Flour", item.getIngredientName());
@@ -109,12 +115,16 @@ class ShoppingListServiceTest {
         when(recipeIngredientRepository.findByRecipeId(1L))
                 .thenReturn(List.of(recipeIngredient));
 
-        List<ShoppingListItemResponse> result =
+        ShoppingListResponse result =
                 shoppingListService.generateShoppingList(1L);
 
-        assertEquals(1, result.size());
+        assertEquals(1, result.getCategories().size());
 
-        ShoppingListItemResponse item = result.get(0);
+        ShoppingListCategoryResponse category = result.getCategories().get(0);
+
+        assertEquals(1, category.getItems().size());
+
+        ShoppingListItemResponse item = category.getItems().get(0);
 
         assertEquals(1L, item.getIngredientId());
         assertEquals("Flour", item.getIngredientName());
@@ -173,12 +183,16 @@ class ShoppingListServiceTest {
         when(recipeIngredientRepository.findByRecipeId(2L))
                 .thenReturn(List.of(flourForBread));
 
-        List<ShoppingListItemResponse> result =
+        ShoppingListResponse result =
                 shoppingListService.generateShoppingList(1L);
 
-        assertEquals(1, result.size());
+        assertEquals(1, result.getCategories().size());
 
-        ShoppingListItemResponse item = result.get(0);
+        ShoppingListCategoryResponse category = result.getCategories().get(0);
+
+        assertEquals(1, category.getItems().size());
+
+        ShoppingListItemResponse item = category.getItems().get(0);
 
         assertEquals(1L, item.getIngredientId());
         assertEquals("Flour", item.getIngredientName());
@@ -238,12 +252,16 @@ class ShoppingListServiceTest {
         when(recipeIngredientRepository.findByRecipeId(2L))
                 .thenReturn(List.of(flourInBread));
 
-        List<ShoppingListItemResponse> result =
+        ShoppingListResponse result =
                 shoppingListService.generateShoppingList(1L);
 
-        assertEquals(1, result.size());
+        assertEquals(1, result.getCategories().size());
 
-        ShoppingListItemResponse item = result.get(0);
+        ShoppingListCategoryResponse category = result.getCategories().get(0);
+
+        assertEquals(1, category.getItems().size());
+
+        ShoppingListItemResponse item = category.getItems().get(0);
 
         assertEquals(1L, item.getIngredientId());
         assertEquals("Flour", item.getIngredientName());
@@ -316,12 +334,16 @@ class ShoppingListServiceTest {
         when(recipeIngredientRepository.findByRecipeId(2L))
                 .thenReturn(List.of(milkForSauce));
 
-        List<ShoppingListItemResponse> result =
+        ShoppingListResponse result =
                 shoppingListService.generateShoppingList(1L);
 
-        assertEquals(1, result.size());
+        assertEquals(1, result.getCategories().size());
 
-        ShoppingListItemResponse item = result.get(0);
+        ShoppingListCategoryResponse categoryResponse = result.getCategories().get(0);
+
+        assertEquals(1, categoryResponse.getItems().size());
+
+        ShoppingListItemResponse item = categoryResponse.getItems().get(0);
 
         assertEquals(1L, item.getIngredientId());
         assertEquals("Milk", item.getIngredientName());
@@ -384,12 +406,16 @@ class ShoppingListServiceTest {
         when(recipeIngredientRepository.findByRecipeId(2L))
                 .thenReturn(List.of(flourInBread));
 
-        List<ShoppingListItemResponse> result =
+        ShoppingListResponse result =
                 shoppingListService.generateShoppingList(1L);
 
-        assertEquals(1, result.size());
+        assertEquals(1, result.getCategories().size());
 
-        ShoppingListItemResponse item = result.get(0);
+        ShoppingListCategoryResponse category = result.getCategories().get(0);
+
+        assertEquals(1, category.getItems().size());
+
+        ShoppingListItemResponse item = category.getItems().get(0);
 
         assertEquals(1L, item.getIngredientId());
         assertEquals("Flour", item.getIngredientName());
@@ -501,12 +527,16 @@ class ShoppingListServiceTest {
         when(recipeIngredientRepository.findByRecipeId(3L))
                 .thenReturn(List.of(milk3));
 
-        List<ShoppingListItemResponse> result =
+        ShoppingListResponse result =
                 shoppingListService.generateShoppingList(1L);
 
-        assertEquals(1, result.size());
+        assertEquals(1, result.getCategories().size());
 
-        ShoppingListItemResponse item = result.get(0);
+        ShoppingListCategoryResponse categoryResponse = result.getCategories().get(0);
+
+        assertEquals(1, categoryResponse.getItems().size());
+
+        ShoppingListItemResponse item = categoryResponse.getItems().get(0);
 
         assertEquals(1L, item.getIngredientId());
         assertEquals("Milk", item.getIngredientName());
@@ -575,6 +605,82 @@ class ShoppingListServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         assertEquals("Cannot combine units G and CUP for ingredient: Flour",
                 exception.getReason());
+
+    }
+
+    @Test
+    void shouldGroupShoppingListItemsByIngredientCategory() {
+
+        IngredientCategory baking = IngredientCategory.builder()
+                .id(1L)
+                .name("Baking")
+                .build();
+
+        Ingredient flour = Ingredient.builder()
+                .id(1L)
+                .name("Flour")
+                .defaultUnit(Unit.G)
+                .ingredientCategory(baking)
+                .build();
+
+        Ingredient sugar = Ingredient.builder()
+                .id(2L)
+                .name("Sugar")
+                .defaultUnit(Unit.G)
+                .ingredientCategory(baking)
+                .build();
+
+        Recipe recipe = Recipe.builder()
+                .id(1L)
+                .name("Pancakes")
+                .servings(4)
+                .build();
+
+        MealPlan mealPlan = MealPlan.builder()
+                .id(1L)
+                .name("Family Meals")
+                .build();
+
+        MealPlanRecipe mealPlanRecipe = MealPlanRecipe.builder()
+                .id(1L)
+                .mealPlan(mealPlan)
+                .recipe(recipe)
+                .mealDate(LocalDate.of(2026, 8, 18))
+                .mealType(MealType.DINNER)
+                .servings(4)
+                .build();
+
+        RecipeIngredient flourIngredient = RecipeIngredient.builder()
+                .id(1L)
+                .recipe(recipe)
+                .ingredient(flour)
+                .quantity(new BigDecimal("500"))
+                .unit(Unit.G)
+                .build();
+
+        RecipeIngredient sugarIngredient = RecipeIngredient.builder()
+                .id(2L)
+                .recipe(recipe)
+                .ingredient(sugar)
+                .quantity(new BigDecimal("250"))
+                .unit(Unit.G)
+                .build();
+
+        when(mealPlanRecipeRepository.findByMealPlanId(1L))
+                .thenReturn(List.of(mealPlanRecipe));
+
+        when(recipeIngredientRepository.findByRecipeId(1L))
+                .thenReturn(List.of(flourIngredient, sugarIngredient));
+
+        ShoppingListResponse result = shoppingListService.generateShoppingList(1L);
+
+        assertEquals(1, result.getCategories().size());
+
+        ShoppingListCategoryResponse category = result.getCategories().get(0);
+
+        assertEquals(1L, category.getCategoryId());
+        assertEquals("Baking", category.getCategoryName());
+        assertEquals(2, category.getItems().size());
 
     }
 

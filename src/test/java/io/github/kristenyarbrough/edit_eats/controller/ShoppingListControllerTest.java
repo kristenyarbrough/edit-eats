@@ -1,7 +1,9 @@
 package io.github.kristenyarbrough.edit_eats.controller;
 
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
+import io.github.kristenyarbrough.edit_eats.dto.response.ShoppingListCategoryResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.ShoppingListItemResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.ShoppingListResponse;
 import io.github.kristenyarbrough.edit_eats.service.ShoppingListService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,19 +43,33 @@ final class ShoppingListControllerTest {
                         .unit(Unit.L)
                         .build();
 
+        ShoppingListCategoryResponse category =
+                ShoppingListCategoryResponse.builder()
+                        .categoryId(2L)
+                        .categoryName("Dairy")
+                        .items(List.of(item))
+                        .build();
+
+        ShoppingListResponse response =
+                ShoppingListResponse.builder()
+                        .categories(List.of(category))
+                        .build();
+
         when(shoppingListService.generateShoppingList(1L))
-                .thenReturn(List.of(item));
+                .thenReturn(response);
 
         mockMvc.perform(
                 get("/api/meal-plans/1/shopping-list")
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].ingredientId").value(1))
-                .andExpect(jsonPath("$[0].ingredientName").value("Milk"))
-                .andExpect(jsonPath("[0].quantity").value(1.5))
-                .andExpect(jsonPath("[0].unit").value("L"))
-                .andExpect(jsonPath("[0].ingredientCategoryId").value(2))
-                .andExpect(jsonPath("[0].ingredientCategoryName").value("Dairy"));
+                .andExpect(jsonPath("$.categories[0].categoryId").value(2))
+                .andExpect(jsonPath("$.categories[0].categoryName").value("Dairy"))
+                .andExpect(jsonPath("$.categories[0].items[0].ingredientId").value(1))
+                .andExpect(jsonPath("$.categories[0].items[0].ingredientName").value("Milk"))
+                .andExpect(jsonPath("$.categories[0].items[0].quantity").value(1.5))
+                .andExpect(jsonPath("$.categories[0].items[0].unit").value("L"))
+                .andExpect(jsonPath("$.categories[0].items[0].ingredientCategoryId").value(2))
+                .andExpect(jsonPath("$.categories[0].items[0].ingredientCategoryName").value("Dairy"));
 
         verify(shoppingListService).generateShoppingList(1L);
 
@@ -62,14 +78,19 @@ final class ShoppingListControllerTest {
     @Test
     void shouldReturnEmptyShoppingListWhenMealPlanHasNoRecipes() throws Exception {
 
+        ShoppingListResponse response =
+                ShoppingListResponse.builder()
+                        .categories(List.of())
+                        .build();
+
         when(shoppingListService.generateShoppingList(1L))
-                .thenReturn(List.of());
+                .thenReturn(response);
 
         mockMvc.perform(
                 get("/api/meal-plans/1/shopping-list")
         )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isEmpty());
+                .andExpect(jsonPath("$.categories").isEmpty());
 
         verify(shoppingListService).generateShoppingList(1L);
 

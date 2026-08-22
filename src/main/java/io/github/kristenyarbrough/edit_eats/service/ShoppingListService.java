@@ -1,9 +1,10 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.MealPlanRecipe;
-import io.github.kristenyarbrough.edit_eats.domain.Recipe;
 import io.github.kristenyarbrough.edit_eats.domain.RecipeIngredient;
+import io.github.kristenyarbrough.edit_eats.dto.response.ShoppingListCategoryResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.ShoppingListItemResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.ShoppingListResponse;
 import io.github.kristenyarbrough.edit_eats.repository.MealPlanRecipeRepository;
 import io.github.kristenyarbrough.edit_eats.repository.MealPlanRepository;
 import io.github.kristenyarbrough.edit_eats.repository.RecipeIngredientRepository;
@@ -31,7 +32,7 @@ public class ShoppingListService {
     private final MealPlanRepository mealPlanRepository;
 
     @Transactional(readOnly = true)
-    public List<ShoppingListItemResponse> generateShoppingList(Long mealPlanId) {
+    public ShoppingListResponse generateShoppingList(Long mealPlanId) {
 
         mealPlanRepository.findById(mealPlanId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -143,7 +144,27 @@ public class ShoppingListService {
 
         }
 
-        return result;
+        Map<Long, ShoppingListCategoryResponse> categories = new LinkedHashMap<>();
+
+        for (ShoppingListItemResponse item : result) {
+
+            ShoppingListCategoryResponse category =
+                    categories.computeIfAbsent(
+                            item.getIngredientCategoryId(),
+                            id -> ShoppingListCategoryResponse.builder()
+                                    .categoryId(id)
+                                    .categoryName(item.getIngredientCategoryName())
+                                    .items(new ArrayList<>())
+                                    .build()
+                    );
+
+            category.getItems().add(item);
+
+        }
+
+        return ShoppingListResponse.builder()
+                .categories(new ArrayList<>(categories.values()))
+                .build();
 
     }
 
