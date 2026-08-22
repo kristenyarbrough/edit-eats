@@ -87,7 +87,7 @@
 - [x] Generate shopping list
 - [x] Combine duplicate ingredients
 - [x] Convert units
-- [ ] Group by ingredient category
+- [x] Group by ingredient category
 
 ### Pantry
 
