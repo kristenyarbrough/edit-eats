@@ -540,6 +540,44 @@ class ShoppingListServiceTest {
 
     }
 
+    @Test
+    void shouldThrowBadRequestWhenIngredientUsesIncompatibleUnits() {
+
+        Recipe recipe = createRecipe();
+
+        MealPlan mealPlan = createMealPlan();
+
+        MealPlanRecipe mealPlanRecipe = createMealPlanRecipe(mealPlan, recipe);
+
+        Ingredient ingredient = createIngredient();
+
+        RecipeIngredient grams = createRecipeIngredient(recipe, ingredient);
+
+        RecipeIngredient cups = RecipeIngredient.builder()
+                .id(1L)
+                .recipe(recipe)
+                .ingredient(ingredient)
+                .quantity(new BigDecimal("1"))
+                .unit(Unit.CUP)
+                .build();
+
+        when(mealPlanRecipeRepository.findByMealPlanId(1L))
+                .thenReturn(List.of(mealPlanRecipe));
+
+        when(recipeIngredientRepository.findByRecipeId(1L))
+                .thenReturn(List.of(grams, cups));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> shoppingListService.generateShoppingList(1L)
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        assertEquals("Cannot combine units G and CUP for ingredient: Flour",
+                exception.getReason());
+
+    }
+
     private Recipe createRecipe() {
 
         return Recipe.builder()

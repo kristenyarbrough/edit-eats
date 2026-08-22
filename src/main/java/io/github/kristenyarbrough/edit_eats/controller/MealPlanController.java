@@ -95,17 +95,4 @@ public class MealPlanController {
 
     }
 
-//    @GetMapping("/{startDate}/shopping-list")
-//    public List<ShoppingListItem> shoppingList(@PathVariable String startDate) {
-//        LocalDate date = LocalDate.parse(startDate);
-//
-//        MealPlan plan = repository.findByStartDate(date)
-//                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meal plan not found"));
-//
-//        if (plan.getRecipeIds() == null || plan.getRecipeIds().isEmpty()) {
-//            return List.of();
-//        }
-//
-//        return recipeService.generateShoppingListByRecipeIds(plan.getRecipeIds());
-//    }
 }

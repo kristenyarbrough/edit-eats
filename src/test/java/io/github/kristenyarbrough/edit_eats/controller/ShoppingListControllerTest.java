@@ -94,4 +94,22 @@ final class ShoppingListControllerTest {
 
     }
 
+    @Test
+    void shouldReturnBadRequestWhenIngredientUsesIncompatibleUnits() throws Exception {
+
+        when(shoppingListService.generateShoppingList(1L))
+                .thenThrow(new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Cannot combine units G and CUP for ingredient: Flour"
+                ));
+
+        mockMvc.perform(
+                get("/api/meal-plans/1/shopping-list")
+        )
+                .andExpect(status().isBadRequest());
+
+        verify(shoppingListService).generateShoppingList(1L);
+
+    }
+
 }

@@ -41,7 +41,7 @@ public class ShoppingListService {
         List<MealPlanRecipe> meals =
                 mealPlanRecipeRepository.findByMealPlanId(mealPlanId);
 
-        Map<String, ShoppingListItemResponse> shoppingList =
+        Map<Long, ShoppingListItemResponse> shoppingList =
                 new LinkedHashMap<>();
 
         for (MealPlanRecipe meal : meals) {
@@ -66,7 +66,7 @@ public class ShoppingListService {
                         recipeIngredient.getQuantity()
                                 .multiply(scalingFactor);
 
-                String key = String.valueOf(recipeIngredient.getIngredient().getId());
+                Long key = recipeIngredient.getIngredient().getId();
 
                 ShoppingListItemResponse existing = shoppingList.get(key);
 
@@ -94,12 +94,30 @@ public class ShoppingListService {
 
                 } else {
 
-                    BigDecimal convertedQuantity =
-                            UnitConverter.convert(
-                                    scaledQuantity,
-                                    recipeIngredient.getUnit(),
-                                    existing.getUnit()
-                            );
+                    BigDecimal convertedQuantity;
+                    try {
+
+                        convertedQuantity =
+                                UnitConverter.convert(
+                                        scaledQuantity,
+                                        recipeIngredient.getUnit(),
+                                        existing.getUnit()
+                                );
+
+                    } catch (IllegalArgumentException e) {
+
+                        throw new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST,
+                                "Cannot combine units "
+                                    + existing.getUnit()
+                                    + " and "
+                                    + recipeIngredient.getUnit()
+                                    + " for ingredient: "
+                                    + recipeIngredient.getIngredient().getName(),
+                                e
+                        );
+
+                    }
 
                     existing.setQuantity(
                             existing.getQuantity()
@@ -126,12 +144,6 @@ public class ShoppingListService {
         }
 
         return result;
-
-    }
-
-    private List<RecipeIngredient> getRecipeIngredients(Recipe recipe) {
-
-        return List.of();
 
     }
 
