@@ -3,15 +3,16 @@ package io.github.kristenyarbrough.edit_eats.service;
 import io.github.kristenyarbrough.edit_eats.domain.MealPlanRecipe;
 import io.github.kristenyarbrough.edit_eats.domain.Recipe;
 import io.github.kristenyarbrough.edit_eats.domain.RecipeIngredient;
-import io.github.kristenyarbrough.edit_eats.domain.Unit;
 import io.github.kristenyarbrough.edit_eats.dto.response.ShoppingListItemResponse;
 import io.github.kristenyarbrough.edit_eats.repository.MealPlanRecipeRepository;
+import io.github.kristenyarbrough.edit_eats.repository.MealPlanRepository;
 import io.github.kristenyarbrough.edit_eats.repository.RecipeIngredientRepository;
 import io.github.kristenyarbrough.edit_eats.util.ConvertedQuantity;
 import io.github.kristenyarbrough.edit_eats.util.UnitConverter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -27,8 +28,15 @@ public class ShoppingListService {
 
     private final MealPlanRecipeRepository mealPlanRecipeRepository;
     private final RecipeIngredientRepository recipeIngredientRepository;
+    private final MealPlanRepository mealPlanRepository;
 
+    @Transactional(readOnly = true)
     public List<ShoppingListItemResponse> generateShoppingList(Long mealPlanId) {
+
+        mealPlanRepository.findById(mealPlanId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Meal plan not found: " + mealPlanId));
 
         List<MealPlanRecipe> meals =
                 mealPlanRecipeRepository.findByMealPlanId(mealPlanId);
@@ -71,6 +79,14 @@ public class ShoppingListService {
                                             recipeIngredient.getIngredient().getId())
                                     .ingredientName(
                                             recipeIngredient.getIngredient().getName())
+                                    .ingredientCategoryId(
+                                            recipeIngredient.getIngredient()
+                                                    .getIngredientCategory()
+                                                    .getId())
+                                    .ingredientCategoryName(
+                                            recipeIngredient.getIngredient()
+                                                    .getIngredientCategory()
+                                                    .getName())
                                     .quantity(scaledQuantity)
                                     .unit(recipeIngredient.getUnit())
                                     .build()

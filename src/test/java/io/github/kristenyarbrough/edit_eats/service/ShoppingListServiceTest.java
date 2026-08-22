@@ -3,20 +3,25 @@ package io.github.kristenyarbrough.edit_eats.service;
 import io.github.kristenyarbrough.edit_eats.domain.*;
 import io.github.kristenyarbrough.edit_eats.dto.response.ShoppingListItemResponse;
 import io.github.kristenyarbrough.edit_eats.repository.MealPlanRecipeRepository;
+import io.github.kristenyarbrough.edit_eats.repository.MealPlanRepository;
 import io.github.kristenyarbrough.edit_eats.repository.RecipeIngredientRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ShoppingListServiceTest {
@@ -27,8 +32,24 @@ class ShoppingListServiceTest {
     @Mock
     private RecipeIngredientRepository recipeIngredientRepository;
 
+    @Mock
+    private MealPlanRepository mealPlanRepository;
+
     @InjectMocks
     private ShoppingListService shoppingListService;
+
+    @BeforeEach
+    void setUp() {
+
+        MealPlan mealPlan  = MealPlan.builder()
+                .id(1L)
+                .name("Family Meals")
+                .build();
+
+        lenient().when(mealPlanRepository.findById(1L))
+                .thenReturn(Optional.of(mealPlan));
+
+    }
 
     @Test
     void shouldGenerateShoppingListForMealPlan() {
@@ -60,6 +81,8 @@ class ShoppingListServiceTest {
         assertEquals("Flour", item.getIngredientName());
         assertEquals(0, new BigDecimal("500").compareTo(item.getQuantity()));
         assertEquals(Unit.G, item.getUnit());
+        assertEquals(1L, item.getIngredientCategoryId());
+        assertEquals("Pantry", item.getIngredientCategoryName());
 
         verify(mealPlanRecipeRepository).findByMealPlanId(1L);
         verify(recipeIngredientRepository).findByRecipeId(1L);
@@ -97,6 +120,8 @@ class ShoppingListServiceTest {
         assertEquals("Flour", item.getIngredientName());
         assertEquals(0, new BigDecimal("750").compareTo(item.getQuantity()));
         assertEquals(Unit.G, item.getUnit());
+        assertEquals(1L, item.getIngredientCategoryId());
+        assertEquals("Pantry", item.getIngredientCategoryName());
 
         verify(mealPlanRecipeRepository).findByMealPlanId(1L);
         verify(recipeIngredientRepository).findByRecipeId(1L);
@@ -159,6 +184,8 @@ class ShoppingListServiceTest {
         assertEquals("Flour", item.getIngredientName());
         assertEquals(0, new BigDecimal("800").compareTo(item.getQuantity()));
         assertEquals(Unit.G, item.getUnit());
+        assertEquals(1L, item.getIngredientCategoryId());
+        assertEquals("Pantry", item.getIngredientCategoryName());
 
         verify(mealPlanRecipeRepository).findByMealPlanId(1L);
         verify(recipeIngredientRepository).findByRecipeId(1L);
@@ -222,6 +249,8 @@ class ShoppingListServiceTest {
         assertEquals("Flour", item.getIngredientName());
         assertEquals(0, new BigDecimal("1.5").compareTo(item.getQuantity()));
         assertEquals(Unit.KG, item.getUnit());
+        assertEquals(1L, item.getIngredientCategoryId());
+        assertEquals("Pantry", item.getIngredientCategoryName());
 
     }
 
@@ -250,10 +279,16 @@ class ShoppingListServiceTest {
                 .servings(4)
                 .build();
 
+        IngredientCategory category = IngredientCategory.builder()
+                .id(1L)
+                .name("Dairy")
+                .build();
+
         Ingredient milk = Ingredient.builder()
                 .id(1L)
                 .name("Milk")
                 .defaultUnit(Unit.ML)
+                .ingredientCategory(category)
                 .build();
 
         RecipeIngredient milkForSoup = RecipeIngredient.builder()
@@ -293,6 +328,8 @@ class ShoppingListServiceTest {
         assertEquals(0,
                 new BigDecimal("1.6").compareTo(item.getQuantity()));
         assertEquals(Unit.L, item.getUnit());
+        assertEquals(1L, item.getIngredientCategoryId());
+        assertEquals("Dairy", item.getIngredientCategoryName());
 
         verify(mealPlanRecipeRepository).findByMealPlanId(1L);
         verify(recipeIngredientRepository).findByRecipeId(1L);
@@ -358,6 +395,8 @@ class ShoppingListServiceTest {
         assertEquals("Flour", item.getIngredientName());
         assertEquals(0, new BigDecimal("1.5").compareTo(item.getQuantity()));
         assertEquals(Unit.KG, item.getUnit());
+        assertEquals(1L, item.getIngredientCategoryId());
+        assertEquals("Pantry", item.getIngredientCategoryName());
 
     }
 
@@ -414,10 +453,16 @@ class ShoppingListServiceTest {
                 .servings(4)
                 .build();
 
+        IngredientCategory category = IngredientCategory.builder()
+                .id(1L)
+                .name("Dairy")
+                .build();
+
         Ingredient milk = Ingredient.builder()
                 .id(1L)
                 .name("Milk")
                 .defaultUnit(Unit.ML)
+                .ingredientCategory(category)
                 .build();
 
         RecipeIngredient milk1 = RecipeIngredient.builder()
@@ -467,11 +512,31 @@ class ShoppingListServiceTest {
         assertEquals("Milk", item.getIngredientName());
         assertEquals(0, new BigDecimal("2.6").compareTo(item.getQuantity()));
         assertEquals(Unit.L, item.getUnit());
+        assertEquals(1L, item.getIngredientCategoryId());
+        assertEquals("Dairy", item.getIngredientCategoryName());
 
         verify(mealPlanRecipeRepository).findByMealPlanId(1L);
         verify(recipeIngredientRepository).findByRecipeId(1L);
         verify(recipeIngredientRepository).findByRecipeId(2L);
         verify(recipeIngredientRepository).findByRecipeId(3L);
+
+    }
+
+    @Test
+    void shouldThrowNotFoundWhenMealPlanDoesNotExist() {
+
+        when(mealPlanRepository.findById(999L))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> shoppingListService.generateShoppingList(999L)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertEquals("Meal plan not found: 999", exception.getReason());
+
+        verify(mealPlanRepository).findById(999L);
 
     }
 
@@ -509,10 +574,16 @@ class ShoppingListServiceTest {
 
     private Ingredient createIngredient() {
 
+        IngredientCategory category = IngredientCategory.builder()
+                .id(1L)
+                .name("Pantry")
+                .build();
+
         return Ingredient.builder()
                 .id(1L)
                 .name("Flour")
                 .defaultUnit(Unit.G)
+                .ingredientCategory(category)
                 .build();
 
     }
