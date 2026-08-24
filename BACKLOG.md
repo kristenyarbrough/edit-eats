@@ -58,7 +58,7 @@
   - [x] Controller
 - [x] Tests
 
-## Next Sprint - Complete Meal Plan Workflow
+## Sprint 4 - Complete Meal Plan Workflow
 
 ### Update and Delete Meal Plans
 
@@ -70,9 +70,16 @@
 - [x] Tests for Delete
 - [x] DELETE controller endpoint + tests
 
----
+## Sprint 5 - Generate shopping lists
 
-## Future Features
+### Shopping Lists
+
+- [x] Generate shopping list
+- [x] Combine duplicate ingredients
+- [x] Convert units
+- [x] Group by ingredient category
+
+## Next Sprint - Import recipes
 
 ### Recipe Importing
 
@@ -82,12 +89,9 @@
 - [ ] Download recipe image
 - [ ] Save source URL
 
-### Shopping Lists
+---
 
-- [x] Generate shopping list
-- [x] Combine duplicate ingredients
-- [x] Convert units
-- [x] Group by ingredient category
+## Future Features
 
 ### Pantry
 
@@ -163,7 +167,7 @@ Relationships:
 
 - [x] Add createdAt to Recipe
 - [x] Add lastModifiedAt to Recipe
-- [ ] Recipe search
+- [x] Recipe search
 - [ ] Recipe pagination
 - [ ] Recently viewed recipes
 - [ ] Favourite recipes
@@ -186,23 +190,110 @@ Relationships:
 - [x] 🚧 RecipeIngredient
 - [x] ⏳ RecipeCategory
 
-### Phase 2 — Retrieval
-- [ ] Get recipe by ID
-- [ ] Search recipes
-- [ ] List recipes
-- [ ] Filter by category
-- [ ] Filter by ingredient
-- [ ] Sort
-
-### Phase 3 — Editing
+### Phase 2 — Editing
 - [x] Update recipe
-- [ ] Add/remove ingredients
+- [x] Add/remove ingredients
 - [ ] Reorder steps
 - [x] Delete recipe
 
-### Phase 4 — The exciting features
+### Phase 3 — The exciting features
 - [ ] Recipe import from URL
-- [ ] Shopping list generation
-- [ ] Scale recipes (2 serves → 8 serves)
+- [x] Shopping list generation
+- [x] Scale recipes (2 serves → 8 serves)
 - [ ] Pantry
-- [ ] Meal planner
+- [x] Meal planner
+
+### Phase 4 — Make the existing recipe system excellent
+
+- [ ] 🔎 Recipe search/filtering
+  - [ ] Search
+    - [ ] Get recipe by ID
+    - [ ] Search recipes
+    - [ ] List recipes
+  - [ ] Filter
+    - [ ] Filter by category
+    - [ ] Filter by ingredient
+  - [ ] Sort
+- [ ] ⭐ Favourite recipes
+- [ ] 📥 Recipe upload/import
+- [ ] ✏️ Edit imported recipe
+- [ ] 🥫 Pantry/inventory/fridge
+- [ ] ☑️ Shopping-list check-off/editing
+  - [ ] provide totalMinutes and derive cookMinutes or prepMinutes?
+  - [ ] passiveTime - important if things need to be made in advance
+- [ ] Better unit converter, converting between metric and US
+
+###  Phase 5 — Make meal planning smarter
+- [ ] 📋 Save/reuse meal plans (Meal Plan templates)
+- [ ] 🔄 Repeat a previous week
+- [ ] 🧮 Smarter serving adjustments
+- [ ] 🛒 Pantry-aware shopping lists
+
+### Phase 6 — Turn it into an app
+- [ ] 👥 Users and authentication
+- [ ] 📱 Frontend/mobile app
+
+###  Phase 7 — Personal dining
+- [ ] 🍽️ Restaurants
+- [ ] 📍 Restaurant visits
+- [ ] 🍴 Dishes ordered
+- [ ] ⭐ Personal dish ratings
+- [ ] 📝 Personal notes
+- [ ] 📷 Food photos
+- [ ] 👥 Number of diners
+- [ ] 💰 Price / spend
+- [ ] 🔁 "What did I order last time?"
+- [ ] ❤️ Favourite dishes
+- [ ] 🚫 Never-order-again dishes
+- [ ] 💡 "What should I order next time?"
+
+###  Phase 8 — Personal intelligence
+
+"I'm going back to this restaurant tonight. What should I order?"
+
+Edit Eats could look at your own history and answer from your own experiences.
+
+## Roadmap
+### Now
+
+<h4 style="text-align: center;">🔎 Recipe search/filtering</h4>
+
+<p style="text-align: center;">↓</p>
+
+<h4 style="text-align: center;">🖥️ Build the first React UI</h4>
+
+<p style="text-align: center;">↓</p>
+
+<h4 style="text-align: center;">⭐ Favourites</h4>
+
+<p style="text-align: center;">↓</p>
+
+<h4 style="text-align: center;">🖥️ Favourites UI</h4>
+
+<p style="text-align: center;">↓</p>
+
+<h4 style="text-align: center;">📥 Recipe upload/import</h4>
+
+<p style="text-align: center;">↓</p>
+
+<h4 style="text-align: center;">🖥️ Recipe editor</h4>
+
+<p style="text-align: center;">↓</p>
+
+<h4 style="text-align: center;">🥫 Pantry</h4>
+
+<p style="text-align: center;">↓</p>
+
+<h4 style="text-align: center;">🛒 Smarter shopping list</h4>
+
+<p style="text-align: center;">↓</p>
+
+<h4 style="text-align: center;">📅 Reusable meal plans</h4>
+
+<p style="text-align: center;">↓</p>
+
+<h4 style="text-align: center;">🍽️ Dining Journal</h4>
+
+<p style="text-align: center;">↓</p>
+
+<h4 style="text-align: center;">📱 Eventually mobile</h4>

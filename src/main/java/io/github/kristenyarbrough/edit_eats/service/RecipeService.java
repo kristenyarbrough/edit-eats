@@ -2,10 +2,7 @@ package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.*;
 import io.github.kristenyarbrough.edit_eats.dto.request.*;
-import io.github.kristenyarbrough.edit_eats.dto.response.RecipeCategoryResponse;
-import io.github.kristenyarbrough.edit_eats.dto.response.RecipeIngredientResponse;
-import io.github.kristenyarbrough.edit_eats.dto.response.RecipeResponse;
-import io.github.kristenyarbrough.edit_eats.dto.response.RecipeStepResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.*;
 import io.github.kristenyarbrough.edit_eats.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -317,6 +314,63 @@ public class RecipeService {
         recipeCategoryAssignmentRepository.deleteByRecipeId(id);
 
         recipeRepository.delete(recipe);
+
+    }
+
+    @Transactional(readOnly = true)
+    public List<RecipeSummaryResponse> findRecipeSummaries(String name) {
+
+        List<Recipe> recipes = recipeRepository.findByNameContainingIgnoreCase(name);
+
+        return recipes.stream()
+                .map(recipe -> RecipeSummaryResponse.builder()
+                        .id(recipe.getId())
+                        .name(recipe.getName())
+                        .prepMinutes(recipe.getPrepMinutes())
+                        .cookMinutes(recipe.getCookMinutes())
+                        .totalMinutes(recipe.getTotalMinutes())
+                        .formattedTotalTime(recipe.getFormattedTotalTime())
+                        .servings(recipe.getServings())
+                        .difficulty(recipe.getDifficulty())
+                        .imageUrl(recipe.getImageUrl())
+                        .categories(
+                                recipeCategoryAssignmentRepository
+                                        .findByRecipeId(recipe.getId())
+                                        .stream()
+                                        .map(assignment ->
+                                                RecipeCategoryResponse.builder()
+                                                        .id(assignment.getRecipeCategory().getId())
+                                                        .name(assignment.getRecipeCategory().getName())
+                                                        .build())
+                                        .toList()
+                        )
+                        .build())
+                .toList();
+
+    }
+
+    @Transactional(readOnly = true)
+    public List<RecipeResponse> findRecipes(String name) {
+
+        return recipeRepository.findByNameContainingIgnoreCase(name)
+                .stream()
+                .map(recipe -> RecipeResponse.builder()
+                        .id(recipe.getId())
+                        .name(recipe.getName())
+                        .prepMinutes(recipe.getPrepMinutes())
+                        .cookMinutes(recipe.getCookMinutes())
+                        .totalMinutes(recipe.getTotalMinutes())
+                        .formattedTotalTime(recipe.getFormattedTotalTime())
+                        .servings(recipe.getServings())
+                        .difficulty(recipe.getDifficulty())
+                        .sourceUrl(recipe.getSourceUrl())
+                        .imageUrl(recipe.getImageUrl())
+                        .storageInstructions(recipe.getStorageInstructions())
+                        .freezerInstructions(recipe.getFreezerInstructions())
+                        .createdAt(recipe.getCreatedAt())
+                        .lastModifiedAt(recipe.getLastModifiedAt())
+                        .build())
+                .toList();
 
     }
 

@@ -258,6 +258,7 @@ Key relationships include:
 - Recipe → many Recipe Steps
 - Recipe → many Recipe Categories
 - Ingredient → one Ingredient Category
+- Meal Plan → many Meal Plan Recipes
 
 ---
 

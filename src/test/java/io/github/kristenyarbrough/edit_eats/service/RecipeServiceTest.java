@@ -2,6 +2,8 @@ package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.*;
 import io.github.kristenyarbrough.edit_eats.dto.request.*;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeSummaryResponse;
 import io.github.kristenyarbrough.edit_eats.repository.*;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -981,6 +983,69 @@ class RecipeServiceTest {
         verify(recipeRepository, never())
                 .delete(any(Recipe.class));
         
+    }
+
+    @Test
+    void shouldFindRecipesByName() {
+
+        Recipe chicken = Recipe.builder()
+                .id(1L)
+                .name("Chicken Curry")
+                .servings(4)
+                .build();
+
+        Recipe pasta = Recipe.builder()
+                .id(2L)
+                .name("Chicken Pasta")
+                .servings(4)
+                .build();
+
+        when(recipeRepository.findByNameContainingIgnoreCase("chicken"))
+                .thenReturn(List.of(chicken, pasta));
+
+        List<RecipeResponse> result = recipeService.findRecipes("chicken");
+
+        assertEquals(2, result.size());
+        assertEquals("Chicken Curry", result.get(0).getName());
+        assertEquals("Chicken Pasta", result.get(1).getName());
+
+        verify(recipeRepository).findByNameContainingIgnoreCase("chicken");
+
+    }
+
+    @Test
+    void shouldFindRecipeSummaries() {
+
+        Recipe recipe = Recipe.builder()
+                .id(1L)
+                .name("Chicken Curry")
+                .prepMinutes(15)
+                .cookMinutes(30)
+                .servings(4)
+                .difficulty(Difficulty.MEDIUM)
+                .imageUrl("chicken-curry.jpg")
+                .build();
+
+        when(recipeRepository.findByNameContainingIgnoreCase("chicken"))
+                .thenReturn(List.of(recipe));
+
+        List<RecipeSummaryResponse> result = recipeService.findRecipeSummaries("chicken");
+
+        assertEquals(1, result.size());
+
+        RecipeSummaryResponse summary = result.get(0);
+
+        assertEquals(1L, summary.getId());
+        assertEquals("Chicken Curry", summary.getName());
+        assertEquals(15, summary.getPrepMinutes());
+        assertEquals(30, summary.getCookMinutes());
+        assertEquals(45, summary.getTotalMinutes());
+        assertEquals(4, summary.getServings());
+        assertEquals(Difficulty.MEDIUM, summary.getDifficulty());
+        assertEquals("chicken-curry.jpg", summary.getImageUrl());
+
+        verify(recipeRepository).findByNameContainingIgnoreCase("chicken");
+
     }
 
     private CreateRecipeRequest createValidRequest() {
