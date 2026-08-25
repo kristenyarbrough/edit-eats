@@ -666,4 +666,450 @@ class RecipeImportServiceTest {
 
     }
 
+    @Test
+    void shouldImportRealisticRecipe() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Creamy Garlic Chicken
+                
+                Serves 4
+                Prep Time: 15 minutes
+                Cook Time: 25 minutes
+                
+                Ingredients
+                
+                4 chicken breasts
+                1 tbsp olive oil
+                1 tbsp butter
+                4 cloves garlic, minced
+                1 onion, finely chopped
+                1 cup chicken stock
+                1/2 cup heavy cream
+                1/3 cup grated Parmesan
+                1 tsp Italian seasoning
+                1/2 tsp salt
+                1/4 tsp black pepper
+                1/2 cup baby spinach, optional
+                
+                Method
+                
+                Season the chicken breasts with salt and pepper.
+                Heat the olive oil and butter in a large frying pan over medium-high heat.
+                Add the chicken and cook for 5–6 minutes on each side, or until golden and cooked through. Remove from the pan and set aside.
+                Add the onion and cook for 3–4 minutes until softened.
+                Add the garlic and Italian seasoning and cook for 30 seconds.
+                Pour in the chicken stock and scrape any browned bits from the bottom of the pan.
+                Reduce the heat and stir in the cream and Parmesan.
+                Return the chicken to the pan and simmer for 5 minutes.
+                Stir through the spinach and cook until wilted.
+                Serve immediately.
+                """);
+
+        assertEquals("Creamy Garlic Chicken", result.getName());
+        assertEquals(4, result.getServings());
+
+        assertEquals(12, result.getIngredients().size());
+        assertEquals(10, result.getSteps().size());
+
+        assertEquals(15, result.getPrepMinutes());
+        assertEquals(25, result.getCookMinutes());
+
+    }
+
+    @Test
+    void shouldParseTotalTime() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Chocolate Cake
+                
+                Serves: 8
+                Total Time: 1 hour 15 minutes
+                
+                Ingredients
+                200 g flour
+                
+                Method
+                Mix ingredients.
+                Bake.
+                """);
+
+        assertEquals(75, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldParseHoursAbbreviation() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Cake
+                
+                Total Time: 1 hr
+                
+                Ingredients
+                1 cup flour
+                
+                Method
+                Bake.
+                """);
+
+        assertEquals(60, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldParseHoursPluralAbbreviation() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Cake
+                
+                Total Time: 2 hrs
+                
+                Ingredients
+                1 cup flour
+                
+                Method
+                Bake.
+                """);
+
+        assertEquals(120, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldParseMinutesAbbreviation() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Cake
+                
+                Total Time: 15 min
+                
+                Ingredients
+                1 cup flour
+                
+                Method
+                Bake.
+                """);
+
+        assertEquals(15, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldParseMinutesPluralAbbreviation() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Cake
+                
+                Total Time: 15 mins
+                
+                Ingredients
+                1 cup flour
+                
+                Method
+                Bake.
+                """);
+
+        assertEquals(15, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldParseHoursAndMinutesAbbreviations() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Cake
+                
+                Total Time: 1 hr 15 mins
+                
+                Ingredients
+                1 cup flour
+                
+                Method
+                Bake.
+                """);
+
+        assertEquals(75, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldParseHoursPluralAndMinutesAbbreviations() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Cake
+                
+                Total Time: 1 hrs 15 min
+                
+                Ingredients
+                1 cup flour
+                
+                Method
+                Bake.
+                """);
+
+        assertEquals(75, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldParseHoursPluralAndMinutesPluralAbbreviations() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Cake
+                
+                Total Time: 2 hrs 30 mins
+                
+                Ingredients
+                1 cup flour
+                
+                Method
+                Bake.
+                """);
+
+        assertEquals(150, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldParseHoursFullAndMinutesAbbreviations() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Cake
+                
+                Total Time: 1 hour 15 min
+                
+                Ingredients
+                1 cup flour
+                
+                Method
+                Bake.
+                """);
+
+        assertEquals(75, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldParseHoursAbbreviationAndMinutesFull() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Cake
+                
+                Total Time: 1 hr 15 minutes
+                
+                Ingredients
+                1 cup flour
+                
+                Method
+                Bake.
+                """);
+
+        assertEquals(75, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldParsePrepCookAndTotalTime() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Chicken Curry
+                
+                Prep Time: 15 mins
+                Cook Time: 45 mins
+                Total Time: 1 hr
+                
+                Ingredients
+                500 g chicken breast
+                
+                Method
+                Cook the chicken.
+                """);
+
+        assertEquals(15, result.getPrepMinutes());
+        assertEquals(45, result.getCookMinutes());
+        assertEquals(60, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldParseTimesWithoutColons() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+            Chicken Curry
+
+            Prep Time 15 mins
+            Cook Time 45 mins
+            Total Time 1 hr
+
+            Ingredients
+            500 g chicken breast
+
+            Method
+            Cook the chicken.
+            """);
+
+        assertEquals(15, result.getPrepMinutes());
+        assertEquals(45, result.getCookMinutes());
+        assertEquals(60, result.getTotalMinutes());
+    }
+
+    @Test
+    void shouldParsePassiveTime() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+            Marinated Chicken
+
+            Prep Time: 15 mins
+            Cook Time: 10 mins
+            Marinating Time: 2 hrs
+            Total Time: 2 hrs 25 mins
+
+            Ingredients
+            500 g chicken breast
+
+            Method
+            Mix the marinade.
+            Marinate the chicken.
+            Cook the chicken.
+            """);
+
+        assertEquals(15, result.getPrepMinutes());
+        assertEquals(10, result.getCookMinutes());
+        assertEquals(120, result.getPassiveMinutes());
+        assertEquals(145, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldParsePassiveTimeWithoutColon() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+            Marinated Chicken
+
+            Prep Time 15 mins
+            Cook Time 10 mins
+            Marinating Time 2 hrs
+            Total Time 2 hrs 25 mins
+
+            Ingredients
+            500 g chicken breast
+
+            Method
+            Mix the marinade.
+            Marinate the chicken.
+            Cook the chicken.
+            """);
+
+        assertEquals(120, result.getPassiveMinutes());
+
+    }
+
+    @Test
+    void shouldImportRealisticRecipeChickenKorma() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+            Chicken Korma
+
+            Serves 4
+
+            Prep: 10 mins
+            Cook: 25 mins
+
+            Ingredients
+            1 onion, chopped
+            2 garlic cloves, roughly chopped
+            thumb-sized piece ginger, roughly chopped
+            4 tbsp korma paste
+            4 skinless, boneless chicken breasts, cut into bite-sized pieces
+            50g ground almonds, plus extra to serve (optional)
+            4 tbsp sultanas
+            400ml chicken stock
+            ¼ tsp golden caster sugar
+            150g pot 0% fat Greek yogurt
+            small bunch coriander, chopped
+
+            Method
+            Put the onion, garlic and ginger in a food processor and whizz to a paste.
+            Tip the paste into a large frying pan and cook for 5 mins.
+            Add the korma paste and cook for 2 mins until aromatic.
+            Stir the chicken into the sauce.
+            Add the ground almonds, sultanas, chicken stock and sugar.
+            Cover and simmer for 10 mins or until the chicken is cooked through.
+            Remove from the heat and stir in the yogurt.
+            Scatter over the coriander and serve.
+            """);
+
+        assertEquals("Chicken Korma", result.getName());
+        assertEquals(4, result.getServings());
+        assertEquals(10, result.getPrepMinutes());
+        assertEquals(25, result.getCookMinutes());
+
+        assertEquals(11, result.getIngredients().size());
+        assertEquals(8, result.getSteps().size());
+
+    }
+
+    @Test
+    void shouldParsePrepTime() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+            Chicken Curry
+            
+            Prep: 10 mins
+            Cook: 30 mins
+            
+            Ingredients:
+            500 g chicken
+            
+            Method:
+            Cook chicken.
+            """);
+
+        assertEquals(10, result.getPrepMinutes());
+        assertEquals(30, result.getCookMinutes());
+
+    }
+
+    @Test
+    void shouldParsePreparationTime() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+            Chicken Curry
+            
+            Preparation Time: 10 minutes
+            Cooking Time: 30 minutes
+            
+            Ingredients:
+            500 g chicken
+            
+            Method:
+            Cook chicken.
+            """);
+
+        assertEquals(10, result.getPrepMinutes());
+        assertEquals(30, result.getCookMinutes());
+
+    }
+
+    @Test
+    void shouldParsePrepTimeWithoutColon() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+            Chicken Curry
+            
+            Prep 10 mins
+            Cook 30 mins
+            
+            Ingredients:
+            500 g chicken
+            
+            Method:
+            Cook chicken.
+            """);
+
+        assertEquals(10, result.getPrepMinutes());
+        assertEquals(30, result.getCookMinutes());
+
+    }
+
 }

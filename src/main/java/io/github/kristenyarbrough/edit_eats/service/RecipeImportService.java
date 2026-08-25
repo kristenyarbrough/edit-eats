@@ -12,6 +12,8 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +35,10 @@ public class RecipeImportService {
         String name = lines[0];
 
         Integer servings = null;
+        Integer prepMinutes = null;
+        Integer cookMinutes = null;
+        Integer passiveMinutes = null;
+        Integer totalMinutes = null;
 
         List<ImportedIngredient> ingredients = new ArrayList<>();
         List<ImportedStep> steps = new ArrayList<>();
@@ -57,6 +63,33 @@ public class RecipeImportService {
                 servings = Integer.valueOf(value);
                 continue;
 
+            }
+
+            if (isPrepTimeHeading(heading)) {
+
+                prepMinutes = parseTimeValue(heading);
+                continue;
+
+            }
+
+            if (isCookTimeHeading(heading)) {
+
+                cookMinutes = parseTimeValue(heading);
+                continue;
+
+            }
+
+            if (isPassiveTimeHeading(heading)) {
+
+                passiveMinutes = parseTimeValue(heading);
+                continue;
+
+            }
+
+            if (isTotalTimeHeading(heading)) {
+
+                totalMinutes = parseTimeValue(heading);
+                continue;
             }
 
             if (heading.toLowerCase().startsWith("serves")) {
@@ -107,6 +140,10 @@ public class RecipeImportService {
         return ImportedRecipe.builder()
                 .name(name)
                 .servings(servings)
+                .prepMinutes(prepMinutes)
+                .cookMinutes(cookMinutes)
+                .passiveMinutes(passiveMinutes)
+                .totalMinutes(totalMinutes)
                 .ingredients(ingredients)
                 .steps(steps)
                 .build();
@@ -415,6 +452,94 @@ public class RecipeImportService {
                 false
         );
 
+
+    }
+
+    private boolean isPrepTimeHeading(String line) {
+
+        return line.matches("(?i)^prep(?:aration)?(?:\\s+time)?\\s*:?.*\\d+\\s*(?:hours?|hrs?\\.?|minutes?|mins?\\.?)\\s*$"
+        );
+
+    }
+
+    private boolean isCookTimeHeading(String line) {
+
+        return line.matches(
+                "(?i)^cook(?:ing)?(?:\\s+time)?\\s*:?.*\\d+\\s*(?:hours?|hrs?\\.?|minutes?|mins?\\.?)\\s*$");
+
+    }
+
+    private boolean isPassiveTimeHeading(String line) {
+
+        return line.matches(
+                "(?i)^(?:passive|rest(?:ing)?|marinat(?:e|ing)|chill(?:ing)?|cool(?:ing)?|" +
+                "proof(?:ing)?|ris(?:e|ing)|soak(?:ing)?)\\s*(time)?\\s*:?.*\\d+\\s*(?:hours?|hrs?\\.?|minutes?|mins?\\.?)\\s*$"
+        );
+
+    }
+
+    private boolean isTotalTimeHeading(String line) {
+
+        return line.matches(
+                "(?i)^total(?:\\s+time)?\\s*:?.*\\d+\\s*(?:hours?|hrs?\\.?|minutes?|mins?\\.?)\\s*$");
+
+    }
+
+    private Integer parseTime(String value) {
+
+        Matcher matcher = Pattern.compile(
+                "(?:(\\d+)\\s*(?:hours?|hrs?\\.?)\\s*)?(?:(\\d+)\\s*(?:minutes?|mins?\\.?)\\s*)?",
+                Pattern.CASE_INSENSITIVE
+        ).matcher(value.trim());
+
+        if (!matcher.matches()) {
+
+            return null;
+
+        }
+
+        int hours = matcher.group(1) != null
+                ? Integer.parseInt(matcher.group(1))
+                : 0;
+
+        int minutes = matcher.group(2) != null
+                ? Integer.parseInt(matcher.group(2))
+                : 0;
+
+        // Don't accept a string containing no time value
+        if (hours == 0 && minutes == 0) {
+
+            return null;
+
+        }
+
+        return hours * 60 + minutes;
+
+    }
+
+    private Integer parseTimeValue(String line) {
+
+        int colonIndex = line.indexOf(':');
+
+        if (colonIndex >= 0) {
+
+            return parseTime(line.substring(colonIndex + 1).trim());
+
+        }
+
+        Matcher matcher = Pattern.compile(
+                "(?i)^(?:prep(?:aration)?|cook|passive|rest(?:ing)?|marinat(?:e|ing)|" +
+                        "chill(?:ing)?|cool(?:ing)?|proof(?:ing)?|ris(?:e|ing)|soak(?:ing)?|" +
+                        "total)(?:\\s+time)?\\s+(.+)$"
+        ).matcher(line);
+
+        if (matcher.matches()) {
+
+            return parseTime(matcher.group(1).trim());
+
+        }
+
+        return null;
 
     }
 
