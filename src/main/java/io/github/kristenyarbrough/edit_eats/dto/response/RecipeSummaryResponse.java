@@ -14,8 +14,11 @@ public class RecipeSummaryResponse {
     private String name;
     private Integer prepMinutes;
     private Integer cookMinutes;
+    private Integer passiveMinutes;
+    private Integer activeMinutes;
     private Integer totalMinutes;
     private String formattedTotalTime;
+    private String formattedActiveTime;
     private Integer servings;
     private Difficulty difficulty;
     private String imageUrl;

@@ -25,6 +25,9 @@ public class UpdateRecipeRequest {
     @Min(0)
     private Integer cookMinutes;
 
+    @Min(0)
+    private Integer passiveMinutes;
+
     @NotNull
     @Min(1)
     private Integer servings;

@@ -25,6 +25,9 @@ public class Recipe {
     private Integer cookMinutes;
 
     @Column(nullable = false)
+    private Integer passiveMinutes;
+
+    @Column(nullable = false)
     private Integer servings;
 
     @Enumerated(EnumType.STRING)
@@ -48,16 +51,45 @@ public class Recipe {
 
     @Transient
     public int getTotalMinutes() {
-        return (prepMinutes == null ? 0 : prepMinutes)
-                + (cookMinutes == null ? 0 : cookMinutes);
+
+        return getActiveMinutes()
+                + valueOrZero(passiveMinutes);
+
     }
 
     @Transient
-    public String getFormattedTotalTime() {
-        int total = getTotalMinutes();
+    public int getActiveMinutes() {
 
-        int hours = total / 60;
-        int minutes = total % 60;
+        return valueOrZero(prepMinutes)
+                + valueOrZero(cookMinutes);
+
+    }
+
+
+    @Transient
+
+    public String getFormattedTotalTime() {
+
+        return formatTime(getTotalMinutes());
+
+    }
+
+    public String getFormattedActiveTime() {
+
+        return formatTime(getActiveMinutes());
+
+    }
+
+    private int valueOrZero(Integer value) {
+
+        return value == null ? 0 : value;
+
+    }
+
+    private String formatTime(Integer totalMinutes) {
+
+        int hours = totalMinutes / 60;
+        int minutes = totalMinutes % 60;
 
         if (hours == 0) {
             return minutes + " mins";
@@ -68,10 +100,12 @@ public class Recipe {
         }
 
         return hours + (hours == 1 ? " hr " : " hrs ") + minutes + " mins";
+
     }
+
 }
-//private OffsetDateTime createdAt;
-//
-//@OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
-//@Builder.Default
-//private List<RecipeIngredient> ingredients = new ArrayList<>();
+    //private OffsetDateTime createdAt;
+    //
+    //@OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
+    //@Builder.Default
+    //private List<RecipeIngredient> ingredients = new ArrayList<>();

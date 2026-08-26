@@ -17,8 +17,11 @@ public class RecipeResponse {
 
     private Integer prepMinutes;
     private Integer cookMinutes;
+    private Integer passiveMinutes;
+    private Integer activeMinutes;
     private Integer totalMinutes;
     private String formattedTotalTime;
+    private String formattedActiveTime;
 
     private Integer servings;
 

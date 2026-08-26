@@ -45,6 +45,9 @@ public class RecipeService {
                 .name(request.getName())
                 .prepMinutes(request.getPrepMinutes())
                 .cookMinutes(request.getCookMinutes())
+                .passiveMinutes(request.getPassiveMinutes() == null
+                        ? 0
+                        : request.getPassiveMinutes())
                 .difficulty(request.getDifficulty())
                 .sourceUrl(request.getSourceUrl())
                 .imageUrl(request.getImageUrl())
@@ -181,8 +184,11 @@ public class RecipeService {
                 .name(recipe.getName())
                 .prepMinutes(recipe.getPrepMinutes())
                 .cookMinutes(recipe.getCookMinutes())
+                .passiveMinutes(recipe.getPassiveMinutes())
+                .activeMinutes(recipe.getActiveMinutes())
                 .totalMinutes(recipe.getTotalMinutes())
                 .formattedTotalTime(recipe.getFormattedTotalTime())
+                .formattedActiveTime(recipe.getFormattedActiveTime())
                 .servings(recipe.getServings())
                 .difficulty(recipe.getDifficulty())
                 .sourceUrl(recipe.getSourceUrl())
@@ -208,6 +214,9 @@ public class RecipeService {
         recipe.setName(request.getName());
         recipe.setPrepMinutes(request.getPrepMinutes());
         recipe.setCookMinutes(request.getCookMinutes());
+        recipe.setPassiveMinutes(request.getPassiveMinutes() == null
+                ? 0
+                : request.getPassiveMinutes());
         recipe.setServings(request.getServings());
         recipe.setDifficulty(request.getDifficulty());
         recipe.setSourceUrl(request.getSourceUrl());
@@ -328,8 +337,11 @@ public class RecipeService {
                         .name(recipe.getName())
                         .prepMinutes(recipe.getPrepMinutes())
                         .cookMinutes(recipe.getCookMinutes())
+                        .passiveMinutes(recipe.getPassiveMinutes())
+                        .activeMinutes(recipe.getActiveMinutes())
                         .totalMinutes(recipe.getTotalMinutes())
                         .formattedTotalTime(recipe.getFormattedTotalTime())
+                        .formattedActiveTime(recipe.getFormattedActiveTime())
                         .servings(recipe.getServings())
                         .difficulty(recipe.getDifficulty())
                         .imageUrl(recipe.getImageUrl())
@@ -359,8 +371,11 @@ public class RecipeService {
                         .name(recipe.getName())
                         .prepMinutes(recipe.getPrepMinutes())
                         .cookMinutes(recipe.getCookMinutes())
+                        .passiveMinutes(recipe.getPassiveMinutes())
+                        .activeMinutes(recipe.getActiveMinutes())
                         .totalMinutes(recipe.getTotalMinutes())
                         .formattedTotalTime(recipe.getFormattedTotalTime())
+                        .formattedActiveTime(recipe.getFormattedActiveTime())
                         .servings(recipe.getServings())
                         .difficulty(recipe.getDifficulty())
                         .sourceUrl(recipe.getSourceUrl())
