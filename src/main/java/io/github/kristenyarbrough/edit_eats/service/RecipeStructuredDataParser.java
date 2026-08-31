@@ -1,10 +1,12 @@
-    package io.github.kristenyarbrough.edit_eats.service;
+package io.github.kristenyarbrough.edit_eats.service;
 
+import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedIngredient;
+import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedRecipe;
+import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedStep;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import io.github.kristenyarbrough.edit_eats.dto.response.ImportedRecipeResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,27 +17,36 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class RecipeStructuredDataParser {
 
-    private static final Pattern ISO_DURATION_PATTERN =
-            Pattern.compile(
-                    "^PT(?:(\\d+)H)?(?:(\\d+)M)?$",
-                    Pattern.CASE_INSENSITIVE
-            );
+    private final JsonMapper jsonMapper;
 
-    private static final Pattern INTEGER_PATTERN =
-            Pattern.compile("\\d+");
-
-    private final ObjectMapper objectMapper;
-
-    public ImportedRecipeResponse parse(String json) {
+    public ImportedRecipe parse(String json) {
 
         try {
 
-            JsonNode root = objectMapper.readTree(json);
+            JsonNode root = jsonMapper.readTree(json);
 
-            return ImportedRecipeResponse.builder()
+            Integer prepMinutes =
+                    parseDuration(root.path("prepTime").asText(null));
+
+            Integer cookMinutes =
+                    parseDuration(root.path("cookTime").asText(null));
+
+            Integer totalMinutes =
+                    parseDuration(root.path("totalTime").asText(null));
+
+            if (totalMinutes == null
+                    && prepMinutes != null
+                    && cookMinutes != null) {
+
+                totalMinutes = prepMinutes + cookMinutes;
+
+            }
+
+            return ImportedRecipe.builder()
                     .name(root.path("name").asText(null))
-                    .prepMinutes(parseDuration(root.path("prepTime").asText(null)))
-                    .cookMinutes(parseDuration(root.path("cookTime").asText(null)))
+                    .prepMinutes(prepMinutes)
+                    .cookMinutes(cookMinutes)
+                    .totalMinutes(totalMinutes)
                     .servings(parseServings(root.path("recipeYield").asText(null)))
                     .imageUrl(parseImage(root.path("image")))
                     .sourceUrl(root.path("url").asText(null))
@@ -62,7 +73,10 @@ public class RecipeStructuredDataParser {
 
         }
 
-        Matcher matcher = ISO_DURATION_PATTERN.matcher(value);
+        Matcher matcher = Pattern.compile(
+                "^PT(?:(\\d+)H)?(?:(\\d+)M)?$",
+                Pattern.CASE_INSENSITIVE
+        ).matcher(value);
 
         if (!matcher.matches()) {
 
@@ -90,7 +104,7 @@ public class RecipeStructuredDataParser {
 
         }
 
-        Matcher matcher = INTEGER_PATTERN.matcher(value);
+        Matcher matcher = Pattern.compile("\\d+").matcher(value);
 
         if (!matcher.find()) {
 
@@ -126,9 +140,9 @@ public class RecipeStructuredDataParser {
 
     }
 
-    private List<String> parseIngredients(JsonNode node) {
+    private List<ImportedIngredient> parseIngredients(JsonNode node) {
 
-        List<String> ingredients = new ArrayList<>();
+        List<ImportedIngredient> ingredients = new ArrayList<>();
 
         if (!node.isArray()) {
 
@@ -140,7 +154,25 @@ public class RecipeStructuredDataParser {
 
             if (ingredient.isTextual()) {
 
-                ingredients.add(ingredient.asText());
+                ingredients.add(
+                        ImportedIngredient.builder()
+                                .name(ingredient.asText())
+                                .build()
+                );
+
+            } else if (ingredient.isObject()) {
+
+                String name = ingredient.path("name").asText(null);
+
+                if (name != null) {
+
+                    ingredients.add(
+                            ImportedIngredient.builder()
+                                    .name(name)
+                                    .build()
+                    );
+
+                }
 
             }
 
@@ -150,13 +182,18 @@ public class RecipeStructuredDataParser {
 
     }
 
-    private List<String> parseSteps(JsonNode node) {
+    private List<ImportedStep> parseSteps(JsonNode node) {
 
-        List<String> steps = new ArrayList<>();
+        List<ImportedStep> steps = new ArrayList<>();
 
         if (node.isTextual()) {
 
-            steps.add(node.asText());
+            steps.add(
+                    ImportedStep.builder()
+                            .stepNumber(1)
+                            .instruction(node.asText())
+                            .build()
+            );
 
             return steps;
 
@@ -170,9 +207,11 @@ public class RecipeStructuredDataParser {
 
         for (JsonNode step : node) {
 
+            String instruction = null;
+
             if (step.isTextual()) {
 
-                steps.add(step.asText());
+                instruction = step.asText();
 
             } else if (step.isObject()) {
 
@@ -180,9 +219,20 @@ public class RecipeStructuredDataParser {
 
                 if (text != null && text.isTextual()) {
 
-                    steps.add(text.asText());
+                    instruction = text.asText();
 
                 }
+
+            }
+
+            if (instruction != null) {
+
+                steps.add(
+                        ImportedStep.builder()
+                                .stepNumber(steps.size() + 1)
+                                .instruction(instruction)
+                                .build()
+                );
 
             }
 

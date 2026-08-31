@@ -13,6 +13,7 @@ public class ImportedRecipe {
     private String name;
     private Integer prepMinutes;
     private Integer cookMinutes;
+    private Integer activeMinutes;
     private Integer passiveMinutes;
     private Integer totalMinutes;
     private Integer servings;

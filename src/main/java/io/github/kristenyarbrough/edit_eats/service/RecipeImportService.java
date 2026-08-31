@@ -4,6 +4,9 @@ import io.github.kristenyarbrough.edit_eats.domain.Unit;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedIngredient;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedRecipe;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedStep;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,9 +22,64 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class RecipeImportService {
 
+    private final RecipeStructuredDataParser structuredDataParser;
+    private final RecipePageFetcher pageFetcher;
+
     public ImportedRecipe importRecipeFromUrl(String url) {
 
-        return null;
+        try {
+
+            Document document = pageFetcher.fetch(url);
+
+            Elements structuredDataScripts =
+                    document.select("script[type=application/ld+json]");
+
+            for (Element script : structuredDataScripts) {
+
+                String json = script.data();
+
+                if (json == null || json.isBlank()) {
+
+                    continue;
+
+                }
+
+                try {
+
+                    ImportedRecipe recipe = structuredDataParser.parse(json);
+
+                    if (recipe.getName() != null
+                            && recipe.getIngredients() != null
+                            && !recipe.getIngredients().isEmpty()) {
+
+                        return convertStructuredRecipe(recipe, url);
+
+                    }
+
+                } catch (IllegalArgumentException e) {
+
+                    // Not a recipe JSON-LD block.
+                    // Try the next structured-data block.
+
+                }
+
+            }
+
+            throw new IllegalArgumentException(
+                    "No recipe structured data found at URL: " + url);
+
+        } catch (IllegalArgumentException e) {
+
+                throw e;
+
+        } catch (Exception e) {
+
+            throw new IllegalArgumentException(
+                    "Unable to import recipe from URL: " + url,
+                    e
+            );
+
+        }
 
     }
 
@@ -580,4 +638,51 @@ public class RecipeImportService {
     ) {
 
     }
+
+    private ImportedRecipe convertStructuredRecipe(ImportedRecipe recipe, String sourceUrl) {
+
+        Integer prepMinutes = recipe.getPrepMinutes();
+        Integer cookMinutes = recipe.getCookMinutes();
+        Integer activeMinutes = recipe.getActiveMinutes();
+        Integer passiveMinutes = recipe.getPassiveMinutes();
+        Integer totalMinutes = recipe.getTotalMinutes();
+
+        if (activeMinutes == null
+                && (prepMinutes != null
+                || cookMinutes != null)) {
+
+            activeMinutes = (prepMinutes == null ? 0 : prepMinutes)
+                    + (cookMinutes == null ? 0 : cookMinutes);
+        }
+
+        if (passiveMinutes == null) {
+
+            passiveMinutes = 0;
+
+        }
+
+        if (totalMinutes == null) {
+
+            totalMinutes = (activeMinutes == null ? 0 : activeMinutes)
+                    + passiveMinutes;
+
+        }
+
+        return ImportedRecipe.builder()
+                .name(recipe.getName())
+                .prepMinutes(prepMinutes)
+                .cookMinutes(cookMinutes)
+                .activeMinutes(activeMinutes)
+                .passiveMinutes(passiveMinutes)
+                .totalMinutes(totalMinutes)
+                .servings(recipe.getServings())
+                .difficulty(recipe.getDifficulty())
+                .imageUrl(recipe.getImageUrl())
+                .sourceUrl(sourceUrl)
+                .ingredients(recipe.getIngredients())
+                .steps(recipe.getSteps())
+                .build();
+
+    }
+
 }

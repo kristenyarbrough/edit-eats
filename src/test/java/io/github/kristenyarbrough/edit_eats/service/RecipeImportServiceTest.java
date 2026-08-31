@@ -3,26 +3,137 @@ package io.github.kristenyarbrough.edit_eats.service;
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedIngredient;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedRecipe;
-import io.github.kristenyarbrough.edit_eats.dto.response.ImportedRecipeResponse;
+import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedStep;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class RecipeImportServiceTest {
 
-    private final RecipeImportService recipeImportService = new RecipeImportService();
+    @Mock
+    private RecipeStructuredDataParser structuredDataParser;
+
+    @Mock
+    private RecipePageFetcher pageFetcher;
+
+    @InjectMocks
+    private RecipeImportService recipeImportService;
 
     @Test
     void shouldImportRecipeFromUrl() {
+
+        String jsonLd = """
+                {
+                    "@context": "https://schema.org",
+                    "@type": "Recipe",
+                    "name": "Chicken Curry",
+                    "image": "https://example.com/chicken-curry.jpg",
+                    "prepTime": "PT15M",
+                    "cookTime": "PT30M",
+                    "recipeYield": "4 servings",
+                    "recipeIngredient": [
+                        "500 g chicken breast",
+                        "1 onion",
+                        "400 ml coconut milk"
+                    ],
+                    "recipeInstructions": [
+                        {
+                            "@type": "HowToStep",
+                            "text": "Cut the chicken into pieces."
+                        },
+                        {
+                            "@type": "HowToStep",
+                            "text": "Cook the onion until softened."
+                        },
+                        {
+                            "@type": "HowToStep",
+                            "text": "Add the chicken and coconut milk."
+                        }
+                    ]
+                }
+                """;
+
+        Document document = Jsoup.parse("""
+                <html>
+                    <head>
+                        <script type="application/ld+json">
+                        %s
+                        </script>
+                    </head>
+                </html>
+                """.formatted(jsonLd));
+
+        ImportedRecipe parsedRecipe = ImportedRecipe.builder()
+                .name("Chicken Curry")
+                .prepMinutes(15)
+                .cookMinutes(30)
+                .servings(4)
+                .imageUrl("https://example.com/chicken-curry.jpg")
+                .ingredients(List.of(
+                        ImportedIngredient.builder()
+                                .name("chicken breast")
+                                .quantity(new BigDecimal("500"))
+                                .unit(Unit.G)
+                                .build(),
+                        ImportedIngredient.builder()
+                                .name("onion")
+                                .quantity(new BigDecimal("1"))
+                                .build(),
+                        ImportedIngredient.builder()
+                                .name("coconut milk")
+                                .quantity(new BigDecimal("400"))
+                                .unit(Unit.ML)
+                                .build()
+                ))
+                .steps(List.of(
+                        ImportedStep.builder()
+                                .instruction("Cut the chicken into pieces.")
+                                .build(),
+                        ImportedStep.builder()
+                                .instruction("Cook the onion until softened.")
+                                .build(),
+                        ImportedStep.builder()
+                                .instruction("Add the chicken and coconut milk.")
+                                .build()
+                ))
+                .build();
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenReturn(document);
+
+        when(structuredDataParser.parse(anyString()))
+                .thenReturn(parsedRecipe);
 
         ImportedRecipe result = recipeImportService.importRecipeFromUrl(
                 "https://example.com/recipe"
         );
 
-        assertNull(result);
+        verify(structuredDataParser).parse(anyString());
+
+        assertEquals("Chicken Curry", result.getName());
+        assertEquals(15, result.getPrepMinutes());
+        assertEquals(30, result.getCookMinutes());
+        assertEquals(45, result.getActiveMinutes());
+        assertEquals(0, result.getPassiveMinutes());
+        assertEquals(45, result.getTotalMinutes());
+        assertEquals(4, result.getServings());
+        assertEquals("https://example.com/recipe", result.getSourceUrl());
+        assertEquals(3, result.getIngredients().size());
+        assertEquals(3, result.getSteps().size());
 
     }
 
@@ -1109,6 +1220,171 @@ class RecipeImportServiceTest {
 
         assertEquals(10, result.getPrepMinutes());
         assertEquals(30, result.getCookMinutes());
+
+    }
+
+    @Test
+    void shouldPreservePassiveMinutesWhenProvided() {
+
+        ImportedRecipe recipe = ImportedRecipe.builder()
+                .name("Marinated Chicken")
+                .prepMinutes(15)
+                .cookMinutes(10)
+                .passiveMinutes(120)
+                .servings(4)
+                .ingredients(List.of(
+                        ImportedIngredient.builder()
+                                .name("chicken breast")
+                                .quantity(new BigDecimal("500"))
+                                .unit(Unit.G)
+                                .build()
+                ))
+                .build();
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenReturn(Jsoup.parse("""
+                        <html>
+                            <head>
+                                <script type="application/ld+json">
+                                {}
+                                </script>
+                            </head>
+                        </html>
+                        """));
+
+        when(structuredDataParser.parse(anyString()))
+                .thenReturn(recipe);
+
+        ImportedRecipe result = recipeImportService.importRecipeFromUrl(
+                "https://example.com/recipe"
+        );
+
+        assertEquals(15, result.getPrepMinutes());
+        assertEquals(10, result.getCookMinutes());
+        assertEquals(25, result.getActiveMinutes());
+        assertEquals(120, result.getPassiveMinutes());
+        assertEquals(145, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldPreserveExplicitTotalMinutes() {
+
+        ImportedRecipe recipe = ImportedRecipe.builder()
+                .name("Chicken Curry")
+                .prepMinutes(15)
+                .cookMinutes(30)
+                .passiveMinutes(10)
+                .totalMinutes(100)
+                .servings(4)
+                .ingredients(List.of(
+                        ImportedIngredient.builder()
+                                .name("chicken breast")
+                                .quantity(new BigDecimal("500"))
+                                .unit(Unit.G)
+                                .build()
+                ))
+                .build();
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenReturn(Jsoup.parse("""
+                        <html>
+                            <head>
+                                <script type="application/ld+json">
+                                {}
+                                </script>
+                            </head>
+                        </html>
+                        """));
+
+        when(structuredDataParser.parse(anyString()))
+                .thenReturn(recipe);
+
+        ImportedRecipe result = recipeImportService.importRecipeFromUrl(
+                "https://example.com/recipe"
+        );
+
+        assertEquals(45, result.getActiveMinutes());
+        assertEquals(10, result.getPassiveMinutes());
+        assertEquals(100, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldCalculateActiveMinutesFromPrepTimeOnly() {
+
+        ImportedRecipe recipe = ImportedRecipe.builder()
+                .name("Simple Salad")
+                .prepMinutes(15)
+                .ingredients(List.of(
+                        ImportedIngredient.builder()
+                                .name("lettuce")
+                                .quantity(new BigDecimal("50"))
+                                .unit(Unit.G)
+                                .build()
+                ))
+                .build();
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenReturn(Jsoup.parse("""
+                        <html>
+                            <head>
+                                <script type="application/ld+json">
+                                {}
+                                </script>
+                            </head>
+                        </html>
+                        """));
+
+        when(structuredDataParser.parse(anyString()))
+                .thenReturn(recipe);
+
+        ImportedRecipe result = recipeImportService.importRecipeFromUrl(
+                "https://example.com/recipe"
+        );
+
+        assertEquals(15, result.getActiveMinutes());
+        assertEquals(0, result.getPassiveMinutes());
+        assertEquals(15, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldCalculateActiveMinutesFromCookTimeOnly() {
+
+        ImportedRecipe recipe = ImportedRecipe.builder()
+                .name("Roast Chicken")
+                .cookMinutes(60)
+                .ingredients(List.of(
+                        ImportedIngredient.builder()
+                                .name("whole chicken")
+                                .quantity(new BigDecimal("1"))
+                                .unit(Unit.EACH)
+                                .build()
+                ))
+                .build();
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenReturn(Jsoup.parse("""
+                        <html>
+                            <head>
+                                <script type="application/ld+json">
+                                {}
+                                </script>
+                            </head>
+                        </html>
+                        """));
+
+        when(structuredDataParser.parse(anyString()))
+                .thenReturn(recipe);
+
+        ImportedRecipe result = recipeImportService.importRecipeFromUrl(
+                "https://example.com/recipe"
+        );
+
+        assertEquals(60, result.getCookMinutes());
+        assertEquals(0, result.getPassiveMinutes());
+        assertEquals(60, result.getTotalMinutes());
 
     }
 
