@@ -2,8 +2,7 @@ package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.*;
 import io.github.kristenyarbrough.edit_eats.dto.request.*;
-import io.github.kristenyarbrough.edit_eats.dto.response.RecipeResponse;
-import io.github.kristenyarbrough.edit_eats.dto.response.RecipeSummaryResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.*;
 import io.github.kristenyarbrough.edit_eats.repository.*;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -554,75 +553,198 @@ class RecipeServiceTest {
     void shouldCreateRecipeWithoutCategories() {
         CreateRecipeRequest request = createValidRequest();
 
-                Ingredient ingredient = createIngredient();
+        Ingredient ingredient = createIngredient();
 
-                request.setIngredients(List.of(createIngredientRequest()));
+        request.setIngredients(List.of(createIngredientRequest()));
+        request.setSteps(List.of(createStepRequest()));
 
-                request.setSteps(List.of(createStepRequest()));
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(ingredient));
 
-                when(ingredientRepository.findById(1L))
-                        .thenReturn(Optional.of(ingredient));
+        Recipe recipe = createRecipe(request, false);
 
-                Recipe recipe = createRecipe(request, false);
+        assertAll("created recipe",
+                () -> assertNotNull(recipe),
+                () -> assertEquals(1L, recipe.getId()),
+                () -> assertEquals("Scrambled Eggs", recipe.getName()),
+                () -> assertEquals(2, recipe.getServings()),
+                () -> assertEquals(Difficulty.EASY, recipe.getDifficulty())
+        );
 
-                assertAll("created recipe",
-                        () -> assertNotNull(recipe),
-                        () -> assertEquals(1L, recipe.getId()),
-                        () -> assertEquals("Scrambled Eggs", recipe.getName()),
-                        () -> assertEquals(2, recipe.getServings()),
-                        () -> assertEquals(Difficulty.EASY, recipe.getDifficulty())
-                );
+        ArgumentCaptor<Recipe> recipeCaptor = ArgumentCaptor.forClass(Recipe.class);
 
-                ArgumentCaptor<Recipe> recipeCaptor = ArgumentCaptor.forClass(Recipe.class);
+        verify(recipeRepository).save(recipeCaptor.capture());
 
-                verify(recipeRepository).save(recipeCaptor.capture());
+        Recipe savedRecipe = recipeCaptor.getValue();
 
-                Recipe savedRecipe = recipeCaptor.getValue();
+        assertAll("recipe",
+                () -> assertEquals("Scrambled Eggs", savedRecipe.getName()),
+                () -> assertEquals(2, savedRecipe.getServings()),
+                () -> assertEquals(Difficulty.EASY, savedRecipe.getDifficulty())
+        );
 
-                assertAll("recipe",
-                        () -> assertEquals("Scrambled Eggs", savedRecipe.getName()),
-                        () -> assertEquals(2, savedRecipe.getServings()),
-                        () -> assertEquals(Difficulty.EASY, savedRecipe.getDifficulty())
-                );
+        verify(ingredientRepository).findById(1L);
 
-                verify(ingredientRepository).findById(1L);
+        List<RecipeIngredient> savedIngredients = captureSavedIngredients();
 
-                List<RecipeIngredient> savedIngredients = captureSavedIngredients();
+        assertEquals(1, savedIngredients.size());
 
-                assertEquals(1, savedIngredients.size());
+        RecipeIngredient savedIngredient = savedIngredients.get(0);
 
-                RecipeIngredient savedIngredient = savedIngredients.get(0);
+        assertAll("recipe ingredient",
+                () -> assertEquals(new BigDecimal("4"), savedIngredient.getQuantity()),
+                () -> assertEquals(Unit.EACH, savedIngredient.getUnit()),
+                () -> assertFalse(savedIngredient.getOptional()),
+                () -> assertEquals(ingredient, savedIngredient.getIngredient()),
+                () -> assertEquals(recipe, savedIngredient.getRecipe())
+        );
 
-                assertAll("recipe ingredient",
-                        () -> assertEquals(new BigDecimal("4"), savedIngredient.getQuantity()),
-                        () -> assertEquals(Unit.EACH, savedIngredient.getUnit()),
-                        () -> assertFalse(savedIngredient.getOptional()),
-                        () -> assertEquals(ingredient, savedIngredient.getIngredient()),
-                        () -> assertEquals(recipe, savedIngredient.getRecipe())
-                );
+        List<RecipeStep> savedSteps = captureSavedSteps();
 
-                List<RecipeStep> savedSteps = captureSavedSteps();
+        assertEquals(1, savedSteps.size());
 
-                assertEquals(1, savedSteps.size());
+        RecipeStep savedStep = savedSteps.get(0);
 
-                RecipeStep savedStep = savedSteps.get(0);
+        assertAll("recipe step",
+                () -> assertEquals(1, savedStep.getStepNumber()),
+                () -> assertEquals("Whisk eggs.", savedStep.getInstruction()),
+                () -> assertEquals(recipe, savedStep.getRecipe())
+        );
 
-                assertAll("recipe step",
-                        () -> assertEquals(1, savedStep.getStepNumber()),
-                        () -> assertEquals("Whisk eggs.", savedStep.getInstruction()),
-                        () -> assertEquals(recipe, savedStep.getRecipe())
-                );
+        verifyNoMoreInteractions(
+                recipeRepository,
+                ingredientRepository,
+                recipeIngredientRepository,
+                recipeStepRepository,
+                recipeCategoryRepository,
+                recipeCategoryAssignmentRepository
+        );
 
-                verifyNoMoreInteractions(
-                        recipeRepository,
-                        ingredientRepository,
-                        recipeIngredientRepository,
-                        recipeStepRepository,
-                        recipeCategoryRepository,
-                        recipeCategoryAssignmentRepository
-                );
+    }
 
-            }
+    @Test
+    void shouldGetRecipe() {
+
+        Recipe recipe = createRecipe();
+
+        Ingredient ingredient = createIngredient();
+
+        RecipeIngredient recipeIngredient = RecipeIngredient.builder()
+                .recipe(recipe)
+                .ingredient(ingredient)
+                .quantity(new BigDecimal("4"))
+                .unit(Unit.EACH)
+                .optional(false)
+                .build();
+
+        RecipeStep step = RecipeStep.builder()
+                .recipe(recipe)
+                .stepNumber(1)
+                .instruction("Whisk eggs.")
+                .build();
+
+        RecipeCategory category = createCategory();
+
+        RecipeCategoryAssignment categoryAssignment =
+                RecipeCategoryAssignment.builder()
+                        .recipe(recipe)
+                        .recipeCategory(category)
+                        .build();
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(recipeIngredientRepository.findByRecipeId(1L))
+                .thenReturn(List.of(recipeIngredient));
+
+        when(recipeStepRepository.findByRecipeIdOrderByStepNumber(1L))
+                .thenReturn(List.of(step));
+
+        when(recipeCategoryAssignmentRepository.findByRecipeId(1L))
+                .thenReturn(List.of(categoryAssignment));
+
+        RecipeResponse result = recipeService.getRecipe(1L);
+
+        assertAll("recipe",
+                () -> assertEquals(1L, result.getId()),
+                () -> assertEquals("Scrambled Eggs", result.getName()),
+                () -> assertEquals(2, result.getPrepMinutes()),
+                () -> assertEquals(5, result.getCookMinutes()),
+                () -> assertEquals(7, result.getTotalMinutes()),
+                () -> assertEquals(2, result.getServings()),
+                () -> assertEquals(Difficulty.EASY, result.getDifficulty())
+        );
+
+        assertEquals(1, result.getIngredients().size());
+
+        RecipeIngredientResponse ingredientResult = result.getIngredients().get(0);
+
+        assertAll("ingredient",
+                () -> assertEquals(1L, ingredientResult.getIngredientId()),
+                () -> assertEquals("Eggs", ingredientResult.getIngredientName()),
+                () -> assertEquals(new BigDecimal("4"), ingredientResult.getQuantity()),
+                () -> assertEquals(Unit.EACH, ingredientResult.getUnit()),
+                () -> assertFalse(ingredientResult.getOptional())
+        );
+
+        assertEquals(1, result.getSteps().size());
+
+        RecipeStepResponse stepResult = result.getSteps().get(0);
+
+        assertAll("steps",
+                () -> assertEquals(1, stepResult.getStepNumber()),
+                () -> assertEquals("Whisk eggs.", stepResult.getInstruction())
+        );
+
+        assertEquals(1, result.getCategories().size());
+
+        RecipeCategoryResponse categoryResult = result.getCategories().get(0);
+
+        assertAll("category",
+                () -> assertEquals(1L, categoryResult.getId()),
+                () -> assertEquals("Breakfast", categoryResult.getName())
+        );
+
+        verify(recipeRepository).findById(1L);
+        verify(recipeIngredientRepository).findByRecipeId(1L);
+        verify(recipeStepRepository).findByRecipeIdOrderByStepNumber(1L);
+        verify(recipeCategoryAssignmentRepository).findByRecipeId(1L);
+
+        verifyNoMoreInteractions(
+                recipeRepository,
+                recipeIngredientRepository,
+                recipeStepRepository,
+                recipeCategoryAssignmentRepository
+        );
+    }
+
+    @Test
+    void shouldCreateRecipeWithPassiveMinutes() {
+
+        CreateRecipeRequest request = createValidRequest();
+
+        request.setPrepMinutes(15);
+        request.setCookMinutes(10);
+        request.setPassiveMinutes(120);
+
+        Ingredient ingredient = createIngredient();
+
+        request.setIngredients(List.of(createIngredientRequest()));
+        request.setSteps(List.of(createStepRequest()));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(ingredient));
+
+        Recipe recipe = createRecipe(request, false);
+
+        assertAll(
+                () -> assertEquals(15, recipe.getPrepMinutes()),
+                () -> assertEquals(10, recipe.getCookMinutes()),
+                () -> assertEquals(120, recipe.getPassiveMinutes()),
+                () -> assertEquals(25, recipe.getActiveMinutes()),
+                () -> assertEquals(145, recipe.getTotalMinutes())
+        );
+    }
 
     @Test
     void shouldThrowWhenRecipeHasNoIngredients() {
@@ -636,6 +758,30 @@ class RecipeServiceTest {
 
         verifyNoInteractions(ingredientRepository);
         verify(recipeIngredientRepository, never()).saveAll(any());
+
+    }
+
+    @Test
+    void shouldThrowWhenGettingNonExistentRecipe() {
+
+        when(recipeRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> recipeService.getRecipe(99L)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertEquals("Recipe not found: 99", exception.getReason());
+
+        verify(recipeRepository).findById(99L);
+
+        verifyNoInteractions(
+                recipeIngredientRepository,
+                recipeStepRepository,
+                recipeCategoryAssignmentRepository
+        );
 
     }
 
@@ -681,6 +827,41 @@ class RecipeServiceTest {
         );
 
         assertNotNull(result.getLastModifiedAt());
+
+        verify(recipeRepository).findById(1L);
+        verify(recipeRepository).save(recipe);
+
+    }
+
+    @Test
+    void shouldUpdateRecipeWithPassiveMinutes() {
+
+        Recipe recipe = createRecipe();
+
+        UpdateRecipeRequest request = updateValidRequest();
+
+        request.setPrepMinutes(15);
+        request.setCookMinutes(10);
+        request.setPassiveMinutes(120);
+        request.setIngredients(List.of());
+        request.setSteps(List.of());
+        request.setCategories(List.of());
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(recipeRepository.save(recipe))
+                .thenReturn(recipe);
+
+        Recipe result = recipeService.updateRecipe(1L, request);
+
+        assertAll(
+                () -> assertEquals(15, result.getPrepMinutes()),
+                () -> assertEquals(10, result.getCookMinutes()),
+                () -> assertEquals(120, result.getPassiveMinutes()),
+                () -> assertEquals(25, result.getActiveMinutes()),
+                () -> assertEquals(145, result.getTotalMinutes())
+        );
 
         verify(recipeRepository).findById(1L);
         verify(recipeRepository).save(recipe);
@@ -1021,6 +1202,7 @@ class RecipeServiceTest {
                 .name("Chicken Curry")
                 .prepMinutes(15)
                 .cookMinutes(30)
+                .passiveMinutes(60)
                 .servings(4)
                 .difficulty(Difficulty.MEDIUM)
                 .imageUrl("chicken-curry.jpg")
@@ -1035,16 +1217,123 @@ class RecipeServiceTest {
 
         RecipeSummaryResponse summary = result.get(0);
 
-        assertEquals(1L, summary.getId());
-        assertEquals("Chicken Curry", summary.getName());
-        assertEquals(15, summary.getPrepMinutes());
-        assertEquals(30, summary.getCookMinutes());
-        assertEquals(45, summary.getTotalMinutes());
-        assertEquals(4, summary.getServings());
-        assertEquals(Difficulty.MEDIUM, summary.getDifficulty());
-        assertEquals("chicken-curry.jpg", summary.getImageUrl());
+        assertAll(
+                () -> assertEquals(1L, summary.getId()),
+                () -> assertEquals("Chicken Curry", summary.getName()),
+                () -> assertEquals(15, summary.getPrepMinutes()),
+                () -> assertEquals(30, summary.getCookMinutes()),
+                () -> assertEquals(45, summary.getActiveMinutes()),
+                () -> assertEquals(60, summary.getPassiveMinutes()),
+                () -> assertEquals(105, summary.getTotalMinutes()),
+                () -> assertEquals(4, summary.getServings()),
+                () -> assertEquals(Difficulty.MEDIUM, summary.getDifficulty()),
+                () -> assertEquals("chicken-curry.jpg", summary.getImageUrl())
+        );
 
         verify(recipeRepository).findByNameContainingIgnoreCase("chicken");
+
+    }
+
+    @Test
+    void shouldFindRecipeSummariesWithCategories() {
+
+        Recipe chicken = Recipe.builder()
+                .id(1L)
+                .name("Chicken Curry")
+                .prepMinutes(15)
+                .cookMinutes(30)
+                .servings(4)
+                .difficulty(Difficulty.MEDIUM)
+                .imageUrl("chicken-curry.jpg")
+                .build();
+
+        Recipe pasta  = Recipe.builder()
+                .id(2L)
+                .name("Chicken Pasta")
+                .prepMinutes(10)
+                .cookMinutes(20)
+                .servings(2)
+                .difficulty(Difficulty.EASY)
+                .imageUrl("chicken-pasta.jpg")
+                .build();
+
+        RecipeCategory curryCategory = RecipeCategory.builder()
+                .id(1L)
+                .name("Dinner")
+                .build();
+
+        RecipeCategory pastaCategory = RecipeCategory.builder()
+                .id(2L)
+                .name("Quick Meals")
+                .build();
+
+        RecipeCategoryAssignment chickenAssignment = RecipeCategoryAssignment.builder()
+                .recipe(chicken)
+                .recipeCategory(curryCategory)
+                .build();
+
+        RecipeCategoryAssignment pastaAssignment = RecipeCategoryAssignment.builder()
+                .recipe(pasta)
+                .recipeCategory(pastaCategory)
+                .build();
+
+        when(recipeRepository.findByNameContainingIgnoreCase("chicken"))
+                .thenReturn(List.of(chicken, pasta));
+
+        when(recipeCategoryAssignmentRepository.findByRecipeId(1L))
+                .thenReturn(List.of(chickenAssignment));
+
+        when(recipeCategoryAssignmentRepository.findByRecipeId(2L))
+                .thenReturn(List.of(pastaAssignment));
+
+        List<RecipeSummaryResponse> result = recipeService.findRecipeSummaries("chicken");
+
+        assertEquals(2, result.size());
+
+        RecipeSummaryResponse chickenResult = result.get(0);
+
+        assertAll("chicken summary",
+                () -> assertEquals(1L, chickenResult.getId()),
+                () -> assertEquals("Chicken Curry", chickenResult.getName()),
+                () -> assertEquals(15, chickenResult.getPrepMinutes()),
+                () -> assertEquals(30, chickenResult.getCookMinutes()),
+                () -> assertEquals(45, chickenResult.getTotalMinutes()),
+                () -> assertEquals(4, chickenResult.getServings()),
+                () -> assertEquals(Difficulty.MEDIUM, chickenResult.getDifficulty()),
+                () -> assertEquals("chicken-curry.jpg", chickenResult.getImageUrl())
+        );
+
+        assertEquals(1, chickenResult.getCategories().size());
+
+        assertAll("chicken category",
+                () -> assertEquals(1L, chickenResult.getCategories().get(0).getId()),
+                () -> assertEquals("Dinner", chickenResult.getCategories().get(0).getName())
+        );
+
+        RecipeSummaryResponse pastaResult = result.get(1);
+
+        assertAll("pasta summary",
+                () -> assertEquals(2L, pastaResult.getId()),
+                () -> assertEquals("Chicken Pasta", pastaResult.getName()),
+                () -> assertEquals(10, pastaResult.getPrepMinutes()),
+                () -> assertEquals(20, pastaResult.getCookMinutes()),
+                () -> assertEquals(30, pastaResult.getTotalMinutes()),
+                () -> assertEquals(2, pastaResult.getServings()),
+                () -> assertEquals(Difficulty.EASY, pastaResult.getDifficulty()),
+                () -> assertEquals("chicken-pasta.jpg", pastaResult.getImageUrl())
+        );
+
+        assertEquals(1, pastaResult.getCategories().size());
+
+        assertAll("pasta-category",
+                () -> assertEquals(2L, pastaResult.getCategories().get(0).getId()),
+                () -> assertEquals("Quick Meals",
+                        pastaResult.getCategories().get(0).getName())
+        );
+
+        verify(recipeRepository).findByNameContainingIgnoreCase("chicken");
+        verify(recipeCategoryAssignmentRepository).findByRecipeId(1L);
+        verify(recipeCategoryAssignmentRepository).findByRecipeId(2L);
 
     }
 

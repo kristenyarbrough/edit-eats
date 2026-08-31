@@ -11,16 +11,23 @@ import java.util.List;
 public class RecipeDraftResponse {
 
     private String name;
+
     private Integer prepMinutes;
     private Integer cookMinutes;
+    private Integer activeMinutes;
+    private Integer passiveMinutes;
+    private Integer totalMinutes;
+
     private Integer servings;
     private Difficulty difficulty;
+
     private String sourceUrl;
     private String imageUrl;
+
     private String storageInstructions;
     private String freezerInstructions;
 
-    private List<RecipeIngredientResponse> ingredients;
+    private List<ImportedIngredientResponse> ingredients;
     private List<RecipeStepResponse> steps;
     private List<RecipeCategoryResponse> categories;
 

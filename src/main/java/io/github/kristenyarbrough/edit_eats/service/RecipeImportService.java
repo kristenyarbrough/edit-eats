@@ -4,6 +4,10 @@ import io.github.kristenyarbrough.edit_eats.domain.Unit;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedIngredient;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedRecipe;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedStep;
+import io.github.kristenyarbrough.edit_eats.dto.response.ImportedIngredientResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeDraftResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeIngredientResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeStepResponse;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -25,7 +29,7 @@ public class RecipeImportService {
     private final RecipeStructuredDataParser structuredDataParser;
     private final RecipePageFetcher pageFetcher;
 
-    public ImportedRecipe importRecipeFromUrl(String url) {
+    public RecipeDraftResponse importRecipeFromUrl(String url) {
 
         try {
 
@@ -52,7 +56,9 @@ public class RecipeImportService {
                             && recipe.getIngredients() != null
                             && !recipe.getIngredients().isEmpty()) {
 
-                        return convertStructuredRecipe(recipe, url);
+                        ImportedRecipe importedRecipe = convertStructuredRecipe(recipe, url);
+
+                        return toDraftResponse(importedRecipe);
 
                     }
 
@@ -83,7 +89,7 @@ public class RecipeImportService {
 
     }
 
-    public ImportedRecipe importRecipeFromText(String text) {
+    public RecipeDraftResponse importRecipeFromText(String text) {
 
         String[] lines = text.lines()
                 .map(String::trim)
@@ -195,7 +201,7 @@ public class RecipeImportService {
 
         }
 
-        return ImportedRecipe.builder()
+        ImportedRecipe importedRecipe = ImportedRecipe.builder()
                 .name(name)
                 .servings(servings)
                 .prepMinutes(prepMinutes)
@@ -206,7 +212,25 @@ public class RecipeImportService {
                 .steps(steps)
                 .build();
 
+        return toDraftResponse(importedRecipe);
+
     }
+//
+//    public RecipeDraftResponse createDraftFromUrl(String url) {
+//
+//        ImportedRecipe recipe = importRecipeFromUrl(url);
+//
+//        return toDraftResponse(recipe);
+//
+//    }
+//
+//    public RecipeDraftResponse createDraftFromText(String text) {
+//
+//        ImportedRecipe recipe = importRecipeFromText(text);
+//
+//        return toDraftResponse(recipe);
+//
+//    }
 
     private ImportedIngredient parseIngredient(String line) {
 
@@ -639,6 +663,44 @@ public class RecipeImportService {
 
     }
 
+    private RecipeDraftResponse toDraftResponse(ImportedRecipe recipe) {
+
+        List<ImportedIngredientResponse> ingredientResponses =
+                recipe.getIngredients().stream()
+                        .map(ingredient -> ImportedIngredientResponse.builder()
+                                .ingredientName(ingredient.getName())
+                                .quantity(ingredient.getQuantity())
+                                .unit(ingredient.getUnit())
+                                .preparation(ingredient.getPreparation())
+                                .optional(ingredient.getOptional())
+                                .build())
+                        .toList();
+
+        List<RecipeStepResponse> stepResponses =
+                recipe.getSteps().stream()
+                        .map(step -> RecipeStepResponse.builder()
+                                .stepNumber(step.getStepNumber())
+                                .instruction(step.getInstruction())
+                                .build())
+                        .toList();
+
+        return RecipeDraftResponse.builder()
+                .name(recipe.getName())
+                .prepMinutes(recipe.getPrepMinutes())
+                .cookMinutes(recipe.getCookMinutes())
+                .activeMinutes(recipe.getActiveMinutes())
+                .passiveMinutes(recipe.getPassiveMinutes())
+                .totalMinutes(recipe.getTotalMinutes())
+                .servings(recipe.getServings())
+                .difficulty(recipe.getDifficulty())
+                .sourceUrl(recipe.getSourceUrl())
+                .imageUrl(recipe.getImageUrl())
+                .ingredients(ingredientResponses)
+                .steps(stepResponses)
+                .build();
+
+    }
+
     private ImportedRecipe convertStructuredRecipe(ImportedRecipe recipe, String sourceUrl) {
 
         Integer prepMinutes = recipe.getPrepMinutes();
@@ -681,6 +743,19 @@ public class RecipeImportService {
                 .sourceUrl(sourceUrl)
                 .ingredients(recipe.getIngredients())
                 .steps(recipe.getSteps())
+                .build();
+
+    }
+
+    private ImportedIngredientResponse toIngredientResponse(
+            ImportedIngredient ingredient) {
+
+        return ImportedIngredientResponse.builder()
+                .ingredientName(ingredient.getName())
+                .quantity(ingredient.getQuantity())
+                .unit(ingredient.getUnit())
+                .preparation(ingredient.getPreparation())
+                .optional(ingredient.getOptional())
                 .build();
 
     }
