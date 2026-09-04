@@ -29,7 +29,7 @@ public class RecipeImportService {
     private final RecipeStructuredDataParser structuredDataParser;
     private final RecipePageFetcher pageFetcher;
 
-    public RecipeDraftResponse importRecipeFromUrl(String url) {
+    public ImportedRecipe importRecipeFromUrl(String url) {
 
         try {
 
@@ -42,6 +42,11 @@ public class RecipeImportService {
 
                 String json = script.data();
 
+                System.out.println("================================");
+                System.out.println("JSON-LD FOUND:");
+                System.out.println(json);
+                System.out.println("================================");
+
                 if (json == null || json.isBlank()) {
 
                     continue;
@@ -52,13 +57,15 @@ public class RecipeImportService {
 
                     ImportedRecipe recipe = structuredDataParser.parse(json);
 
+                    System.out.println("PARSED RECIPE:");
+                    System.out.println("name = " + recipe.getName());
+                    System.out.println("ingredients = " + recipe.getIngredients());
+
                     if (recipe.getName() != null
                             && recipe.getIngredients() != null
                             && !recipe.getIngredients().isEmpty()) {
 
-                        ImportedRecipe importedRecipe = convertStructuredRecipe(recipe, url);
-
-                        return toDraftResponse(importedRecipe);
+                        return convertStructuredRecipe(recipe, url);
 
                     }
 
@@ -66,6 +73,9 @@ public class RecipeImportService {
 
                     // Not a recipe JSON-LD block.
                     // Try the next structured-data block.
+                    System.out.println("Failed to parse JSON-LD:");
+                    System.out.println(json);
+                    e.printStackTrace();
 
                 }
 
@@ -89,7 +99,7 @@ public class RecipeImportService {
 
     }
 
-    public RecipeDraftResponse importRecipeFromText(String text) {
+    public ImportedRecipe importRecipeFromText(String text) {
 
         String[] lines = text.lines()
                 .map(String::trim)
@@ -201,7 +211,7 @@ public class RecipeImportService {
 
         }
 
-        ImportedRecipe importedRecipe = ImportedRecipe.builder()
+        return ImportedRecipe.builder()
                 .name(name)
                 .servings(servings)
                 .prepMinutes(prepMinutes)
@@ -212,25 +222,23 @@ public class RecipeImportService {
                 .steps(steps)
                 .build();
 
-        return toDraftResponse(importedRecipe);
+    }
+
+    public RecipeDraftResponse importRecipeDraftFromUrl(String url) {
+
+        ImportedRecipe recipe = importRecipeFromUrl(url);
+
+        return toDraftResponse(recipe);
 
     }
-//
-//    public RecipeDraftResponse createDraftFromUrl(String url) {
-//
-//        ImportedRecipe recipe = importRecipeFromUrl(url);
-//
-//        return toDraftResponse(recipe);
-//
-//    }
-//
-//    public RecipeDraftResponse createDraftFromText(String text) {
-//
-//        ImportedRecipe recipe = importRecipeFromText(text);
-//
-//        return toDraftResponse(recipe);
-//
-//    }
+
+    public RecipeDraftResponse importRecipeDraftFromText(String text) {
+
+        ImportedRecipe recipe = importRecipeFromText(text);
+
+        return toDraftResponse(recipe);
+
+    }
 
     private ImportedIngredient parseIngredient(String line) {
 
@@ -697,6 +705,7 @@ public class RecipeImportService {
                 .imageUrl(recipe.getImageUrl())
                 .ingredients(ingredientResponses)
                 .steps(stepResponses)
+                .categories(List.of())
                 .build();
 
     }
@@ -741,7 +750,7 @@ public class RecipeImportService {
                 .difficulty(recipe.getDifficulty())
                 .imageUrl(recipe.getImageUrl())
                 .sourceUrl(sourceUrl)
-                .ingredients(recipe.getIngredients())
+                .ingredients(parseStructuredIngredients(recipe.getIngredients()))
                 .steps(recipe.getSteps())
                 .build();
 
@@ -757,6 +766,15 @@ public class RecipeImportService {
                 .preparation(ingredient.getPreparation())
                 .optional(ingredient.getOptional())
                 .build();
+
+    }
+
+    private List<ImportedIngredient> parseStructuredIngredients(
+            List<ImportedIngredient> ingredients) {
+
+        return ingredients.stream()
+                .map(ingredient -> parseIngredient(ingredient.getName()))
+                .toList();
 
     }
 

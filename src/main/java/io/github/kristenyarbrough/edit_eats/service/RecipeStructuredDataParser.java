@@ -25,14 +25,29 @@ public class RecipeStructuredDataParser {
 
             JsonNode root = jsonMapper.readTree(json);
 
+            JsonNode recipe = findRecipeNode(root);
+
+            if (recipe == null) {
+
+                throw new IllegalArgumentException(
+                        "No Recipe object found in structured data"
+                );
+
+            }
+
+            System.out.println("RECIPE NODE = " + recipe);
+            System.out.println("PREP TIME = [" + recipe.path("prepTime").asText(null) + "]");
+            System.out.println("COOK TIME = [" + recipe.path("cookTime").asText(null) + "]");
+
+
             Integer prepMinutes =
-                    parseDuration(root.path("prepTime").asText(null));
+                    parseDuration(recipe.path("prepTime").asText(null));
 
             Integer cookMinutes =
-                    parseDuration(root.path("cookTime").asText(null));
+                    parseDuration(recipe.path("cookTime").asText(null));
 
             Integer totalMinutes =
-                    parseDuration(root.path("totalTime").asText(null));
+                    parseDuration(recipe.path("totalTime").asText(null));
 
             if (totalMinutes == null
                     && prepMinutes != null
@@ -43,15 +58,16 @@ public class RecipeStructuredDataParser {
             }
 
             return ImportedRecipe.builder()
-                    .name(root.path("name").asText(null))
+                    .name(recipe.path("name").asText(null))
                     .prepMinutes(prepMinutes)
                     .cookMinutes(cookMinutes)
                     .totalMinutes(totalMinutes)
-                    .servings(parseServings(root.path("recipeYield").asText(null)))
-                    .imageUrl(parseImage(root.path("image")))
-                    .sourceUrl(root.path("url").asText(null))
-                    .ingredients(parseIngredients(root.path("recipeIngredient")))
-                    .steps(parseSteps(root.path("recipeInstructions")))
+                    .servings(parseServings(recipe.path("recipeYield")
+                            .asText(null)))
+                    .imageUrl(parseImage(recipe.path("image")))
+                    .sourceUrl(recipe.path("url").asText(null))
+                    .ingredients(parseIngredients(recipe.path("recipeIngredient")))
+                    .steps(parseSteps(recipe.path("recipeInstructions")))
                     .build();
 
         } catch (Exception e) {
@@ -67,6 +83,8 @@ public class RecipeStructuredDataParser {
 
     private Integer parseDuration(String value) {
 
+        System.out.println("parseDuration INPUT = [" + value + "]");
+
         if (value == null || value.isBlank()) {
 
             return null;
@@ -78,10 +96,12 @@ public class RecipeStructuredDataParser {
                 Pattern.CASE_INSENSITIVE
         ).matcher(value);
 
-        if (!matcher.matches()) {
+        boolean matches = matcher.matches();
 
+        System.out.println("parseDuration MATCHES = " + matches);
+
+        if (!matches) {
             return null;
-
         }
 
         int hours = matcher.group(1) == null
@@ -91,6 +111,8 @@ public class RecipeStructuredDataParser {
         int minutes = matcher.group(2) == null
                 ? 0
                 : Integer.parseInt(matcher.group(2));
+
+        System.out.println("hours = " + hours + ", minutes = " + minutes);
 
         return hours * 60 + minutes;
 
@@ -207,38 +229,184 @@ public class RecipeStructuredDataParser {
 
         for (JsonNode step : node) {
 
-            String instruction = null;
+            if (isHowToSection(step)) {
 
-            if (step.isTextual()) {
+                JsonNode sectionSteps = step.path("itemListElement");
 
-                instruction = step.asText();
+                if (sectionSteps.isArray()) {
 
-            } else if (step.isObject()) {
+                    for (JsonNode sectionStep: sectionSteps) {
 
-                JsonNode text = step.get("text");
+                        addStep(steps, sectionStep);
 
-                if (text != null && text.isTextual()) {
-
-                    instruction = text.asText();
+                    }
 
                 }
+            } else {
 
-            }
-
-            if (instruction != null) {
-
-                steps.add(
-                        ImportedStep.builder()
-                                .stepNumber(steps.size() + 1)
-                                .instruction(instruction)
-                                .build()
-                );
+                addStep(steps, step);
 
             }
 
         }
 
         return steps;
+
+    }
+
+//    private void parseInstructionNode(JsonNode node, List<ImportedStep> steps) {
+//
+//        if (node.isTextual()) {
+//
+//            steps.add(
+//                    ImportedStep.builder()
+//                            .stepNumber(steps.size() + 1)
+//                            .instruction(node.asText())
+//                            .build()
+//            );
+//
+//            return;
+//
+//        }
+//
+//        if (!node.isObject()) {
+//
+//            return;
+//
+//        }
+//
+//        String type = node.path("@type").asText();
+//
+//        if ("HowToSection".equalsIgnoreCase(type)) {
+//
+//            parseInstructionNode(
+//                    node.path("itemListElement"),
+//                    steps
+//            );
+//
+//            return;
+//
+//        }
+//
+//        JsonNode text = node.get("text");
+//
+//        if (text != null && text.isTextual()) {
+//
+//            steps.add(
+//                    ImportedStep.builder()
+//                            .stepNumber(steps.size() + 1)
+//                            .instruction(text.asText())
+//                            .build()
+//            );
+//        }
+//
+//    }
+
+    private void addStep(List<ImportedStep> steps, JsonNode node) {
+
+        String instruction = null;
+
+        if (node.isTextual()) {
+
+            instruction = node.asText();
+
+        } else if (node.isObject()) {
+
+            JsonNode text = node.get("text");
+
+            if (text != null && text.isTextual()) {
+
+                instruction = text.asText();
+
+            }
+
+        }
+
+        if (instruction != null) {
+
+            steps.add(ImportedStep.builder()
+                    .stepNumber(steps.size() + 1)
+                    .instruction(instruction)
+                    .build()
+            );
+
+        }
+
+    }
+
+    private boolean isHowToSection(JsonNode node) {
+
+        if (!node.isObject()) {
+
+            return false;
+
+        }
+
+        JsonNode type = node.get("@type");
+
+        return type != null && type.isTextual() && "HowToSection".equalsIgnoreCase(type.asText());
+
+    }
+    private JsonNode findRecipeNode(JsonNode root) {
+
+        if (isRecipe(root)) {
+
+            return root;
+
+        }
+
+        JsonNode graph= root.path("@graph");
+
+        if (graph.isArray()) {
+
+            for (JsonNode node : graph) {
+
+                if (isRecipe(node)) {
+
+                    return node;
+
+                }
+
+            }
+
+        }
+
+        return null;
+
+    }
+
+    private boolean isRecipe(JsonNode node) {
+
+        JsonNode type = node.get("@type");
+
+        if (type == null) {
+
+            return false;
+
+        }
+
+        if (type.isTextual()) {
+
+            return "Recipe".equalsIgnoreCase(type.asText());
+
+        }
+
+        if (type.isArray()) {
+
+            for (JsonNode value : type) {
+
+                if (value.isTextual()
+                        && "Recipe".equalsIgnoreCase(value.asText())) {
+
+                    return true;
+
+                }
+
+            }
+
+        }
+
+        return false;
 
     }
 

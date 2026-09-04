@@ -6,6 +6,7 @@ import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.UpdateRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.response.RecipeDraftResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.RecipeResponse;
+import io.github.kristenyarbrough.edit_eats.service.RecipeImportService;
 import io.github.kristenyarbrough.edit_eats.service.RecipeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class RecipeController {
 
     private final RecipeService recipeService;
-//    private final RecipeRepository repository;
+    private final RecipeImportService recipeImportService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -41,6 +42,22 @@ public class RecipeController {
     public Recipe updateRecipe(@PathVariable Long id,
                          @Valid @RequestBody UpdateRecipeRequest request) {
         return recipeService.updateRecipe(id, request);
+    }
+
+    @PostMapping("/import/url")
+    public RecipeDraftResponse importRecipeFromUrl(
+            @RequestParam String url) {
+
+        return recipeImportService.importRecipeDraftFromUrl(url);
+
+    }
+
+    @PostMapping("/import/text")
+    public RecipeDraftResponse importRecipeFromText(
+            @RequestParam String text) {
+
+        return recipeImportService.importRecipeDraftFromText(text);
+
     }
 
 //    @GetMapping

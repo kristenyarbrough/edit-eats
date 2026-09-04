@@ -1,7 +1,11 @@
 package io.github.kristenyarbrough.edit_eats.controller;
 
 import io.github.kristenyarbrough.edit_eats.dto.request.UpdateRecipeRequest;
+import io.github.kristenyarbrough.edit_eats.dto.response.ImportedIngredientResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeDraftResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.RecipeResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeStepResponse;
+import io.github.kristenyarbrough.edit_eats.service.RecipeImportService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.ObjectMapper;
@@ -41,6 +45,9 @@ class RecipeControllerTest {
 
     @MockitoBean
     private RecipeService recipeService;
+
+    @MockitoBean
+    private RecipeImportService recipeImportService;
 
     @Test
     void shouldCreateRecipe() throws Exception {
@@ -401,6 +408,67 @@ class RecipeControllerTest {
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(recipeService);
+
+    }
+
+    @Test
+    void shouldImportRecipeDraftFromUrl() throws Exception {
+
+        RecipeDraftResponse draft = RecipeDraftResponse.builder()
+                .name("Scrambled Eggs")
+                .prepMinutes(2)
+                .cookMinutes(5)
+                .activeMinutes(7)
+                .passiveMinutes(0)
+                .totalMinutes(7)
+                .servings(2)
+                .difficulty(Difficulty.EASY)
+                .sourceUrl("https://example.com/scrambled-eggs")
+                .ingredients(List.of(
+                        ImportedIngredientResponse.builder()
+                                .ingredientName("Eggs")
+                                .quantity(new BigDecimal("4"))
+                                .unit(Unit.EACH)
+                                .preparation(null)
+                                .optional(false)
+                                .build()
+                ))
+                .steps(List.of(
+                        RecipeStepResponse.builder()
+                                .stepNumber(1)
+                                .instruction("Whisk eggs.")
+                                .build()
+                ))
+                .categories(List.of())
+                .build();
+
+        when(recipeImportService.importRecipeDraftFromUrl(
+                "https://example.com/scrambled-eggs"))
+                .thenReturn(draft);
+
+        mockMvc.perform(
+                post("/api/recipes/import/url")
+                        .param("url", "https://example.com/scrambled-eggs")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Scrambled Eggs"))
+                .andExpect(jsonPath("$.prepMinutes").value(2))
+                .andExpect(jsonPath("$.cookMinutes").value(5))
+                .andExpect(jsonPath("$.activeMinutes").value(7))
+                .andExpect(jsonPath("$.passiveMinutes").value(0))
+                .andExpect(jsonPath("$.totalMinutes").value(7))
+                .andExpect(jsonPath("$.servings").value(2))
+                .andExpect(jsonPath("$.difficulty").value("EASY"))
+                .andExpect(jsonPath("$.sourceUrl")
+                        .value("https://example.com/scrambled-eggs"))
+                .andExpect(jsonPath("$.ingredients[0].ingredientName").value("Eggs"))
+                .andExpect(jsonPath("$.ingredients[0].quantity").value(4))
+                .andExpect(jsonPath("$.ingredients[0].unit").value("EACH"))
+                .andExpect(jsonPath("$.steps[0].stepNumber").value(1))
+                .andExpect(jsonPath("$.steps[0].instruction").value("Whisk eggs."))
+                .andExpect(jsonPath("$.categories").isEmpty());
+
+        verify(recipeImportService).importRecipeDraftFromUrl("https://example.com/scrambled-eggs");
 
     }
 
