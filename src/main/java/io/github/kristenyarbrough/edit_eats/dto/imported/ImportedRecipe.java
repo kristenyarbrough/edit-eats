@@ -23,5 +23,6 @@ public class ImportedRecipe {
 
     private List<ImportedIngredient> ingredients;
     private List<ImportedStep> steps;
+    private List<ImportedInstructionSection> instructionSections;
 
 }

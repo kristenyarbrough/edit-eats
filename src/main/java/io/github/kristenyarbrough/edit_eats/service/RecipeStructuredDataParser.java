@@ -1,6 +1,7 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedIngredient;
+import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedInstructionSection;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedRecipe;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedStep;
 import tools.jackson.databind.JsonNode;
@@ -68,6 +69,7 @@ public class RecipeStructuredDataParser {
                     .sourceUrl(recipe.path("url").asText(null))
                     .ingredients(parseIngredients(recipe.path("recipeIngredient")))
                     .steps(parseSteps(recipe.path("recipeInstructions")))
+                    .instructionSections(parseInstructionSections(recipe.path("recipeInstructions")))
                     .build();
 
         } catch (Exception e) {
@@ -229,24 +231,7 @@ public class RecipeStructuredDataParser {
 
         for (JsonNode step : node) {
 
-            if (isHowToSection(step)) {
-
-                JsonNode sectionSteps = step.path("itemListElement");
-
-                if (sectionSteps.isArray()) {
-
-                    for (JsonNode sectionStep: sectionSteps) {
-
-                        addStep(steps, sectionStep);
-
-                    }
-
-                }
-            } else {
-
-                addStep(steps, step);
-
-            }
+            addStep(steps, step);
 
         }
 
@@ -256,53 +241,28 @@ public class RecipeStructuredDataParser {
 
 //    private void parseInstructionNode(JsonNode node, List<ImportedStep> steps) {
 //
-//        if (node.isTextual()) {
-//
-//            steps.add(
-//                    ImportedStep.builder()
-//                            .stepNumber(steps.size() + 1)
-//                            .instruction(node.asText())
-//                            .build()
-//            );
-//
-//            return;
-//
-//        }
-//
-//        if (!node.isObject()) {
-//
-//            return;
-//
-//        }
-//
-//        String type = node.path("@type").asText();
-//
-//        if ("HowToSection".equalsIgnoreCase(type)) {
-//
-//            parseInstructionNode(
-//                    node.path("itemListElement"),
-//                    steps
-//            );
-//
-//            return;
-//
-//        }
-//
-//        JsonNode text = node.get("text");
-//
-//        if (text != null && text.isTextual()) {
-//
-//            steps.add(
-//                    ImportedStep.builder()
-//                            .stepNumber(steps.size() + 1)
-//                            .instruction(text.asText())
-//                            .build()
-//            );
-//        }
-//
+
 //    }
 
     private void addStep(List<ImportedStep> steps, JsonNode node) {
+
+        if (isHowToSection(node)) {
+
+            JsonNode sectionSteps = node.path("itemListElement");
+
+            if (sectionSteps.isArray()) {
+
+                for (JsonNode sectionStep: sectionSteps) {
+
+                    addStep(steps, sectionStep);
+
+                }
+
+            }
+
+            return;
+
+        }
 
         String instruction = null;
 
@@ -332,6 +292,16 @@ public class RecipeStructuredDataParser {
 
         }
 
+        if (node.isTextual()) {
+
+            steps.add(
+                    ImportedStep.builder()
+                            .stepNumber(steps.size() + 1)
+                            .instruction(node.asText())
+                            .build()
+            );
+
+        }
     }
 
     private boolean isHowToSection(JsonNode node) {
@@ -347,6 +317,7 @@ public class RecipeStructuredDataParser {
         return type != null && type.isTextual() && "HowToSection".equalsIgnoreCase(type.asText());
 
     }
+
     private JsonNode findRecipeNode(JsonNode root) {
 
         if (isRecipe(root)) {
@@ -407,6 +378,83 @@ public class RecipeStructuredDataParser {
         }
 
         return false;
+
+    }
+
+    private List<ImportedInstructionSection> parseInstructionSections(JsonNode node) {
+
+        List<ImportedInstructionSection> sections = new ArrayList<>();
+
+        if (!node.isArray()) {
+
+            return sections;
+
+        }
+
+        for (JsonNode item : node) {
+
+            if (isHowToSection(item)) {
+
+                sections.add(parseInstructionSection(item));
+
+            }
+
+        }
+
+        return sections;
+
+    }
+
+    private ImportedInstructionSection parseInstructionSection(JsonNode node) {
+
+        List<ImportedStep> steps = new ArrayList<>();
+        List<ImportedInstructionSection> sections = new ArrayList<>();
+
+        JsonNode items = node.path("itemListElement");
+
+        if (items.isArray()) {
+
+            for (JsonNode item : items) {
+
+                if (isHowToSection(item)) {
+
+                    sections.add(parseInstructionSection(item));
+
+                } else if (isHowToStep(item)) {
+
+                    JsonNode text = item.get("text");
+
+                    if (text != null && text.isTextual()) {
+
+                        steps.add(ImportedStep.builder()
+                                .stepNumber(steps.size() + 1)
+                                .instruction(text.asText())
+                                .build()
+                        );
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return ImportedInstructionSection.builder()
+                .name(node.path("name").asText(null))
+                .steps(steps)
+                .sections(sections)
+                .build();
+
+    }
+
+    private boolean isHowToStep(JsonNode node) {
+
+        JsonNode type = node.get("@type");
+
+        return type != null
+                && type.isTextual()
+                && "HowToStep".equalsIgnoreCase(type.asText());
 
     }
 

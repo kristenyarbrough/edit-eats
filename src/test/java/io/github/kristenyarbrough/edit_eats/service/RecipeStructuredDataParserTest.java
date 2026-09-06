@@ -1,9 +1,11 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
+import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedInstructionSection;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedRecipe;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class RecipeStructuredDataParserTest {
 
@@ -277,6 +279,237 @@ public class RecipeStructuredDataParserTest {
         assertEquals(1, result.getSteps().get(0).getStepNumber());
         assertEquals(2, result.getSteps().get(1).getStepNumber());
         assertEquals(3, result.getSteps().get(2).getStepNumber());
+
+    }
+
+    @Test
+    void shouldParseNestedHowToSection() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Chicken Curry",
+                    "recipeInstructions": [
+                        {
+                            "@type": "HowToSection",
+                            "name": "Prepare",
+                            "itemListElement": [
+                                {
+                                    "@type": "HowToSection",
+                                    "name": "Chicken",
+                                    "itemListElement": [
+                                        {
+                                            "@type": "HowToStep",
+                                            "text": "Cut the chicken into pieces."
+                                        },
+                                        {
+                                            "@type": "HowToStep",
+                                            "text": "Season the chicken."
+                                        }
+                                    ]
+                                },
+                                {
+                                    "@type": "HowToSection",
+                                    "name": "Sauce",
+                                    "itemListElement": [
+                                        {
+                                            "@type": "HowToStep",
+                                            "text": "Heat the pan."
+                                        },
+                                        {
+                                            "@type": "HowToStep",
+                                            "text": "Add the sauce."
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        assertEquals(4, result.getSteps().size());
+        assertEquals("Cut the chicken into pieces.", result.getSteps().get(0).getInstruction());
+        assertEquals("Season the chicken.", result.getSteps().get(1).getInstruction());
+        assertEquals("Heat the pan.", result.getSteps().get(2).getInstruction());
+        assertEquals("Add the sauce.", result.getSteps().get(3).getInstruction());
+
+    }
+
+    @Test
+    void shouldPreserveHowToSectionName() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Chicken Pasta",
+                    "recipeInstructions": [
+                        {
+                            "@type": "HowToSection",
+                            "name": "Prepare the Chicken",
+                            "itemListElement": [
+                                {
+                                    "@type": "HowToStep",
+                                    "text": "Cut the chicken into pieces."
+                                },
+                                {
+                                    "@type": "HowToStep",
+                                    "text": "Cook the chicken until golden."
+                                }
+                            ]
+                        }
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        assertNotNull(result);
+        assertNotNull(result.getInstructionSections());
+        assertEquals(1, result.getInstructionSections().size());
+
+        ImportedInstructionSection section = result.getInstructionSections().get(0);
+
+        assertEquals("Prepare the Chicken", section.getName());
+
+        assertNotNull(section.getSteps());
+        assertEquals(2, section.getSteps().size());
+        assertEquals("Cut the chicken into pieces.", section.getSteps().get(0).getInstruction());
+        assertEquals("Cook the chicken until golden.", section.getSteps().get(1).getInstruction());
+
+    }
+
+//    @Test
+//    void shouldParseInstructionSections() {
+//
+//        String json = """
+//                {
+//                    "@type": "Recipe",
+//                    "name": "Chicken Curry",
+//                    "recipeInstructions": [
+//                        {
+//                            "@type": "HowToSection",
+//                            "name": "Prepare the chicken",
+//                            "itemListElement": [
+//                                {
+//                                    "@type": "HowToStep",
+//                                    "text": "Cut the chicken into pieces."
+//                                },
+//                                {
+//                                    "@type": "HowToStep",
+//                                    "text": "Season the chicken."
+//                                }
+//                            ]
+//                        },
+//                        {
+//                            "@type": "HowToSection",
+//                            "name": Make the sauce",
+//                            "itemListElement": [
+//                                {
+//                                    "@type": "HowToStep",
+//                                    "text": "Heat the pan."
+//                                },
+//                                {
+//                                    "@type": "HowToStep",
+//                                    "text": "Add the sauce."
+//                                }
+//                            ]
+//                        }
+//                    ]
+//                }
+//                """;
+//
+//        ImportedRecipe result = parser.parse(json);
+//
+//        assertEquals(2, result.getInstructionSections().size());
+//
+//        ImportedInstructionSection prepareSection = result.getInstructionSections().get(0);
+//
+//        assertEquals("Prepare the chicken.", prepareSection.getName());
+//        assertEquals(2, prepareSection.getSections().size());
+//        assertEquals("Cut the chicken into pieces.", prepareSection.getSteps().get(0).getInstruction());
+//        assertEquals("Season the chicken.", prepareSection.getSteps().get(1).getInstruction());
+//
+//        ImportedInstructionSection sauceSection = result.getInstructionSections().get(1);
+//
+//        assertEquals("Make the sauce", sauceSection.getName());
+//        assertEquals(2, sauceSection.getSteps().size());
+//        assertEquals("Heat the pan.", sauceSection.getSteps().get(0).getInstruction());
+//        assertEquals("Add the sauce.", sauceSection.getSteps().get(1).getInstruction());
+//
+//    }
+
+    @Test
+    void shouldPreserveNestedHowToSections() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Chicken Curry",
+                    "recipeInstructions": [
+                        {
+                            "@type": "HowToSection",
+                            "name": "Prepare",
+                            "itemListElement": [
+                                {
+                                    "@type": "HowToSection",
+                                    "name": "Chicken",
+                                    "itemListElement": [
+                                        {
+                                            "@type": "HowToStep",
+                                            "text": "Cut the chicken into pieces."
+                                        },
+                                        {
+                                            "@type": "HowToStep",
+                                            "text": "Season the chicken."
+                                        }
+                                    ]
+                                },
+                                {
+                                    "@type": "HowToSection",
+                                    "name": "Sauce",
+                                    "itemListElement": [
+                                        {
+                                            "@type": "HowToStep",
+                                            "text": "Heat the pan."
+                                        },
+                                        {
+                                            "@type": "HowToStep",
+                                            "text": "Add the sauce."
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        assertNotNull(result);
+        assertNotNull(result.getInstructionSections());
+        assertEquals(1, result.getInstructionSections().size());
+
+        ImportedInstructionSection prepare = result.getInstructionSections().get(0);
+
+        assertEquals("Prepare", prepare.getName());
+        assertNotNull(prepare.getSections());
+        assertEquals(2, prepare.getSections().size());
+
+        ImportedInstructionSection chicken = prepare.getSections().get(0);
+
+        assertEquals("Chicken", chicken.getName());
+        assertEquals(2, chicken.getSteps().size());
+        assertEquals("Cut the chicken into pieces.", chicken.getSteps().get(0).getInstruction());
+        assertEquals("Season the chicken.", chicken.getSteps().get(1).getInstruction());
+
+        ImportedInstructionSection sauce = prepare.getSections().get(1);
+        assertEquals(2, sauce.getSteps().size());
+        assertEquals("Heat the pan.", sauce.getSteps().get(0).getInstruction());
+        assertEquals("Add the sauce.", sauce.getSteps().get(1).getInstruction());
 
     }
 
