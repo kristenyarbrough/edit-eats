@@ -1,5 +1,6 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
+import io.github.kristenyarbrough.edit_eats.domain.Unit;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedIngredient;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedInstructionSection;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedRecipe;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -193,6 +195,8 @@ public class RecipeStructuredDataParser {
                     ingredients.add(
                             ImportedIngredient.builder()
                                     .name(name)
+                                    .quantity(parseIngredientQuantity(ingredient.get("value")))
+                                    .unit(parseUnit(ingredient.path("unitCode").asText(null)))
                                     .build()
                     );
 
@@ -455,6 +459,51 @@ public class RecipeStructuredDataParser {
         return type != null
                 && type.isTextual()
                 && "HowToStep".equalsIgnoreCase(type.asText());
+
+    }
+
+    private BigDecimal parseIngredientQuantity(JsonNode node) {
+
+        if (node == null || node.isMissingNode() || node.isNull()) {
+
+            return null;
+
+        }
+
+        try {
+
+            return new BigDecimal(node.asText());
+
+        } catch (NumberFormatException e) {
+
+            return null;
+
+        }
+
+    }
+
+    private Unit parseUnit(String unitCode) {
+
+        if (unitCode == null || unitCode.isBlank()) {
+
+            return null;
+
+        }
+
+        return switch (unitCode.toUpperCase()) {
+
+            case "GRM" -> Unit.G;
+            case "KGM" -> Unit.KG;
+            case "MLT" -> Unit.ML;
+            case "LTR" -> Unit.L;
+            case "G25" -> Unit.TSP;
+            case "G24" -> Unit.TBSP;
+            case "G21" -> Unit.CUP;
+            case "OZA" -> Unit.OZ;
+            case "LBR" -> Unit.LB;
+            default -> null;
+
+        };
 
     }
 
