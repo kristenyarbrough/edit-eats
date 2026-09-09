@@ -1,5 +1,6 @@
 package io.github.kristenyarbrough.edit_eats.controller;
 
+import io.github.kristenyarbrough.edit_eats.domain.Unit;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedRecipe;
 import io.github.kristenyarbrough.edit_eats.service.RecipePageFetcher;
 import io.github.kristenyarbrough.edit_eats.service.RecipeStructuredDataParser;
@@ -13,8 +14,9 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import java.math.BigDecimal;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -81,12 +83,6 @@ class RecipeImportIntegrationTest {
                 </html>
                 """.formatted(jsonLd));
 
-        System.out.println("TEST SCRIPT COUNT = "
-                + document.select("script[type=application/ld+json]").size());
-
-        System.out.println("TEST SCRIPT DATA = "
-                + document.select("script[type=application/ld+json]").first().data());
-
         when(pageFetcher.fetch(TEST_URL))
                 .thenReturn(document);
 
@@ -95,16 +91,6 @@ class RecipeImportIntegrationTest {
 
         assertEquals(1, scripts.size());
         assertFalse(scripts.first().data().isBlank());
-
-        System.out.println("JSON-LD:");
-        System.out.println(scripts.first().data());
-        System.out.println("SCRIPT COUNT = "
-                + document.select("script[type=application/ld+json]").size());
-
-        System.out.println("SCRIPT DATA = "
-                + document.select("script[type=application/ld+json]")
-                .first()
-                .data());
 
         when(pageFetcher.fetch("https://example.com/chicken-curry"))
                 .thenReturn(document);
@@ -180,9 +166,15 @@ class RecipeImportIntegrationTest {
 
         assertEquals("Chicken Curry", result.getName());
         assertEquals(3, result.getIngredients().size());
-        assertEquals("500 g chicken breast", result.getIngredients().get(0).getName());
-        assertEquals("1 onion", result.getIngredients().get(1).getName());
-        assertEquals("2 tsp curry powder", result.getIngredients().get(2).getName());
+        assertEquals("chicken breast", result.getIngredients().get(0).getName());
+        assertEquals(new BigDecimal("500"), result.getIngredients().get(0).getQuantity());
+        assertEquals(Unit.G, result.getIngredients().get(0).getUnit());
+        assertEquals("onion", result.getIngredients().get(1).getName());
+        assertEquals(new BigDecimal("1"), result.getIngredients().get(1).getQuantity());
+        assertNull(result.getIngredients().get(1).getUnit());
+        assertEquals("curry powder", result.getIngredients().get(2).getName());
+        assertEquals(new BigDecimal("2"), result.getIngredients().get(2).getQuantity());
+        assertEquals(Unit.TSP, result.getIngredients().get(2).getUnit());
 
     }
 

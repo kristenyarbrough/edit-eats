@@ -15,5 +15,6 @@ public class ImportedIngredient {
     private Unit unit;
     private String preparation;
     private Boolean optional;
+    private String section;
 
 }

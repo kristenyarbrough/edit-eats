@@ -1,10 +1,7 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
-import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedIngredient;
-import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedInstructionSection;
-import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedRecipe;
-import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedStep;
+import io.github.kristenyarbrough.edit_eats.dto.imported.*;
 import tools.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -38,11 +35,6 @@ public class RecipeStructuredDataParser {
 
             }
 
-            System.out.println("RECIPE NODE = " + recipe);
-            System.out.println("PREP TIME = [" + recipe.path("prepTime").asText(null) + "]");
-            System.out.println("COOK TIME = [" + recipe.path("cookTime").asText(null) + "]");
-
-
             Integer prepMinutes =
                     parseDuration(recipe.path("prepTime").asText(null));
 
@@ -70,6 +62,7 @@ public class RecipeStructuredDataParser {
                     .imageUrl(parseImage(recipe.path("image")))
                     .sourceUrl(recipe.path("url").asText(null))
                     .ingredients(parseIngredients(recipe.path("recipeIngredient")))
+                    .ingredientSections(parseIngredientSections(recipe.path("recipeIngredient")))
                     .steps(parseSteps(recipe.path("recipeInstructions")))
                     .instructionSections(parseInstructionSections(recipe.path("recipeInstructions")))
                     .build();
@@ -87,8 +80,6 @@ public class RecipeStructuredDataParser {
 
     private Integer parseDuration(String value) {
 
-        System.out.println("parseDuration INPUT = [" + value + "]");
-
         if (value == null || value.isBlank()) {
 
             return null;
@@ -102,8 +93,6 @@ public class RecipeStructuredDataParser {
 
         boolean matches = matcher.matches();
 
-        System.out.println("parseDuration MATCHES = " + matches);
-
         if (!matches) {
             return null;
         }
@@ -115,8 +104,6 @@ public class RecipeStructuredDataParser {
         int minutes = matcher.group(2) == null
                 ? 0
                 : Integer.parseInt(matcher.group(2));
-
-        System.out.println("hours = " + hours + ", minutes = " + minutes);
 
         return hours * 60 + minutes;
 
@@ -180,25 +167,62 @@ public class RecipeStructuredDataParser {
 
             if (ingredient.isTextual()) {
 
-                ingredients.add(
-                        ImportedIngredient.builder()
-                                .name(ingredient.asText())
-                                .build()
-                );
+                ingredients.add(parseIngredientText(ingredient.asText()));
 
-            } else if (ingredient.isObject()) {
+            } else if (ingredient.isObject()
+                    && !isIngredientSection(ingredient)) {
 
-                String name = ingredient.path("name").asText(null);
+                ingredients.add(parseStructuredIngredient(ingredient));
 
-                if (name != null) {
+            }
 
-                    ingredients.add(
-                            ImportedIngredient.builder()
-                                    .name(name)
-                                    .quantity(parseIngredientQuantity(ingredient.get("value")))
-                                    .unit(parseUnit(ingredient.path("unitCode").asText(null)))
-                                    .build()
-                    );
+        }
+
+        return ingredients;
+
+    }
+
+    private List<ImportedIngredientSection> parseIngredientSections(JsonNode node) {
+
+        List<ImportedIngredientSection> sections = new ArrayList<>();
+
+        if (!node.isArray()) {
+
+            return sections;
+
+        }
+
+        for (JsonNode item : node) {
+
+            if (isIngredientSection(item)) {
+
+                sections.add(parseIngredientSection(item));
+
+            }
+
+        }
+
+        return sections;
+
+    }
+
+    private ImportedIngredientSection parseIngredientSection(JsonNode node) {
+
+        List<ImportedIngredient> ingredients = new ArrayList<>();
+
+        JsonNode items = node.path("itemListElement");
+
+        if (items.isArray()) {
+
+            for (JsonNode item : items) {
+
+                if (item.isTextual()) {
+
+                    ingredients.add(parseIngredientText(item.asText()));
+
+                } else if (item.isObject()) {
+
+                    ingredients.add(parseStructuredIngredient(item));
 
                 }
 
@@ -206,7 +230,113 @@ public class RecipeStructuredDataParser {
 
         }
 
-        return ingredients;
+        return ImportedIngredientSection.builder()
+                .name(node.path("name").asText(null))
+                .ingredients(ingredients)
+                .build();
+
+    }
+
+    private boolean isIngredientSection(JsonNode node) {
+
+        if (!node.isObject()) {
+
+            return false;
+
+        }
+
+        JsonNode type = node.get("@type");
+
+        return type != null
+                && type.isTextual()
+                && "ItemList".equalsIgnoreCase(type.asText());
+
+    }
+
+    private ImportedIngredient parseStructuredIngredient(JsonNode node) {
+
+        String name = node.path("name").asText(null);
+
+        BigDecimal quantity = null;
+        JsonNode value = node.get("value");
+
+        if (value != null && !value.isNull()) {
+
+            try {
+
+                quantity = new BigDecimal(value.asText());
+
+            } catch (NumberFormatException ignored) {
+
+                // Leave quantity as null if the value isn't numeric
+            }
+
+        }
+
+        Unit unit = parseUnit(node.path("unitCode").asText(null));
+
+        return ImportedIngredient.builder()
+                .name(name)
+                .quantity(quantity)
+                .unit(unit)
+                .build();
+
+    }
+
+    private ImportedIngredient parseIngredientText(String value) {
+
+        if (value == null || value.isBlank()) {
+
+            return ImportedIngredient.builder()
+                    .name(value)
+                    .build();
+
+        }
+
+        // Quantity + unit + ingredient name
+        Matcher matcher = Pattern.compile(
+                "^\\s*(\\d+(?:\\.\\d+)?)\\s*"
+                            + "(g|kg|ml|l|tsp|teaspoon|teaspoons|tbsp|tablespoon|tablespoons"
+                            + "|cup|cups|oz|ounce|ounces|lb|lbs|pound|pounds"
+                            + "|each|clove|cloves)"
+                            +"\\s+(.+?)\\s*$",
+                Pattern.CASE_INSENSITIVE
+        ).matcher(value);
+
+        if (matcher.matches()) {
+
+            BigDecimal quantity = new BigDecimal(matcher.group(1));
+            Unit unit = parseUnit(matcher.group(2));
+            String name = matcher.group(3).trim();
+
+            return ImportedIngredient.builder()
+                    .name(name)
+                    .quantity(quantity)
+                    .unit(unit)
+                    .build();
+
+        }
+
+        // Quantity + ingredient name, with no unit
+        matcher = Pattern.compile(
+                "^\\s*(\\d+(?:\\.\\d+)?)\\s+(.+?)\\s*$"
+        ).matcher(value);
+
+        if (matcher.matches()) {
+
+            BigDecimal quantity = new BigDecimal(matcher.group(1));
+            String name = matcher.group(2).trim();
+
+            return ImportedIngredient.builder()
+                    .name(name)
+                    .quantity(quantity)
+                    .build();
+
+        }
+
+        return ImportedIngredient.builder()
+                .name(value.trim())
+                .build();
 
     }
 
@@ -242,11 +372,6 @@ public class RecipeStructuredDataParser {
         return steps;
 
     }
-
-//    private void parseInstructionNode(JsonNode node, List<ImportedStep> steps) {
-//
-
-//    }
 
     private void addStep(List<ImportedStep> steps, JsonNode node) {
 
@@ -306,6 +431,59 @@ public class RecipeStructuredDataParser {
             );
 
         }
+
+    }
+
+    private BigDecimal parseQuantity(String value) {
+
+        if (value == null || value.isBlank()) {
+
+            return null;
+
+        }
+
+        try {
+
+            return new BigDecimal(value);
+
+        } catch (NumberFormatException e) {
+
+            return null;
+
+        }
+
+    }
+
+    private Unit parseUnit(String value) {
+
+        if (value == null || value.isBlank()) {
+
+            return null;
+
+        }
+
+        return switch (value.trim().toLowerCase()) {
+
+            case "g", "gram", "grams", "grm" -> Unit.G;
+            case "kg", "kilogram", "kilograms" -> Unit.KG;
+
+            case "ml", "millilitre", "millilitres", "milliliter", "milliliters" -> Unit.ML;
+            case "l", "litre", "litres", "liter", "liters" -> Unit.L;
+
+            case "tsp", "teaspoon", "teaspoons" -> Unit.TSP;
+            case "tbsp", "tablespoon", "tablespoons" -> Unit.TBSP;
+            case "cup", "cups" -> Unit.CUP;
+
+            case "oz", "ounce", "ounces" -> Unit.OZ;
+            case "lb", "lbs", "pound", "pounds" -> Unit.LB;
+
+            case "each" -> Unit.EACH;
+            case "clove", "cloves" -> Unit.CLOVE;
+
+            default -> null;
+
+        };
+
     }
 
     private boolean isHowToSection(JsonNode node) {
@@ -479,31 +657,6 @@ public class RecipeStructuredDataParser {
             return null;
 
         }
-
-    }
-
-    private Unit parseUnit(String unitCode) {
-
-        if (unitCode == null || unitCode.isBlank()) {
-
-            return null;
-
-        }
-
-        return switch (unitCode.toUpperCase()) {
-
-            case "GRM" -> Unit.G;
-            case "KGM" -> Unit.KG;
-            case "MLT" -> Unit.ML;
-            case "LTR" -> Unit.L;
-            case "G25" -> Unit.TSP;
-            case "G24" -> Unit.TBSP;
-            case "G21" -> Unit.CUP;
-            case "OZA" -> Unit.OZ;
-            case "LBR" -> Unit.LB;
-            default -> null;
-
-        };
 
     }
 

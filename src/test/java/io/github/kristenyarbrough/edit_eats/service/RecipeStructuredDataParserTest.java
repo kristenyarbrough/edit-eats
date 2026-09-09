@@ -2,14 +2,14 @@ package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedIngredient;
+import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedIngredientSection;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedInstructionSection;
 import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedRecipe;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class RecipeStructuredDataParserTest {
 
@@ -60,9 +60,15 @@ public class RecipeStructuredDataParserTest {
         assertEquals("https://example.com/chicken-curry.jpg", result.getImageUrl());
 
         assertEquals(3, result.getIngredients().size());
-        assertEquals("500 g chicken breast", result.getIngredients().get(0).getName());
-        assertEquals("1 onion", result.getIngredients().get(1).getName());
-        assertEquals("400 ml coconut milk", result.getIngredients().get(2).getName());
+        assertEquals("chicken breast", result.getIngredients().get(0).getName());
+        assertEquals(new BigDecimal("500"), result.getIngredients().get(0).getQuantity());
+        assertEquals(Unit.G, result.getIngredients().get(0).getUnit());
+        assertEquals("onion", result.getIngredients().get(1).getName());
+        assertEquals(new BigDecimal("1"), result.getIngredients().get(1).getQuantity());
+        assertNull(result.getIngredients().get(1).getUnit());
+        assertEquals("coconut milk", result.getIngredients().get(2).getName());
+        assertEquals(new BigDecimal("400"), result.getIngredients().get(2).getQuantity());
+        assertEquals(Unit.ML, result.getIngredients().get(2).getUnit());
 
         assertEquals(3, result.getSteps().size());
         assertEquals("Cut the chicken into pieces.", result.getSteps().get(0).getInstruction());
@@ -640,10 +646,18 @@ public class RecipeStructuredDataParserTest {
         assertNotNull(result);
         assertNotNull(result.getIngredients());
         assertEquals(4, result.getIngredients().size());
-        assertEquals("500g chicken breast", result.getIngredients().get(0).getName());
-        assertEquals("1 onion", result.getIngredients().get(1).getName());
-        assertEquals("2 cloves garlic", result.getIngredients().get(2).getName());
-        assertEquals("1 tablespoon curry powder", result.getIngredients().get(3).getName());
+        assertEquals("chicken breast", result.getIngredients().get(0).getName());
+        assertEquals(new BigDecimal("500"), result.getIngredients().get(0).getQuantity());
+        assertEquals(Unit.G, result.getIngredients().get(0).getUnit());
+        assertEquals("onion", result.getIngredients().get(1).getName());
+        assertEquals(new BigDecimal("1"), result.getIngredients().get(1).getQuantity());
+        assertNull(result.getIngredients().get(1).getUnit());
+        assertEquals("garlic", result.getIngredients().get(2).getName());
+        assertEquals(new BigDecimal("2"), result.getIngredients().get(2).getQuantity());
+        assertEquals(Unit.CLOVE, result.getIngredients().get(2).getUnit());
+        assertEquals("curry powder", result.getIngredients().get(3).getName());
+        assertEquals(new BigDecimal("1"), result.getIngredients().get(3).getQuantity());
+        assertEquals(Unit.TBSP, result.getIngredients().get(3).getUnit());
 
     }
 
@@ -703,9 +717,13 @@ public class RecipeStructuredDataParserTest {
         assertNotNull(result);
         assertNotNull(result.getIngredients());
         assertEquals(3, result.getIngredients().size());
-        assertEquals("500g chicken breast", result.getIngredients().get(0).getName());
+        assertEquals("chicken breast", result.getIngredients().get(0).getName());
+        assertEquals(new BigDecimal("500"), result.getIngredients().get(0).getQuantity());
+        assertEquals(Unit.G, result.getIngredients().get(0).getUnit());
         assertEquals("coconut milk", result.getIngredients().get(1).getName());
-        assertEquals("2 cloves garlic", result.getIngredients().get(2).getName());
+        assertEquals("garlic", result.getIngredients().get(2).getName());
+        assertEquals(new BigDecimal("2"), result.getIngredients().get(2).getQuantity());
+        assertEquals(Unit.CLOVE, result.getIngredients().get(2).getUnit());
 
     }
 
@@ -737,4 +755,327 @@ public class RecipeStructuredDataParserTest {
         assertEquals(Unit.G, ingredient.getUnit());
 
     }
+
+    @Test
+    void shouldParseIngredientSections() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Chicken Curry",
+                    "recipeIngredient": [
+                        {
+                            "@type": "ItemList",
+                            "name": "For the chicken",
+                            "itemListElement": [
+                                {
+                                    "@type": "PropertyValue",
+                                    "name": "chicken",
+                                    "value": "500",
+                                    "unitCode": "GRM"
+                                },
+                                {
+                                    "@type": "PropertyValue",
+                                    "name": "salt",
+                                    "value": "1",
+                                    "unitCode": "TSP"
+                                }
+                            ]
+                        },
+                        {
+                            "@type": "ItemList",
+                            "name": "For the sauce",
+                            "itemListElement": [
+                                {
+                                    "@type": "PropertyValue",
+                                    "name": "coconut milk",
+                                    "value": "400",
+                                    "unitCode": "MLT"
+                                }
+                            ]
+                        }
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        assertNotNull(result);
+        assertEquals(2, result.getIngredientSections().size());
+
+        ImportedIngredientSection chicken = result.getIngredientSections().get(0);
+
+        assertEquals("For the chicken", chicken.getName());
+        assertEquals(2, chicken.getIngredients().size());
+        assertEquals("chicken", chicken.getIngredients().get(0).getName());
+        assertEquals(new BigDecimal("500"), chicken.getIngredients().get(0).getQuantity());
+        assertEquals(Unit.G, chicken.getIngredients().get(0).getUnit());
+
+        ImportedIngredientSection sauce = result.getIngredientSections().get(1);
+
+        assertEquals("For the sauce", sauce.getName());
+        assertEquals(1, sauce.getIngredients().size());
+        assertEquals("coconut milk", sauce.getIngredients().get(0).getName());
+
+    }
+
+    @Test
+    void shouldParseStructuredIngredientFromText() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Chicken Curry",
+                    "recipeIngredient": [
+                        "500g chicken breast"
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        assertEquals(1, result.getIngredients().size());
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("chicken breast", ingredient.getName());
+        assertEquals(new BigDecimal("500"), ingredient.getQuantity());
+        assertEquals(Unit.G, ingredient.getUnit());
+
+    }
+
+    @Test
+    void shouldParseCommonTextIngredientFormats() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Test Recipe",
+                    "recipeIngredient": [
+                        "500g chicken breast",
+                        "2 tbsp olive oil",
+                        "1.5 cups flour",
+                        "3 cloves garlic"
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        assertEquals(4, result.getIngredients().size());
+
+        ImportedIngredient chicken = result.getIngredients().get(0);
+        assertEquals("chicken breast", chicken.getName());
+        assertEquals(new BigDecimal("500"), chicken.getQuantity());
+        assertEquals(Unit.G, chicken.getUnit());
+
+        ImportedIngredient oil = result.getIngredients().get(1);
+        assertEquals("olive oil", oil.getName());
+        assertEquals(new BigDecimal("2"), oil.getQuantity());
+        assertEquals(Unit.TBSP, oil.getUnit());
+
+        ImportedIngredient flour = result.getIngredients().get(2);
+        assertEquals("flour", flour.getName());
+        assertEquals(new BigDecimal("1.5"), flour.getQuantity());
+        assertEquals(Unit.CUP, flour.getUnit());
+
+        ImportedIngredient garlic = result.getIngredients().get(3);
+        assertEquals("garlic", garlic.getName());
+        assertEquals(new BigDecimal("3"), garlic.getQuantity());
+        assertEquals(Unit.CLOVE, garlic.getUnit());
+
+    }
+
+    @Test
+    void shouldParseMixedTextIngredientFormats() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Pancakes",
+                    "recipeIngredient": [
+                        "1.5 cups flour",
+                        "2 eggs",
+                        "250 ml milk",
+                        "1 tablespoon sugar"
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        assertEquals(4, result.getIngredients().size());
+
+        assertEquals("flour", result.getIngredients().get(0).getName());
+        assertEquals(new BigDecimal("1.5"), result.getIngredients().get(0).getQuantity());
+        assertEquals(Unit.CUP, result.getIngredients().get(0).getUnit());
+
+        assertEquals("eggs", result.getIngredients().get(1).getName());
+        assertEquals(new BigDecimal("2"), result.getIngredients().get(1).getQuantity());
+        assertNull(result.getIngredients().get(1).getUnit());
+
+        assertEquals("milk", result.getIngredients().get(2).getName());
+        assertEquals(new BigDecimal("250"), result.getIngredients().get(2).getQuantity());
+        assertEquals(Unit.ML, result.getIngredients().get(2).getUnit());
+
+        assertEquals("sugar", result.getIngredients().get(3).getName());
+        assertEquals(new BigDecimal("1"), result.getIngredients().get(3).getQuantity());
+        assertEquals(Unit.TBSP, result.getIngredients().get(3).getUnit());
+
+    }
+
+    @Test
+    void shouldParseRecipeStructuredData() {
+
+        String json = """
+                {
+                    "@context": "https://schema.org",
+                    "@type": "Recipe",
+                    "name": "Chicken Curry",
+                    "image": "https://example.com/chicken-curry.jpg",
+                    "prepTime": "PT15M",
+                    "cookTime": "PT30M",
+                    "recipeYield": "4 servings",
+                    "recipeIngredient": [
+                        "500 g chicken breast",
+                        "1 onion",
+                        "2 tsp curry powder"
+                    ],
+                    "recipeInstructions": [
+                        {
+                            "@type": "HowToStep",
+                            "text": "Cut the chicken into pieces."
+                        },
+                        {
+                            "@type": "HowToStep",
+                            "text": "Cook the onion until softened."
+                        }
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        assertEquals("Chicken Curry", result.getName());
+        assertEquals("https://example.com/chicken-curry.jpg", result.getImageUrl());
+        assertEquals(15, result.getPrepMinutes());
+        assertEquals(30, result.getCookMinutes());
+        assertEquals(4, result.getServings());
+
+        assertEquals(3, result.getIngredients().size());
+        assertEquals("chicken breast", result.getIngredients().get(0).getName());
+        assertEquals(new BigDecimal("500"), result.getIngredients().get(0).getQuantity());
+        assertEquals(Unit.G, result.getIngredients().get(0).getUnit());
+
+        assertEquals(2, result.getSteps().size());
+        assertEquals("Cut the chicken into pieces.",
+                result.getSteps().get(0).getInstruction());
+
+    }
+
+    @Test
+    void shouldParseMixedIngredientFormats() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Chicken Curry",
+                    "recipeIngredient": [
+                        "2 tbsp olive oil",
+                        {
+                            "@type": "PropertyValue",
+                            "name": "chicken",
+                            "value": "500",
+                            "unitCode": "GRM"
+                        },
+                        {
+                            "@type": "ItemList",
+                            "name": "For the sauce",
+                            "itemListElement": [
+                                {
+                                    "@type": "PropertyValue",
+                                    "name": "coconut milk",
+                                    "value": "400",
+                                    "unitCode": "MLT"
+                                }
+                            ]
+                        }
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        assertNotNull(result);
+
+        // Unsectioned ingredients
+        assertEquals(2, result.getIngredients().size());
+
+        assertEquals("olive oil", result.getIngredients().get(0).getName());
+        assertEquals(new BigDecimal("2"), result.getIngredients().get(0).getQuantity());
+        assertEquals(Unit.TBSP, result.getIngredients().get(0).getUnit());
+
+        assertEquals("chicken", result.getIngredients().get(1).getName());
+        assertEquals(new BigDecimal("500"), result.getIngredients().get(1).getQuantity());
+        assertEquals(Unit.G, result.getIngredients().get(1).getUnit());
+
+        // Sectioned ingredients
+        assertEquals(1, result.getIngredientSections().size());
+
+        ImportedIngredientSection sauce = result.getIngredientSections().get(0);
+
+        assertEquals("For the sauce", sauce.getName());
+        assertEquals(1, sauce.getIngredients().size());
+        assertEquals("coconut milk", sauce.getIngredients().get(0).getName());
+
+    }
+
+    @Test
+    void shouldParseTextIngredientsWithinSection() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Chicken Curry",
+                    "recipeIngredient": [
+                        {
+                            "@type": "ItemLIst",
+                            "name": "For the sauce",
+                            "itemListElement": [
+                                "400 ml coconut milk",
+                                "2 tbsp curry paste",
+                                "1 onion"
+                            ]
+                        }
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        assertNotNull(result);
+        assertEquals(1, result.getIngredientSections().size());
+
+        ImportedIngredientSection sauce = result.getIngredientSections().get(0);
+
+        assertEquals("For the sauce", sauce.getName());
+        assertEquals(3, sauce.getIngredients().size());
+
+        ImportedIngredient coconutMilk = sauce.getIngredients().get(0);
+        assertEquals("coconut milk", coconutMilk.getName());
+        assertEquals(new BigDecimal("400"), coconutMilk.getQuantity());
+        assertEquals(Unit.ML, coconutMilk.getUnit());
+
+        ImportedIngredient curryPaste = sauce.getIngredients().get(1);
+        assertEquals("curry paste", curryPaste.getName());
+        assertEquals(new BigDecimal("2"), curryPaste.getQuantity());
+        assertEquals(Unit.TBSP, curryPaste.getUnit());
+
+        ImportedIngredient onion = sauce.getIngredients().get(2);
+        assertEquals("onion", onion.getName());
+        assertEquals(new BigDecimal("1"), onion.getQuantity());
+        assertNull(onion.getUnit());
+
+    }
+
 }

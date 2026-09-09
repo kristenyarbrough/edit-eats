@@ -22,6 +22,7 @@ public class ImportedRecipe {
     private String sourceUrl;
 
     private List<ImportedIngredient> ingredients;
+    private List<ImportedIngredientSection> ingredientSections;
     private List<ImportedStep> steps;
     private List<ImportedInstructionSection> instructionSections;
 
