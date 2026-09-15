@@ -4,6 +4,7 @@ import io.github.kristenyarbrough.edit_eats.domain.Difficulty;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -21,9 +22,16 @@ public class ImportedRecipe {
     private String imageUrl;
     private String sourceUrl;
 
-    private List<ImportedIngredient> ingredients;
-    private List<ImportedIngredientSection> ingredientSections;
-    private List<ImportedStep> steps;
-    private List<ImportedInstructionSection> instructionSections;
+    @Builder.Default
+    private List<ImportedIngredient> ingredients = new ArrayList<>();
+
+    @Builder.Default
+    private List<ImportedIngredientSection> ingredientSections = new ArrayList<>();
+
+    @Builder.Default
+    private List<ImportedStep> steps = new ArrayList<>();
+
+    @Builder.Default
+    private List<ImportedInstructionSection> instructionSections = new ArrayList<>();
 
 }

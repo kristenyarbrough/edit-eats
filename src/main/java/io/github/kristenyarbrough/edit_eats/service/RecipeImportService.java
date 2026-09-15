@@ -47,22 +47,27 @@ public class RecipeImportService {
 
                 }
 
+                ImportedRecipe recipe;
+
                 try {
 
-                    ImportedRecipe recipe = structuredDataParser.parse(json);
-
-                    if (recipe.getName() != null
-                            && recipe.getIngredients() != null
-                            && !recipe.getIngredients().isEmpty()) {
-
-                        return convertStructuredRecipe(recipe, url);
-
-                    }
+                    recipe = structuredDataParser.parse(json);
 
                 } catch (IllegalArgumentException e) {
 
                     // Not a recipe JSON-LD block.
                     // Try the next structured-data block.
+                    continue;
+
+                }
+
+                if (recipe.getName() != null) {
+
+                    ImportedRecipe convertedRecipe = convertStructuredRecipe(recipe, url);
+
+                    validateImportedRecipe(convertedRecipe);
+
+                    return convertedRecipe;
 
                 }
 
@@ -198,7 +203,7 @@ public class RecipeImportService {
 
         }
 
-        return ImportedRecipe.builder()
+        ImportedRecipe recipe = ImportedRecipe.builder()
                 .name(name)
                 .servings(servings)
                 .prepMinutes(prepMinutes)
@@ -208,6 +213,10 @@ public class RecipeImportService {
                 .ingredients(ingredients)
                 .steps(steps)
                 .build();
+
+        validateImportedRecipe(recipe);
+
+        return recipe;
 
     }
 
@@ -738,8 +747,42 @@ public class RecipeImportService {
                 .imageUrl(recipe.getImageUrl())
                 .sourceUrl(sourceUrl)
                 .ingredients(recipe.getIngredients())
+                .ingredientSections(recipe.getIngredientSections())
                 .steps(recipe.getSteps())
+                .instructionSections(recipe.getInstructionSections())
                 .build();
+
+    }
+
+    private void validateImportedRecipe(ImportedRecipe recipe) {
+
+        boolean hasIngredients =
+                (recipe.getIngredients() != null
+                    && !recipe.getIngredients().isEmpty())
+                || (recipe.getIngredientSections() != null
+                    && !recipe.getIngredientSections().isEmpty());
+
+        boolean hasSteps =
+                (recipe.getSteps() != null
+                    && !recipe.getSteps().isEmpty())
+                || (recipe.getInstructionSections() != null
+                    && !recipe.getInstructionSections().isEmpty());
+
+        if (!hasIngredients) {
+
+            throw new IllegalArgumentException(
+                    "Recipe must contain at least one ingredient"
+            );
+
+        }
+
+        if (!hasSteps) {
+
+            throw new IllegalArgumentException(
+                    "Recipe must contain at least one step"
+            );
+
+        }
 
     }
 

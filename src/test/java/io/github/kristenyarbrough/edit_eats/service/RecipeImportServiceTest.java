@@ -1,9 +1,7 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
-import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedIngredient;
-import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedRecipe;
-import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedStep;
+import io.github.kristenyarbrough.edit_eats.dto.imported.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,8 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -123,6 +120,7 @@ class RecipeImportServiceTest {
         );
 
         verify(structuredDataParser).parse(anyString());
+        verify(pageFetcher).fetch("https://example.com/recipe");
 
         assertEquals("Chicken Curry", result.getName());
         assertEquals(15, result.getPrepMinutes());
@@ -163,6 +161,59 @@ class RecipeImportServiceTest {
         assertEquals("onion", result.getIngredients().get(1).getName());
         assertEquals("curry powder", result.getIngredients().get(2).getName());
         assertEquals(3, result.getSteps().size());
+
+    }
+
+    @Test
+    void shouldFailWhenTextDoesNotContainRecipeContent() {
+
+        String text = """
+                This is just some random text.
+                It does not contain recipe structured data.
+                """;
+
+        assertThrows(IllegalArgumentException.class,
+                () -> recipeImportService.importRecipeFromText(text));
+
+        verifyNoInteractions(structuredDataParser);
+
+    }
+
+    @Test
+    void shouldFailWhenTextContainsNoIngredients() {
+
+        String text = """
+                Chocolate Cake
+                
+                Method:
+                Mix everything together.
+                Bake until done.
+                """;
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> recipeImportService.importRecipeFromText(text)
+        );
+
+        assertEquals("Recipe must contain at least one ingredient",
+                exception.getMessage()
+        );
+
+    }
+
+    @Test
+    void shouldFailWhenTextContainsNoSteps() {
+
+        String text = """
+                Chocolate Cake
+                
+                Ingredients:
+                200 g flour
+                100 g sugar
+                """;
+
+        assertThrows(IllegalArgumentException.class,
+                () -> recipeImportService.importRecipeFromText(text));
 
     }
 
@@ -778,6 +829,582 @@ class RecipeImportServiceTest {
     }
 
     @Test
+    void shouldPreserveIngredientSectionsWhenImportingRecipeFromUrl() {
+
+        ImportedIngredient chicken = ImportedIngredient.builder()
+                .name("chicken")
+                .quantity(new BigDecimal("500"))
+                .unit(Unit.G)
+                .build();
+
+        ImportedIngredient coconutMilk = ImportedIngredient.builder()
+                .name("coconut milk")
+                .quantity(new BigDecimal("400"))
+                .unit(Unit.ML)
+                .build();
+
+        ImportedIngredientSection chickenSection = ImportedIngredientSection.builder()
+                .name("For the chicken")
+                .ingredients(List.of(chicken))
+                .build();
+
+        ImportedIngredientSection sauceSection = ImportedIngredientSection.builder()
+                .name("For the sauce")
+                .ingredients(List.of(coconutMilk))
+                .build();
+
+        ImportedRecipe parsedRecipe = ImportedRecipe.builder()
+                .name("Chicken Curry")
+                .prepMinutes(15)
+                .cookMinutes(30)
+                .ingredients(List.of(chicken))
+                .ingredientSections(List.of(chickenSection, sauceSection))
+                .steps(List.of(
+                        ImportedStep.builder()
+                                .stepNumber(1)
+                                .instruction("Cook the chicken.")
+                                .build()
+                ))
+                .build();
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenReturn(Jsoup.parse("""
+                        <html>
+                            <head>
+                                <script type="application/ld+json">
+                                {}
+                                </script>
+                            </head>
+                        </html>
+                        """));
+
+        when(structuredDataParser.parse(anyString()))
+                .thenReturn(parsedRecipe);
+
+        ImportedRecipe result = recipeImportService.importRecipeFromUrl(
+                "https://example.com/recipe"
+        );
+
+        assertEquals(2, result.getIngredientSections().size());
+
+        ImportedIngredientSection resultChicken = result.getIngredientSections().get(0);
+
+        assertEquals("For the chicken", resultChicken.getName());
+        assertEquals(1, resultChicken.getIngredients().size());
+        assertEquals("chicken", resultChicken.getIngredients().get(0).getName());
+        assertEquals(new BigDecimal("500"),
+                resultChicken.getIngredients().get(0).getQuantity());
+        assertEquals(Unit.G, result.getIngredients().get(0).getUnit());
+
+        ImportedIngredientSection resultSauce = result.getIngredientSections().get(1);
+
+        assertEquals("For the sauce", resultSauce.getName());
+        assertEquals(1, resultSauce.getIngredients().size());
+        assertEquals("coconut milk", resultSauce.getIngredients().get(0).getName());
+
+    }
+
+    @Test
+    void shouldPreserveMultipleIngredientSectionsWhenImportingRecipeFromUrl() {
+
+        ImportedRecipe recipe = ImportedRecipe.builder()
+                .name("Chicken Curry")
+                .servings(4)
+                .ingredients(List.of(
+                        ImportedIngredient.builder()
+                                .name("chicken")
+                                .quantity(new BigDecimal("500"))
+                                .unit(Unit.G)
+                                .build(),
+                        ImportedIngredient.builder()
+                                .name("salt")
+                                .quantity(new BigDecimal("1"))
+                                .unit(Unit.TSP)
+                                .build(),
+                        ImportedIngredient.builder()
+                                .name("coconut milk")
+                                .quantity(new BigDecimal("400"))
+                                .unit(Unit.ML)
+                                .build()
+                ))
+                .ingredientSections(List.of(
+                        ImportedIngredientSection.builder()
+                                .name("For the chicken")
+                                .ingredients(List.of(
+                                        ImportedIngredient.builder()
+                                                .name("chicken")
+                                                .quantity(new BigDecimal("500"))
+                                                .unit(Unit.G)
+                                                .build(),
+                                        ImportedIngredient.builder()
+                                                .name("salt")
+                                                .quantity(new BigDecimal("1"))
+                                                .unit(Unit.TSP)
+                                                .build()
+                                ))
+                                .build(),
+                        ImportedIngredientSection.builder()
+                                .name("For the sauce")
+                                .ingredients(List.of(
+                                        ImportedIngredient.builder()
+                                                .name("coconut milk")
+                                                .quantity(new BigDecimal("400"))
+                                                .unit(Unit.ML)
+                                                .build()
+                                ))
+                                .build()
+                ))
+                .steps(List.of(
+                        ImportedStep.builder()
+                                .stepNumber(1)
+                                .instruction("Cook the chicken.")
+                                .build()
+                ))
+                .build();
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenReturn(Jsoup.parse("""
+                        <html>
+                            <head>
+                                <script type="application/ld+json">
+                                {}
+                                </script>
+                            </head>
+                        </html>
+                        """));
+
+        when(structuredDataParser.parse(anyString()))
+                .thenReturn(recipe);
+
+        ImportedRecipe result = recipeImportService.importRecipeFromUrl(
+                "https://example.com/recipe"
+        );
+
+        assertEquals(2, result.getIngredientSections().size());
+
+        ImportedIngredientSection chicken = result.getIngredientSections().get(0);
+
+        assertEquals("For the chicken", chicken.getName());
+        assertEquals(2, chicken.getIngredients().size());
+        assertEquals("chicken", chicken.getIngredients().get(0).getName());
+
+        ImportedIngredientSection sauce = result.getIngredientSections().get(1);
+
+        assertEquals("For the sauce", sauce.getName());
+        assertEquals(1, sauce.getIngredients().size());
+        assertEquals("coconut milk", sauce.getIngredients().get(0).getName());
+
+    }
+
+    @Test
+    void shouldImportRecipeWithoutIngredientSections() {
+
+        ImportedRecipe recipe = ImportedRecipe.builder()
+                .name("Simple Salad")
+                .ingredients(List.of(
+                        ImportedIngredient.builder()
+                                .name("lettuce")
+                                .quantity(new BigDecimal("100"))
+                                .build()
+                ))
+                .steps(List.of(
+                        ImportedStep.builder()
+                                .stepNumber(1)
+                                .instruction("Put the lettuce in a bowl.")
+                                .build()
+                ))
+                .build();
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenReturn(Jsoup.parse("""
+                        <html>
+                            <head>
+                                <script type="application/ld+json">
+                                {}
+                                </script>
+                            </head>
+                        </html>
+                        """));
+
+        when(structuredDataParser.parse(anyString()))
+                .thenReturn(recipe);
+
+        ImportedRecipe result = recipeImportService.importRecipeFromUrl(
+                "https://example.com/recipe"
+        );
+
+        assertEquals("Simple Salad", result.getName());
+        assertEquals(1, result.getIngredients().size());
+        assertEquals(0, result.getIngredientSections().size());
+        assertEquals(1, result.getSteps().size());
+
+    }
+
+    @Test
+    void shouldPreserveInstructionSectionsWhenImportingRecipeFromUrl() {
+
+        ImportedRecipe recipe = ImportedRecipe.builder()
+                .name("Chicken Curry")
+                .ingredients(List.of(
+                        ImportedIngredient.builder()
+                                .name("chicken")
+                                .quantity(new BigDecimal("500"))
+                                .unit(Unit.G)
+                                .build()
+                ))
+                .steps(List.of(
+                        ImportedStep.builder()
+                                .stepNumber(1)
+                                .instruction("Cut the chicken into pieces.")
+                                .build(),
+                        ImportedStep.builder()
+                                .stepNumber(2)
+                                .instruction("Season the chicken.")
+                                .build(),
+                        ImportedStep.builder()
+                                .stepNumber(3)
+                                .instruction("Cook the chicken.")
+                                .build()
+                ))
+                .instructionSections(List.of(
+                        ImportedInstructionSection.builder()
+                                .name("Prepare the chicken")
+                                .steps(List.of(
+                                        ImportedStep.builder()
+                                                .stepNumber(1)
+                                                .instruction("Cut the chicken into pieces.")
+                                                .build(),
+                                        ImportedStep.builder()
+                                                .stepNumber(2)
+                                                .instruction("Season the chicken.")
+                                                .build()
+                                ))
+                                .build(),
+                        ImportedInstructionSection.builder()
+                                .name("Cook the chicken")
+                                .steps(List.of(
+                                        ImportedStep.builder()
+                                                .stepNumber(1)
+                                                .instruction("Cook the chicken.")
+                                                .build()
+                                ))
+                                .build()
+                ))
+                .build();
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenReturn(Jsoup.parse("""
+                        <html>
+                            <head>
+                                <script type="application/ld+json">
+                                {}
+                                </script>
+                            </head>
+                        </html>
+                        """));
+
+        when(structuredDataParser.parse(anyString()))
+                .thenReturn(recipe);
+
+        ImportedRecipe result = recipeImportService.importRecipeFromUrl(
+                "https://example.com/recipe"
+        );
+
+        assertEquals(2, result.getInstructionSections().size());
+
+        ImportedInstructionSection prepare = result.getInstructionSections().get(0);
+
+        assertEquals("Prepare the chicken", prepare.getName());
+        assertEquals(2, prepare.getSteps().size());
+        assertEquals("Cut the chicken into pieces.",
+                prepare.getSteps().get(0).getInstruction());
+        assertEquals("Season the chicken.",
+                prepare.getSteps().get(1).getInstruction());
+
+        ImportedInstructionSection cook = result.getInstructionSections().get(1);
+
+        assertEquals("Cook the chicken", cook.getName());
+        assertEquals(1, cook.getSteps().size());
+        assertEquals("Cook the chicken.", cook.getSteps().get(0).getInstruction());
+
+    }
+
+    @Test
+    void shouldPreserveNestedInstructionSectionsWhenImportingRecipeFromUrl() {
+
+        ImportedInstructionSection nestedSection = ImportedInstructionSection.builder()
+                .name("Make the sauce")
+                .steps(List.of(
+                        ImportedStep.builder()
+                                .stepNumber(1)
+                                .instruction("Mix the ingredients.")
+                                .build()
+                ))
+                .build();
+
+        ImportedInstructionSection mainSection = ImportedInstructionSection.builder()
+                .name("Prepare the dish")
+                .steps(List.of(
+                        ImportedStep.builder()
+                                .stepNumber(1)
+                                .instruction("Prepare the vegetables.")
+                                .build()
+                ))
+                .sections(List.of(nestedSection))
+                .build();
+
+        ImportedRecipe recipe = ImportedRecipe.builder()
+                .name("Test Recipe")
+                .ingredients(List.of(
+                        ImportedIngredient.builder()
+                                .name("chicken")
+                                .quantity(new BigDecimal("1"))
+                                .unit(Unit.EACH)
+                                .build()
+                ))
+                .steps(List.of(
+                        ImportedStep.builder()
+                                .stepNumber(1)
+                                .instruction("Prepare the vegetables.")
+                                .build(),
+                        ImportedStep.builder()
+                                .stepNumber(2)
+                                .instruction("Mix the ingredients.")
+                                .build()
+                ))
+                .instructionSections(List.of(mainSection))
+                .build();
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenReturn(Jsoup.parse("""
+                        <html>
+                            <head>
+                                <script type="application/ld+json">
+                                {}
+                                </script>
+                            </head>
+                        </html>
+                        """));
+
+        when(structuredDataParser.parse(anyString()))
+                .thenReturn(recipe);
+
+        ImportedRecipe result =
+                recipeImportService.importRecipeFromUrl("https://example.com/recipe");
+
+        assertEquals(1, result.getInstructionSections().size());
+
+        ImportedInstructionSection section = result.getInstructionSections().get(0);
+
+        assertEquals("Prepare the dish", section.getName());
+        assertEquals(1, section.getSteps().size());
+        assertEquals("Prepare the vegetables.",
+                section.getSteps().get(0).getInstruction());
+        assertEquals(1, section.getSections().size());
+
+        ImportedInstructionSection nested = section.getSections().get(0);
+
+        assertEquals("Make the sauce", nested.getName());
+        assertEquals(1, nested.getSteps().size());
+        assertEquals("Mix the ingredients.",
+                nested.getSteps().get(0).getInstruction());
+
+    }
+
+    @Test
+    void shouldPropagatePageFetchFailure() {
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenThrow(new IllegalArgumentException("Unable to fetch page"));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> recipeImportService.importRecipeFromUrl(
+                        "https://example.com/recipe"
+                )
+        );
+
+        verify(pageFetcher).fetch("https://example.com/recipe");
+        verifyNoInteractions(structuredDataParser);
+
+    }
+
+    @Test
+    void shouldFailWhenNoRecipeStructuredDataExists() {
+
+        Document document = Jsoup.parse(
+                "<html><body><h1>Not a recipe</h1></body></html>"
+        );
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenReturn(document);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> recipeImportService.importRecipeFromUrl(
+                        "https://example.com/recipe"
+                )
+        );
+
+        assertEquals(
+                "No recipe structured data found at URL: https://example.com/recipe",
+                exception.getMessage()
+        );
+
+        verify(pageFetcher).fetch("https://example.com/recipe");
+        verifyNoInteractions(structuredDataParser);
+
+    }
+
+    @Test
+    void shouldFindRecipeWhenMultipleStructuredDataScriptsExist() {
+
+        Document document = Jsoup.parse("""
+                <html>
+                    <head>
+                        <script type="application/ld+json">
+                            {
+                                "@type": "WebSite",
+                                "name": "Example"
+                            }
+                        </script>
+                        <script type="application/ld+json">
+                            {
+                                "@type": "Recipe",
+                                "name": "Test Recipe"
+                            }
+                        </script>
+                    </head>
+                </html>
+                """);
+
+        ImportedRecipe parsedRecipe = ImportedRecipe.builder()
+                .name("Test Recipe")
+                .ingredients(List.of(
+                        ImportedIngredient.builder()
+                                .name("chicken")
+                                .build()
+                ))
+                .steps(List.of(
+                        ImportedStep.builder()
+                                .stepNumber(1)
+                                .instruction("Cook the chicken.")
+                                .build()
+                ))
+                .build();
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenReturn(document);
+
+        when(structuredDataParser.parse(anyString()))
+                .thenReturn(parsedRecipe);
+
+        ImportedRecipe result = recipeImportService.importRecipeFromUrl(
+                "https://example.com/recipe"
+        );
+
+        assertEquals("Test Recipe", result.getName());
+
+        verify(structuredDataParser, atLeastOnce())
+                .parse(anyString());
+
+    }
+
+    @Test
+    void shouldContinueWhenOneStructuredDataScriptCannotBeParsed() {
+
+        Document document = Jsoup.parse("""
+                <html>
+                    <head>
+                        <script type="application/ld+json">
+                            {
+                                "@type": "WebSite",
+                                "name": "Example"
+                            }
+                        </script>
+                        <script type="application/ld+json">
+                            {
+                                "@type": "Recipe",
+                                "name": "Test Recipe"
+                            }
+                        </script>
+                    </head>
+                </html>
+                """);
+
+        ImportedRecipe parsedRecipe = ImportedRecipe.builder()
+                .name("Test Recipe")
+                .ingredients(List.of(
+                        ImportedIngredient.builder()
+                                .name("chicken")
+                                .build()
+                ))
+                .steps(List.of(
+                        ImportedStep.builder()
+                                .stepNumber(1)
+                                .instruction("Cook the chicken.")
+                                .build()
+                ))
+                .build();
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenReturn(document);
+
+        when(structuredDataParser.parse(anyString()))
+                .thenThrow(new IllegalArgumentException("Not a recipe"))
+                .thenReturn(parsedRecipe);
+
+        ImportedRecipe result = recipeImportService.importRecipeFromUrl(
+                "https://example.com/recipe"
+        );
+
+        assertEquals("Test Recipe", result.getName());
+
+        verify(structuredDataParser, times(2))
+                .parse(anyString());
+
+    }
+
+    @Test
+    void shouldFailWhenAllStructuredDataScriptsCannotBeParsed() {
+
+        Document document = Jsoup.parse("""
+                <html>
+                    <head>
+                        <script type="application/ld+json">
+                            {
+                                "@type": "WebSite",
+                                "name": "Example"
+                            }
+                        </script>
+                        <script type="application/ld+json">
+                            {
+                                "@type": "SomethingElse",
+                                "name": "Other"
+                            }
+                        </script>
+                    </head>
+                </html>
+                """);
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenReturn(document);
+
+        when(structuredDataParser.parse(anyString()))
+                .thenThrow(new IllegalArgumentException(
+                        "Unable to parse recipe structured data."));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> recipeImportService.importRecipeFromUrl(
+                        "https://example.com/recipe"
+                )
+        );
+
+        verify(structuredDataParser, times(2))
+                .parse(anyString());
+
+    }
+
+    @Test
     void shouldImportRealisticRecipe() {
 
         ImportedRecipe result = recipeImportService.importRecipeFromText("""
@@ -1239,6 +1866,12 @@ class RecipeImportServiceTest {
                                 .unit(Unit.G)
                                 .build()
                 ))
+                .steps(List.of(
+                        ImportedStep.builder()
+                                .stepNumber(1)
+                                .instruction("Cook the chicken.")
+                                .build()
+                ))
                 .build();
 
         when(pageFetcher.fetch("https://example.com/recipe"))
@@ -1284,6 +1917,12 @@ class RecipeImportServiceTest {
                                 .unit(Unit.G)
                                 .build()
                 ))
+                .steps(List.of(
+                        ImportedStep.builder()
+                                .stepNumber(1)
+                                .instruction("Cook the chicken.")
+                                .build()
+                ))
                 .build();
 
         when(pageFetcher.fetch("https://example.com/recipe"))
@@ -1323,6 +1962,12 @@ class RecipeImportServiceTest {
                                 .unit(Unit.G)
                                 .build()
                 ))
+                .steps(List.of(
+                        ImportedStep.builder()
+                                .stepNumber(1)
+                                .instruction("Put the lettuce in a bowl.")
+                                .build()
+                ))
                 .build();
 
         when(pageFetcher.fetch("https://example.com/recipe"))
@@ -1360,6 +2005,12 @@ class RecipeImportServiceTest {
                                 .name("whole chicken")
                                 .quantity(new BigDecimal("1"))
                                 .unit(Unit.EACH)
+                                .build()
+                ))
+                .steps(List.of(
+                        ImportedStep.builder()
+                                .stepNumber(1)
+                                .instruction("Cook the chicken.")
                                 .build()
                 ))
                 .build();
