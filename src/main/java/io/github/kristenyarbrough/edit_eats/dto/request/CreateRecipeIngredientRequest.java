@@ -14,11 +14,9 @@ public class CreateRecipeIngredientRequest {
     @NotNull
     private Long ingredientId;
 
-    @NotNull
     @DecimalMin(value = ValidationConstants.MIN_RECIPE_QUANTITY)
     private BigDecimal quantity;
 
-    @NotNull
     private Unit unit;
 
     private String preparation;

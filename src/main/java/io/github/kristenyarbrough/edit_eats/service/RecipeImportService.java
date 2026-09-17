@@ -1,12 +1,8 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
-import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedIngredient;
-import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedRecipe;
-import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedStep;
-import io.github.kristenyarbrough.edit_eats.dto.response.ImportedIngredientResponse;
-import io.github.kristenyarbrough.edit_eats.dto.response.RecipeDraftResponse;
-import io.github.kristenyarbrough.edit_eats.dto.response.RecipeStepResponse;
+import io.github.kristenyarbrough.edit_eats.dto.imported.*;
+import io.github.kristenyarbrough.edit_eats.dto.response.*;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -671,13 +667,7 @@ public class RecipeImportService {
 
         List<ImportedIngredientResponse> ingredientResponses =
                 recipe.getIngredients().stream()
-                        .map(ingredient -> ImportedIngredientResponse.builder()
-                                .ingredientName(ingredient.getName())
-                                .quantity(ingredient.getQuantity())
-                                .unit(ingredient.getUnit())
-                                .preparation(ingredient.getPreparation())
-                                .optional(ingredient.getOptional())
-                                .build())
+                        .map(this::toIngredientResponse)
                         .toList();
 
         List<RecipeStepResponse> stepResponses =
@@ -686,6 +676,16 @@ public class RecipeImportService {
                                 .stepNumber(step.getStepNumber())
                                 .instruction(step.getInstruction())
                                 .build())
+                        .toList();
+
+        List<ImportedIngredientSectionResponse> ingredientSectionResponses =
+                recipe.getIngredientSections().stream()
+                        .map(this::toIngredientSectionResponse)
+                        .toList();
+
+        List<RecipeInstructionSectionResponse> instructionSectionResponses =
+                recipe.getInstructionSections().stream()
+                        .map(this::toInstructionSectionResponse)
                         .toList();
 
         return RecipeDraftResponse.builder()
@@ -700,7 +700,9 @@ public class RecipeImportService {
                 .sourceUrl(recipe.getSourceUrl())
                 .imageUrl(recipe.getImageUrl())
                 .ingredients(ingredientResponses)
+                .ingredientSections(ingredientSectionResponses)
                 .steps(stepResponses)
+                .instructionSections(instructionSectionResponses)
                 .categories(List.of())
                 .build();
 
@@ -795,6 +797,43 @@ public class RecipeImportService {
                 .unit(ingredient.getUnit())
                 .preparation(ingredient.getPreparation())
                 .optional(ingredient.getOptional())
+                .build();
+
+    }
+
+    private ImportedIngredientSectionResponse toIngredientSectionResponse(
+            ImportedIngredientSection section) {
+
+        return ImportedIngredientSectionResponse.builder()
+                .name(section.getName())
+                .ingredients(section.getIngredients().stream()
+                        .map(this::toIngredientResponse)
+                        .toList()
+                )
+                .sections(section.getSections().stream()
+                        .map(this::toIngredientSectionResponse)
+                        .toList()
+                )
+                .build();
+
+    }
+
+    private RecipeInstructionSectionResponse toInstructionSectionResponse(
+            ImportedInstructionSection section) {
+
+        return RecipeInstructionSectionResponse.builder()
+                .name(section.getName())
+                .steps(section.getSteps().stream()
+                        .map(step -> RecipeStepResponse.builder()
+                                .stepNumber(step.getStepNumber())
+                                .instruction(step.getInstruction())
+                                .build())
+                        .toList()
+                )
+                .sections(section.getSections().stream()
+                        .map(this::toInstructionSectionResponse)
+                        .toList()
+                )
                 .build();
 
     }

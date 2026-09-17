@@ -4,18 +4,13 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "recipe_step",
-    uniqueConstraints = @UniqueConstraint(
-        name = "uk_recipe_step_number",
-        columnNames = {"recipe_id", "step_number"}
-    )
-)
+@Table(name = "recipe_ingredient_section")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RecipeStep {
+public class RecipeIngredientSection {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,14 +21,13 @@ public class RecipeStep {
     private Recipe recipe;
 
     @Column(nullable = false)
-    private Integer stepNumber;
-
-    @Lob
-    @Column(nullable = false)
-    private String instruction;
+    private String name;
 
     @ManyToOne
-    @JoinColumn(name = "section_id")
-    private RecipeInstructionSection section;
+    @JoinColumn(name = "parent_section_id")
+    private RecipeIngredientSection parentSection;
+
+    @Column(nullable = false)
+    private Integer sortOrder;
 
 }

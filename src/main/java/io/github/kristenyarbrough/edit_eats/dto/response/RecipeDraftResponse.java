@@ -28,7 +28,11 @@ public class RecipeDraftResponse {
     private String freezerInstructions;
 
     private List<ImportedIngredientResponse> ingredients;
+    private List<ImportedIngredientSectionResponse> ingredientSections;
+
     private List<RecipeStepResponse> steps;
+    private List<RecipeInstructionSectionResponse> instructionSections;
+
     private List<RecipeCategoryResponse> categories;
 
 }

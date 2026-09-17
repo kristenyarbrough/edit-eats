@@ -209,6 +209,7 @@ public class RecipeStructuredDataParser {
     private ImportedIngredientSection parseIngredientSection(JsonNode node) {
 
         List<ImportedIngredient> ingredients = new ArrayList<>();
+        List<ImportedIngredientSection> sections = new ArrayList<>();
 
         JsonNode items = node.path("itemListElement");
 
@@ -216,7 +217,11 @@ public class RecipeStructuredDataParser {
 
             for (JsonNode item : items) {
 
-                if (item.isTextual()) {
+                if (isIngredientSection(item)) {
+
+                    sections.add(parseIngredientSection(item));
+
+                } else if (item.isTextual()) {
 
                     ingredients.add(parseIngredientText(item.asText()));
 
@@ -233,6 +238,7 @@ public class RecipeStructuredDataParser {
         return ImportedIngredientSection.builder()
                 .name(node.path("name").asText(null))
                 .ingredients(ingredients)
+                .sections(sections)
                 .build();
 
     }
@@ -411,23 +417,12 @@ public class RecipeStructuredDataParser {
 
         }
 
-        if (instruction != null) {
+        if (instruction != null && !instruction.isBlank()) {
 
             steps.add(ImportedStep.builder()
                     .stepNumber(steps.size() + 1)
                     .instruction(instruction)
                     .build()
-            );
-
-        }
-
-        if (node.isTextual()) {
-
-            steps.add(
-                    ImportedStep.builder()
-                            .stepNumber(steps.size() + 1)
-                            .instruction(node.asText())
-                            .build()
             );
 
         }

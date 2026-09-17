@@ -1,14 +1,13 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
-import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedIngredient;
-import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedIngredientSection;
-import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedInstructionSection;
-import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedRecipe;
+import io.github.kristenyarbrough.edit_eats.dto.imported.*;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class RecipeStructuredDataParserTest {
@@ -1075,6 +1074,144 @@ public class RecipeStructuredDataParserTest {
         assertEquals("onion", onion.getName());
         assertEquals(new BigDecimal("1"), onion.getQuantity());
         assertNull(onion.getUnit());
+
+    }
+
+    @Test
+    void shouldPreserveNestedIngredientSections() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Test Recipe",
+                    "recipeIngredient": [
+                        {
+                            "@type": "ItemList",
+                            "name": "Main",
+                            "itemListElement": [
+                                "1 cup flour",
+                                {
+                                    "@type": "ItemList",
+                                    "name": "Sauce",
+                                    "itemListElement": [
+                                        "2 tbsp butter",
+                                        "1 tsp garlic"
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "recipeInstructions": [
+                        {
+                            "@type": "HowToStep",
+                            "text": "Make the recipe."
+                        }
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        assertEquals(1, result.getIngredientSections().size());
+
+        ImportedIngredientSection mainSection = result.getIngredientSections().get(0);
+
+        assertEquals("Main", mainSection.getName());
+        assertEquals(1, mainSection.getIngredients().size());
+        assertEquals("flour", mainSection.getIngredients().get(0).getName());
+
+        assertEquals(1, mainSection.getSections().size());
+
+        ImportedIngredientSection nestedSection = mainSection.getSections().get(0);
+
+        assertEquals("Sauce", nestedSection.getName());
+        assertEquals(2, nestedSection.getIngredients().size());
+
+        assertEquals("butter", nestedSection.getIngredients().get(0).getName());
+        assertEquals("garlic", nestedSection.getIngredients().get(1).getName());
+
+    }
+
+    @Test
+    void shouldParseNestedIngredientAndInstructionSections() {
+
+        String json = """
+                {
+                    "@context": "https://schema.org",
+                    "@type": "Recipe",
+                    "name": "Lasagne",
+                    "recipeIngredient": [
+                        {
+                            "@type": "ItemList",
+                            "name": "Sauce",
+                            "itemListElement": [
+                                "2 tbsp olive oil",
+                                {
+                                    "@type": "ItemList",
+                                    "name": "Meat",
+                                    "itemListElement": [
+                                        "500 g beef mince"
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "recipeInstructions": [
+                        {
+                            "@type": "HowToSection",
+                            "name": "Make the sauce",
+                            "itemListElement": [
+                                {
+                                    "@type": "HowToStep",
+                                    "text": "Heat the oil."
+                                },
+                                {
+                                    "@type": "HowToSection",
+                                    "name": "Brown the meat",
+                                    "itemListElement": [
+                                        {
+                                            "@type": "HowToStep",
+                                            "text": "Brown the mince."
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        assertEquals("Lasagne", result.getName());
+        assertEquals(1, result.getInstructionSections().size());
+
+        ImportedIngredientSection sauce = result.getIngredientSections().get(0);
+
+        assertEquals("Sauce", sauce.getName());
+        assertEquals(1, sauce.getIngredients().size());
+        assertEquals("olive oil", sauce.getIngredients().get(0).getName());
+        assertEquals(1, sauce.getSections().size());
+
+        ImportedIngredientSection meat = sauce.getSections().get(0);
+
+        assertEquals("Meat", meat.getName());
+        assertEquals(1, meat.getIngredients().size());
+        assertEquals("beef mince", meat.getIngredients().get(0).getName());
+        assertEquals(1, result.getInstructionSections().size());
+
+        ImportedInstructionSection makeSauce = result.getInstructionSections().get(0);
+
+        assertEquals("Make the sauce", makeSauce.getName());
+        assertEquals(1, makeSauce.getSteps().size());
+        assertEquals("Heat the oil.", makeSauce.getSteps().get(0).getInstruction());
+        assertEquals(1, makeSauce.getSections().size());
+
+        ImportedInstructionSection brownMeat = makeSauce.getSections().get(0);
+
+        assertEquals("Brown the meat", brownMeat.getName());
+        assertEquals(1, brownMeat.getSteps().size());
+        assertEquals("Brown the mince.", brownMeat.getSteps().get(0).getInstruction());
 
     }
 

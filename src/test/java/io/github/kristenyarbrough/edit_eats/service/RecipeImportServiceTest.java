@@ -2,6 +2,7 @@ package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
 import io.github.kristenyarbrough.edit_eats.dto.imported.*;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeDraftResponse;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.BeforeEach;
@@ -2036,6 +2037,128 @@ class RecipeImportServiceTest {
         assertEquals(60, result.getCookMinutes());
         assertEquals(0, result.getPassiveMinutes());
         assertEquals(60, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldConvertNestedSectionsToDraftResponse() {
+
+        ImportedIngredient butter = ImportedIngredient.builder()
+                .name("butter")
+                .quantity(new BigDecimal("2"))
+                .unit(Unit.TBSP)
+                .build();
+
+        ImportedIngredient garlic = ImportedIngredient.builder()
+                .name("garlic")
+                .quantity(new BigDecimal("1"))
+                .unit(Unit.CLOVE)
+                .build();
+
+        ImportedIngredientSection sauceSection = ImportedIngredientSection.builder()
+                .name("Sauce")
+                .ingredients(List.of(butter, garlic))
+                .sections(List.of())
+                .build();
+
+        ImportedIngredientSection mainSection = ImportedIngredientSection.builder()
+                .name("Main")
+                .ingredients(List.of())
+                .sections(List.of(sauceSection))
+                .build();
+
+        ImportedInstructionSection nestedInstructionSection =
+                ImportedInstructionSection.builder()
+                        .name("Make the sauce")
+                        .steps(List.of(ImportedStep.builder()
+                                .stepNumber(1)
+                                .instruction("Mix the ingredients.")
+                                .build()
+                        ))
+                        .sections(List.of())
+                        .build();
+
+        ImportedInstructionSection mainInstructionSection =
+                ImportedInstructionSection.builder()
+                        .name("Prepare the dish")
+                        .steps(List.of(ImportedStep.builder()
+                                .stepNumber(1)
+                                .instruction("Prepare the vegetables.")
+                                .build()
+                        ))
+                        .sections(List.of(nestedInstructionSection))
+                        .build();
+
+        ImportedRecipe recipe = ImportedRecipe.builder()
+                .name("Test Recipe")
+                .ingredients(List.of())
+                .ingredientSections(List.of(mainSection))
+                .steps(List.of())
+                .instructionSections(List.of(mainInstructionSection))
+                .build();
+
+        when(pageFetcher.fetch("https://example.com/recipe"))
+                .thenReturn(Jsoup.parse("""
+                        <html>
+                            <head>
+                                <script type="application/ld+json">
+                                {}
+                                </script>
+                            </head>
+                        </html>
+                        """));
+
+        when(structuredDataParser.parse(anyString()))
+                .thenReturn(recipe);
+
+        RecipeDraftResponse result = recipeImportService.importRecipeDraftFromUrl(
+                "https://example.com/recipe"
+        );
+
+        assertNotNull(result);
+
+        // Ingredient sections
+
+        assertEquals(1, result.getIngredientSections().size());
+
+        var mainResponse = result.getIngredientSections().get(0);
+
+        assertEquals("Main", mainResponse.getName());
+
+        assertEquals(1, mainResponse.getSections().size());
+
+        var sauceResponse = mainResponse.getSections().get(0);
+
+        assertEquals("Sauce", sauceResponse.getName());
+        assertEquals(2, sauceResponse.getIngredients().size());
+
+        assertEquals("butter", sauceResponse.getIngredients().get(0).getIngredientName());
+        assertEquals(new BigDecimal("2"), sauceResponse.getIngredients().get(0).getQuantity());
+        assertEquals(Unit.TBSP, sauceResponse.getIngredients().get(0).getUnit());
+
+        assertEquals("garlic", sauceResponse.getIngredients().get(1).getIngredientName());
+
+        // Instruction sections
+
+        assertEquals(1, result.getInstructionSections().size());
+
+        var prepareResponse = result.getInstructionSections().get(0);
+
+        assertEquals("Prepare the dish", prepareResponse.getName());
+        assertEquals(1, prepareResponse.getSteps().size());
+
+        assertEquals("Prepare the vegetables.",
+                prepareResponse.getSteps().get(0).getInstruction());
+
+        assertEquals(1, prepareResponse.getSections().size());
+
+        var sauceInstructionResponse = prepareResponse.getSections().get(0);
+
+        assertEquals("Make the sauce", sauceInstructionResponse.getName());
+        assertEquals(1, sauceInstructionResponse.getSteps().size());
+
+        assertEquals("Mix the ingredients.",
+                sauceInstructionResponse.getSteps().get(0).getInstruction());
 
     }
 

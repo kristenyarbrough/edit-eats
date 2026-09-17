@@ -18,9 +18,11 @@ import java.util.*;
 public class RecipeService {
 
     private final RecipeRepository recipeRepository;
-    private final RecipeStepRepository recipeStepRepository;
     private final IngredientRepository ingredientRepository;
     private final RecipeIngredientRepository recipeIngredientRepository;
+    private final RecipeIngredientSectionRepository recipeIngredientSectionRepository;
+    private final RecipeStepRepository recipeStepRepository;
+    private final RecipeInstructionSectionRepository recipeInstructionSectionRepository;
     private final RecipeCategoryAssignmentRepository recipeCategoryAssignmentRepository;
     private final RecipeCategoryRepository recipeCategoryRepository;
 
@@ -125,8 +127,21 @@ public class RecipeService {
 
         // Save after all validation has passed
         recipe = recipeRepository.save(recipe);
+
         recipeIngredientRepository.saveAll(recipeIngredients);
         recipeStepRepository.saveAll(steps);
+
+        if (request.getIngredientSections() != null) {
+
+            saveIngredientSections(recipe, request.getIngredientSections(), null);
+
+        }
+
+        if (request.getInstructionSections() != null) {
+
+            saveInstructionSections(recipe, request.getInstructionSections(), null, steps.size() + 1);
+
+        }
 
         if (!categoryAssignments.isEmpty()) {
 
@@ -147,12 +162,19 @@ public class RecipeService {
 
         List<RecipeIngredient> recipeIngredients = recipeIngredientRepository.findByRecipeId(recipeId);
 
+        List<RecipeIngredientSection> ingredientSections =
+                recipeIngredientSectionRepository.findByRecipeIdOrderBySortOrder(recipeId);
+
         List<RecipeStep> recipeSteps = recipeStepRepository.findByRecipeIdOrderByStepNumber(recipeId);
+
+        List<RecipeInstructionSection> instructionSections =
+                recipeInstructionSectionRepository.findByRecipeIdOrderBySortOrder(recipeId);
 
         List<RecipeCategoryAssignment> categoryAssignments = recipeCategoryAssignmentRepository.findByRecipeId(recipeId);
 
         List<RecipeIngredientResponse> ingredientResponses =
                 recipeIngredients.stream()
+                        .filter(recipeIngredient -> recipeIngredient.getSection() == null)
                         .map(recipeIngredient -> RecipeIngredientResponse.builder()
                                 .ingredientId(recipeIngredient.getIngredient().getId())
                                 .ingredientName(recipeIngredient.getIngredient().getName())
@@ -163,13 +185,20 @@ public class RecipeService {
                                 .build())
                         .toList();
 
+        List<RecipeIngredientSectionResponse> ingredientSectionResponses =
+                buildIngredientSections(ingredientSections, recipeIngredients);
+
         List<RecipeStepResponse> stepResponses =
                 recipeSteps.stream()
+                        .filter(step -> step.getSection() == null)
                         .map(step -> RecipeStepResponse.builder()
                                 .stepNumber(step.getStepNumber())
                                 .instruction(step.getInstruction())
                                 .build())
                         .toList();
+
+        List<RecipeInstructionSectionResponse> instructionSectionResponses =
+                buildInstructionSections(instructionSections, recipeSteps);
 
         List<RecipeCategoryResponse> categoryResponses =
                 categoryAssignments.stream()
@@ -198,7 +227,9 @@ public class RecipeService {
                 .createdAt(recipe.getCreatedAt())
                 .lastModifiedAt(recipe.getLastModifiedAt())
                 .ingredients(ingredientResponses)
+                .ingredientSections(ingredientSectionResponses)
                 .steps(stepResponses)
+                .instructionSections(instructionSectionResponses)
                 .categories(categoryResponses)
                 .build();
     }
@@ -386,6 +417,185 @@ public class RecipeService {
                         .lastModifiedAt(recipe.getLastModifiedAt())
                         .build())
                 .toList();
+
+    }
+
+    private void saveIngredientSections(
+            Recipe recipe,
+            List<CreateRecipeIngredientSectionRequest> sectionRequests,
+            RecipeIngredientSection parentSection) {
+
+        for (int i = 0; i < sectionRequests.size(); i++) {
+
+            CreateRecipeIngredientSectionRequest sectionRequest = sectionRequests.get(i);
+
+            RecipeIngredientSection section = RecipeIngredientSection.builder()
+                    .recipe(recipe)
+                    .name(sectionRequest.getName())
+                    .parentSection(parentSection)
+                    .sortOrder(i)
+                    .build();
+
+            section = recipeIngredientSectionRepository.save(section);
+
+            // Save ingredients belonging directly to this section
+            for (CreateRecipeIngredientRequest ingredientRequest :
+                sectionRequest.getIngredients()) {
+
+                Ingredient ingredient = ingredientRepository.findById(
+                        ingredientRequest.getIngredientId()
+                ).orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Ingredient not found: " + ingredientRequest.getIngredientId()
+                ));
+
+                RecipeIngredient recipeIngredient = RecipeIngredient.builder()
+                        .recipe(recipe)
+                        .ingredient(ingredient)
+                        .quantity(ingredientRequest.getQuantity())
+                        .unit(ingredientRequest.getUnit())
+                        .preparation(ingredientRequest.getPreparation())
+                        .optional(ingredientRequest.getOptional())
+                        .section(section)
+                        .build();
+
+                recipeIngredientRepository.save(recipeIngredient);
+
+            }
+
+            // Recursively save any child sections
+            saveIngredientSections(recipe, sectionRequest.getSections(), section);
+
+        }
+
+    }
+
+    private int saveInstructionSections(
+            Recipe recipe,
+            List<CreateRecipeInstructionSectionRequest> sectionRequests,
+            RecipeInstructionSection parentSection,
+            int nextStepNumber) {
+
+        for (int i = 0; i < sectionRequests.size(); i++) {
+
+            CreateRecipeInstructionSectionRequest sectionRequest = sectionRequests.get(i);
+
+            RecipeInstructionSection section = RecipeInstructionSection.builder()
+                    .recipe(recipe)
+                    .name(sectionRequest.getName())
+                    .parentSection(parentSection)
+                    .sortOrder(i)
+                    .build();
+
+            section = recipeInstructionSectionRepository.save(section);
+
+            // Save instructions belonging directly to this section
+            for (CreateRecipeStepRequest stepRequest :
+                    sectionRequest.getSteps()) {
+
+                RecipeStep recipeStep = RecipeStep.builder()
+                        .recipe(recipe)
+                        .stepNumber(nextStepNumber++)
+                        .instruction(stepRequest.getInstruction())
+                        .section(section)
+                        .build();
+
+                recipeStepRepository.save(recipeStep);
+
+            }
+
+            // Recursively save any child sections
+            nextStepNumber = saveInstructionSections(recipe,
+                    sectionRequest.getSections(),
+                    section,
+                    nextStepNumber);
+
+        }
+
+        return nextStepNumber;
+
+    }
+
+    private List<RecipeIngredientSectionResponse> buildIngredientSections(
+            List<RecipeIngredientSection> sections,
+            List<RecipeIngredient> recipeIngredients) {
+
+        return sections.stream()
+                .filter(section -> section.getParentSection() == null)
+                .map(section -> buildIngredientSections(section, sections, recipeIngredients))
+                .toList();
+
+    }
+
+    private RecipeIngredientSectionResponse buildIngredientSections(
+            RecipeIngredientSection section,
+            List<RecipeIngredientSection> allSections,
+            List<RecipeIngredient> recipeIngredients) {
+
+        List<RecipeIngredientResponse> ingredients = recipeIngredients.stream()
+                .filter(ingredient -> ingredient.getSection() != null)
+                .filter(ingredient ->
+                        ingredient.getSection().getId().equals(section.getId()))
+                .map(recipeIngredient -> RecipeIngredientResponse.builder()
+                        .ingredientId(recipeIngredient.getIngredient().getId())
+                        .ingredientName(recipeIngredient.getIngredient().getName())
+                        .quantity(recipeIngredient.getQuantity())
+                        .unit(recipeIngredient.getUnit())
+                        .preparation(recipeIngredient.getPreparation())
+                        .optional(recipeIngredient.getOptional())
+                        .build())
+                .toList();
+
+        List<RecipeIngredientSectionResponse> childSections = allSections.stream()
+                .filter(child -> child.getParentSection() != null)
+                .filter(child -> child.getParentSection().getId().equals(section.getId()))
+                .sorted(Comparator.comparing(RecipeIngredientSection::getSortOrder))
+                .map(child -> buildIngredientSections(child, allSections, recipeIngredients))
+                .toList();
+
+        return RecipeIngredientSectionResponse.builder()
+                .name(section.getName())
+                .ingredients(ingredients)
+                .sections(childSections)
+                .build();
+
+    }
+
+    private List<RecipeInstructionSectionResponse> buildInstructionSections(
+            List<RecipeInstructionSection> sections,
+            List<RecipeStep> steps) {
+
+        return sections.stream()
+                .filter(section -> section.getParentSection() == null)
+                .map(section -> buildInstructionSections(section, sections, steps))
+                .toList();
+
+    }
+
+    private RecipeInstructionSectionResponse buildInstructionSections(
+            RecipeInstructionSection section,
+            List<RecipeInstructionSection> sections,
+            List<RecipeStep> steps) {
+
+        List<RecipeStepResponse> sectionSteps = steps.stream()
+                .filter(step -> step.getSection() == section)
+                .map(step -> RecipeStepResponse.builder()
+                        .stepNumber(step.getStepNumber())
+                        .instruction(step.getInstruction())
+                        .build())
+                .toList();
+
+        List<RecipeInstructionSectionResponse> childSections = sections.stream()
+                .filter(child -> child.getParentSection() == section)
+                .sorted(Comparator.comparing(RecipeInstructionSection::getSortOrder))
+                .map(child -> buildInstructionSections(child, sections, steps))
+                .toList();
+
+        return RecipeInstructionSectionResponse.builder()
+                .name(section.getName())
+                .steps(sectionSteps)
+                .sections(childSections)
+                .build();
 
     }
 

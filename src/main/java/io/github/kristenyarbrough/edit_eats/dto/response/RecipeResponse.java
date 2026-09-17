@@ -42,4 +42,8 @@ public class RecipeResponse {
 
     private List<RecipeCategoryResponse> categories;
 
+    private List<RecipeIngredientSectionResponse> ingredientSections;
+
+    private List<RecipeInstructionSectionResponse> instructionSections;
+
 }

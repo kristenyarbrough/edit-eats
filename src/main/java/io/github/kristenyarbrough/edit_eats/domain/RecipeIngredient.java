@@ -26,11 +26,10 @@ public class RecipeIngredient {
     @JoinColumn(name = "ingredient_id")
     private Ingredient ingredient;
 
-    @Column(nullable = false, precision = 10, scale = 4)
+    @Column(precision = 10, scale = 4)
     private BigDecimal quantity;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private Unit unit;
 
     private String preparation;
@@ -38,4 +37,9 @@ public class RecipeIngredient {
     @Column(nullable = false)
     @Builder.Default
     private Boolean optional = false;
+
+    @ManyToOne
+    @JoinColumn(name = "section_id")
+    private RecipeIngredientSection section;
+
 }

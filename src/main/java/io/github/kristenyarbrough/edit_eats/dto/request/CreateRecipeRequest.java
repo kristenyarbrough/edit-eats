@@ -39,11 +39,17 @@ public class CreateRecipeRequest {
 
     @NotEmpty
     @Valid
-    private List<CreateRecipeStepRequest> steps;
+    private List<CreateRecipeIngredientRequest> ingredients;
+
+    @Valid
+    private List<CreateRecipeIngredientSectionRequest> ingredientSections = new ArrayList<>();
 
     @NotEmpty
     @Valid
-    private List<CreateRecipeIngredientRequest> ingredients;
+    private List<CreateRecipeStepRequest> steps;
+
+    @Valid
+    private List<CreateRecipeInstructionSectionRequest> instructionSections = new ArrayList<>();
 
     @Valid
     private List<CreateRecipeCategoryRequest> categories = new ArrayList<>();

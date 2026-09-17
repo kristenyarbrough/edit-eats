@@ -28,13 +28,19 @@ class RecipeServiceTest {
     private RecipeRepository recipeRepository;
 
     @Mock
-    private RecipeStepRepository recipeStepRepository;
-
-    @Mock
     private IngredientRepository ingredientRepository;
 
     @Mock
     private RecipeIngredientRepository recipeIngredientRepository;
+
+    @Mock
+    private RecipeIngredientSectionRepository recipeIngredientSectionRepository;
+
+    @Mock
+    private RecipeStepRepository recipeStepRepository;
+
+    @Mock
+    private RecipeInstructionSectionRepository recipeInstructionSectionRepository;
 
     @Mock
     private RecipeCategoryRepository recipeCategoryRepository;
@@ -89,7 +95,7 @@ class RecipeServiceTest {
         when(recipeCategoryRepository.findById(1L))
                 .thenReturn(Optional.of(category));
 
-        Recipe recipe = createRecipe(request, true);
+        Recipe recipe = createRecipe(request, true, false);
 
         assertAll("created recipe",
                 () -> assertNotNull(recipe),
@@ -163,6 +169,322 @@ class RecipeServiceTest {
     }
 
     @Test
+    void shouldCreateRecipeWithNestedSections() {
+
+        CreateRecipeRequest request = createValidRequest();
+
+        Ingredient eggs = createIngredient();
+
+        request.setIngredients(List.of(createIngredientRequest()));
+        request.setSteps(List.of(createStepRequest()));
+        request.setCategories(List.of());
+
+        CreateRecipeIngredientSectionRequest sauceSection =
+                new CreateRecipeIngredientSectionRequest();
+        sauceSection.setName("Sauce");
+
+        CreateRecipeIngredientSectionRequest garnishSection =
+                new CreateRecipeIngredientSectionRequest();
+        garnishSection.setName("Garnish");
+        garnishSection.setIngredients(List.of(createIngredientRequest()));
+
+        sauceSection.setSections(List.of(garnishSection));
+
+        request.setIngredientSections(List.of(sauceSection));
+
+        CreateRecipeInstructionSectionRequest prepareSection =
+                new CreateRecipeInstructionSectionRequest();
+        prepareSection.setName("Prepare sauce");
+
+        CreateRecipeInstructionSectionRequest finishSection =
+                new CreateRecipeInstructionSectionRequest();
+        finishSection.setName("Finish");
+
+        CreateRecipeStepRequest nestedStep = createStepRequest("Serve immediately.");
+
+        finishSection.setSteps(List.of(nestedStep));
+        prepareSection.setSections(List.of(finishSection));
+
+        request.setInstructionSections(List.of(prepareSection));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(eggs));
+
+        Recipe recipe = createRecipe(request, false, true);
+
+        assertNotNull(recipe);
+
+        ArgumentCaptor<RecipeIngredientSection> ingredientSectionCaptor =
+                ArgumentCaptor.forClass(RecipeIngredientSection.class);
+
+        verify(recipeIngredientSectionRepository, times(2))
+                .save(ingredientSectionCaptor.capture());
+
+        List<RecipeIngredientSection> savedIngredientSections =
+                ingredientSectionCaptor.getAllValues();
+
+        RecipeIngredientSection savedSauce = savedIngredientSections.get(0);
+        RecipeIngredientSection savedGarnish = savedIngredientSections.get(1);
+
+        assertAll("ingredient sections",
+                () -> assertEquals("Sauce", savedSauce.getName()),
+                () -> assertEquals(recipe, savedSauce.getRecipe()),
+                () -> assertNull(savedSauce.getParentSection()),
+                () -> assertEquals(0, savedSauce.getSortOrder()),
+
+                () -> assertEquals("Garnish", savedGarnish.getName()),
+                () -> assertEquals(recipe, savedGarnish.getRecipe()),
+                () -> assertEquals(savedSauce, savedGarnish.getParentSection()),
+                () -> assertEquals(0, savedGarnish.getSortOrder())
+        );
+
+        ArgumentCaptor<RecipeInstructionSection> instructionSectionCaptor =
+                ArgumentCaptor.forClass(RecipeInstructionSection.class);
+
+        verify(recipeInstructionSectionRepository, times(2))
+                .save(instructionSectionCaptor.capture());
+
+        List<RecipeInstructionSection> savedInstructionSections =
+                instructionSectionCaptor.getAllValues();
+
+        RecipeInstructionSection savedPrepare = savedInstructionSections.get(0);
+        RecipeInstructionSection savedFinish = savedInstructionSections.get(1);
+
+        assertAll("instruction sections",
+                () -> assertEquals("Prepare sauce", savedPrepare.getName()),
+                () -> assertEquals(recipe, savedPrepare.getRecipe()),
+                () -> assertNull(savedPrepare.getParentSection()),
+                () -> assertEquals(0, savedPrepare.getSortOrder()),
+
+                () -> assertEquals("Finish", savedFinish.getName()),
+                () -> assertEquals(recipe, savedFinish.getRecipe()),
+                () -> assertEquals(savedPrepare, savedFinish.getParentSection()),
+                () -> assertEquals(0, savedFinish.getSortOrder())
+        );
+
+        ArgumentCaptor<RecipeIngredient> nestedIngredientCaptor =
+                ArgumentCaptor.forClass(RecipeIngredient.class);
+
+        verify(recipeIngredientRepository).save(nestedIngredientCaptor.capture());
+
+        RecipeIngredient nestedIngredient = nestedIngredientCaptor.getValue();
+
+        assertAll("nested ingredient",
+                () -> assertEquals(eggs, nestedIngredient.getIngredient()),
+                () -> assertEquals(recipe, nestedIngredient.getRecipe()),
+                () -> assertEquals(savedGarnish, nestedIngredient.getSection())
+        );
+
+        ArgumentCaptor<RecipeStep> nestedStepCaptor =
+                ArgumentCaptor.forClass(RecipeStep.class);
+
+        verify(recipeStepRepository).save(nestedStepCaptor.capture());
+
+        RecipeStep nestedRecipeStep = nestedStepCaptor.getValue();
+
+        assertAll("nested step",
+                () -> assertEquals(recipe, nestedRecipeStep.getRecipe()),
+                () -> assertEquals("Serve immediately.",
+                        nestedRecipeStep.getInstruction()),
+                () -> assertEquals(2, nestedRecipeStep.getStepNumber()),
+                () -> assertEquals(savedFinish, nestedRecipeStep.getSection())
+        );
+
+    }
+
+    @Test
+    void shouldGetRecipeWithNestedIngredientSections() {
+
+        Recipe recipe = createRecipe();
+
+        Ingredient eggs = Ingredient.builder()
+                .id(1L)
+                .name("Eggs")
+                .build();
+
+        Ingredient salt = Ingredient.builder()
+                .id(2L)
+                .name("Salt")
+                .build();
+
+        RecipeIngredientSection sauceSection =
+                RecipeIngredientSection.builder()
+                        .id(1L)
+                        .recipe(recipe)
+                        .name("Sauce")
+                        .parentSection(null)
+                        .sortOrder(0)
+                        .build();
+
+        RecipeIngredientSection garnishSection =
+                RecipeIngredientSection.builder()
+                        .id(2L)
+                        .recipe(recipe)
+                        .name("Garnish")
+                        .parentSection(sauceSection)
+                        .sortOrder(0)
+                        .build();
+
+        RecipeIngredient topLevelIngredient =
+                RecipeIngredient.builder()
+                        .recipe(recipe)
+                        .ingredient(eggs)
+                        .quantity(BigDecimal.ONE)
+                        .unit(Unit.EACH)
+                        .optional(false)
+                        .section(null)
+                        .build();
+
+        RecipeIngredient nestedIngredient =
+                RecipeIngredient.builder()
+                        .recipe(recipe)
+                        .ingredient(salt)
+                        .quantity(BigDecimal.ONE)
+                        .unit(Unit.TSP)
+                        .optional(false)
+                        .section(garnishSection)
+                        .build();
+
+        RecipeStep topLevelStep = RecipeStep.builder()
+                .recipe(recipe)
+                .stepNumber(1)
+                .instruction("Prepare the ingredients.")
+                .section(null)
+                .build();
+
+        when(recipeRepository.findById(recipe.getId()))
+                .thenReturn(Optional.of(recipe));
+
+        when(recipeIngredientRepository.findByRecipeId(recipe.getId()))
+                .thenReturn(List.of(topLevelIngredient, nestedIngredient));
+
+        when(recipeIngredientSectionRepository.findByRecipeIdOrderBySortOrder(recipe.getId()))
+                .thenReturn(List.of(sauceSection, garnishSection));
+
+        when(recipeStepRepository.findByRecipeIdOrderByStepNumber(recipe.getId()))
+                .thenReturn(List.of(topLevelStep));
+
+        when(recipeInstructionSectionRepository.findByRecipeIdOrderBySortOrder(recipe.getId()))
+                .thenReturn(List.of());
+
+        when(recipeCategoryAssignmentRepository.findByRecipeId(recipe.getId()))
+                .thenReturn(List.of());
+
+        assertNull(topLevelIngredient.getSection());
+        assertEquals(garnishSection, nestedIngredient.getSection());
+
+        assertEquals(eggs, topLevelIngredient.getIngredient());
+        assertEquals(salt, nestedIngredient.getIngredient());
+
+        RecipeResponse response = recipeService.getRecipe(recipe.getId());
+
+        assertNotNull(response);
+
+        assertEquals(1, response.getIngredients().size());
+        assertEquals("Eggs", response.getIngredients().get(0).getIngredientName());
+
+        assertEquals(1, response.getSteps().size());
+        assertEquals("Prepare the ingredients.", response.getSteps().get(0).getInstruction());
+
+        assertEquals(1, response.getIngredientSections().size());
+
+        RecipeIngredientSectionResponse sauceResponse = response.getIngredientSections().get(0);
+
+        assertEquals("Sauce", sauceResponse.getName());
+
+        assertTrue(sauceResponse.getIngredients().isEmpty());
+
+        assertEquals(1, sauceResponse.getSections().size());
+
+        RecipeIngredientSectionResponse garnishResponse = sauceResponse.getSections().get(0);
+
+        assertEquals("Garnish", garnishResponse.getName());
+
+        assertEquals(1, garnishResponse.getIngredients().size());
+
+        assertEquals("Salt", garnishResponse.getIngredients().get(0).getIngredientName());
+
+        assertEquals(0, response.getInstructionSections().size());
+
+    }
+
+    @Test
+    void shouldGetRecipeWithNestedInstructionSections() {
+
+        Recipe recipe = Recipe.builder()
+                .id(1L)
+                .name("Scrambled Eggs")
+                .build();
+
+        RecipeInstructionSection methodSection = RecipeInstructionSection.builder()
+                .id(1L)
+                .recipe(recipe)
+                .name("Method")
+                .sortOrder(0)
+                .build();
+
+        RecipeInstructionSection sauceSection = RecipeInstructionSection.builder()
+                .id(2L)
+                .recipe(recipe)
+                .name("Sauce")
+                .parentSection(methodSection)
+                .sortOrder(0)
+                .build();
+
+        RecipeStep topLevelStep = RecipeStep.builder()
+                .id(1L)
+                .recipe(recipe)
+                .stepNumber(1)
+                .instruction("Prepare the ingredients.")
+                .section(null)
+                .build();
+
+        RecipeStep nestedStep = RecipeStep.builder()
+                .id(2L)
+                .recipe(recipe)
+                .stepNumber(2)
+                .instruction("Add the sauce.")
+                .section(sauceSection)
+                .build();
+
+        when(recipeRepository.findById(1L)).thenReturn(Optional.of(recipe));
+        when(recipeIngredientRepository.findByRecipeId(1L))
+                .thenReturn(List.of());
+        when(recipeIngredientSectionRepository.findByRecipeIdOrderBySortOrder(1L))
+                .thenReturn(List.of());
+        when(recipeStepRepository.findByRecipeIdOrderByStepNumber(1L))
+                .thenReturn(List.of(topLevelStep, nestedStep));
+        when(recipeInstructionSectionRepository.findByRecipeIdOrderBySortOrder(1L))
+                .thenReturn(List.of(methodSection, sauceSection));
+        when(recipeCategoryAssignmentRepository.findByRecipeId(1L))
+                .thenReturn(List.of());
+
+        RecipeResponse response = recipeService.getRecipe(1L);
+
+        assertEquals(1, response.getSteps().size());
+        assertEquals("Prepare the ingredients.", response.getSteps().get(0).getInstruction());
+
+        assertEquals(1, response.getInstructionSections().size());
+
+        RecipeInstructionSectionResponse methodResponse =
+                response.getInstructionSections().get(0);
+
+        assertEquals("Method", methodResponse.getName());
+        assertEquals(0, methodResponse.getSteps().size());
+
+        assertEquals(1, methodResponse.getSections().size());
+
+        RecipeInstructionSectionResponse sauceResponse =
+                methodResponse.getSections().get(0);
+
+        assertEquals("Sauce", sauceResponse.getName());
+        assertEquals(1, sauceResponse.getSteps().size());
+        assertEquals("Add the sauce.",
+                sauceResponse.getSteps().get(0).getInstruction());
+
+    }
+
+    @Test
     void shouldThrowWhenRecipeCategoryDoesNotExist() {
 
         CreateRecipeRequest request = createValidRequest();
@@ -228,7 +550,7 @@ class RecipeServiceTest {
         when(recipeCategoryRepository.findById(1L))
                 .thenReturn(Optional.of(category));
 
-        Recipe recipe = createRecipe(request, true);
+        Recipe recipe = createRecipe(request, true, false);
 
         assertAll("created recipe",
                 () -> assertNotNull(recipe),
@@ -334,7 +656,7 @@ class RecipeServiceTest {
         when(recipeCategoryRepository.findById(1L))
                 .thenReturn(Optional.of(category));
 
-        Recipe recipe = createRecipe(request, true);
+        Recipe recipe = createRecipe(request, true, false);
 
         assertAll("created recipe",
                 () -> assertNotNull(recipe),
@@ -462,7 +784,7 @@ class RecipeServiceTest {
         when(recipeCategoryRepository.findById(3L))
                 .thenReturn(Optional.of(quickMeals));
 
-        Recipe recipe = createRecipe(request, true);
+        Recipe recipe = createRecipe(request, true, false);
 
         assertAll("created recipe",
                 () -> assertNotNull(recipe),
@@ -561,7 +883,7 @@ class RecipeServiceTest {
         when(ingredientRepository.findById(1L))
                 .thenReturn(Optional.of(ingredient));
 
-        Recipe recipe = createRecipe(request, false);
+        Recipe recipe = createRecipe(request, false, false);
 
         assertAll("created recipe",
                 () -> assertNotNull(recipe),
@@ -735,7 +1057,7 @@ class RecipeServiceTest {
         when(ingredientRepository.findById(1L))
                 .thenReturn(Optional.of(ingredient));
 
-        Recipe recipe = createRecipe(request, false);
+        Recipe recipe = createRecipe(request, false, false);
 
         assertAll(
                 () -> assertEquals(15, recipe.getPrepMinutes()),
@@ -1423,6 +1745,16 @@ class RecipeServiceTest {
 
     }
 
+    private void mockSaveSectionRepositories() {
+
+        when(recipeIngredientSectionRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(recipeInstructionSectionRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+    }
+
     private void mockCategoryRepositorySave() {
 
         when(recipeCategoryAssignmentRepository.saveAll(any()))
@@ -1466,7 +1798,9 @@ class RecipeServiceTest {
 
     }
 
-    private Recipe createRecipe(CreateRecipeRequest request, boolean withCategories) {
+    private Recipe createRecipe(CreateRecipeRequest request,
+                                boolean withCategories,
+                                boolean withSections) {
 
         when(recipeRepository.save(any(Recipe.class)))
                 .thenAnswer(invocation -> {
@@ -1480,6 +1814,12 @@ class RecipeServiceTest {
         if (withCategories) {
 
             mockCategoryRepositorySave();
+
+        }
+
+        if (withSections) {
+
+            mockSaveSectionRepositories();
 
         }
 
