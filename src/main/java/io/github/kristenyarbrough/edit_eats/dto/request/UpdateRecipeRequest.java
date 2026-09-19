@@ -42,11 +42,17 @@ public class UpdateRecipeRequest {
 
     @NotEmpty
     @Valid
-    private List<CreateRecipeStepRequest> steps = new ArrayList<>();
+    private List<CreateRecipeIngredientRequest> ingredients = new ArrayList<>();
+
+    @Valid
+    private List<CreateRecipeIngredientSectionRequest> ingredientSections = new ArrayList<>();
 
     @NotEmpty
     @Valid
-    private List<CreateRecipeIngredientRequest> ingredients = new ArrayList<>();
+    private List<CreateRecipeStepRequest> steps = new ArrayList<>();
+
+    @Valid
+    private List<CreateRecipeInstructionSectionRequest> instructionSections = new ArrayList<>();
 
     @Valid
     private List<CreateRecipeCategoryRequest> categories = new ArrayList<>();

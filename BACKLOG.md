@@ -83,9 +83,9 @@
 
 ### Recipe Importing
 
-- [ ] Import recipe from URL
-- [ ] Extract ingredients
-- [ ] Extract method
+- [x] Import recipe from URL
+- [x] Extract ingredients
+- [x] Extract method
 - [ ] Download recipe image
 - [ ] Save source URL
 
@@ -172,9 +172,9 @@ Relationships:
 - [ ] Recently viewed recipes
 - [ ] Favourite recipes
 - [ ] Recipe ratings
-- [ ] Import recipe from URL
+- [x] Import recipe from URL
 - [ ] Upload image to Recipe
-- [ ] Update recipe
+- [x] Update recipe
 - [ ] Add createdBy to Recipe
 - [ ] Allow adding ingredient by name (search by name)
 
@@ -197,7 +197,7 @@ Relationships:
 - [x] Delete recipe
 
 ### Phase 3 — The exciting features
-- [ ] Recipe import from URL
+- [x] Recipe import from URL
 - [x] Shopping list generation
 - [x] Scale recipes (2 serves → 8 serves)
 - [ ] Pantry

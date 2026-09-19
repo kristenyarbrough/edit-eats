@@ -522,7 +522,9 @@ public class RecipeService {
 
         return sections.stream()
                 .filter(section -> section.getParentSection() == null)
-                .map(section -> buildIngredientSections(section, sections, recipeIngredients))
+                .sorted(Comparator.comparing(RecipeIngredientSection::getSortOrder))
+                .map(section ->
+                        buildIngredientSections(section, sections, recipeIngredients))
                 .toList();
 
     }
@@ -567,7 +569,9 @@ public class RecipeService {
 
         return sections.stream()
                 .filter(section -> section.getParentSection() == null)
-                .map(section -> buildInstructionSections(section, sections, steps))
+                .sorted(Comparator.comparing(RecipeInstructionSection::getSortOrder))
+                .map(section ->
+                        buildInstructionSections(section, sections, steps))
                 .toList();
 
     }

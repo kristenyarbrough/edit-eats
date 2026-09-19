@@ -166,6 +166,74 @@ class RecipeImportServiceTest {
     }
 
     @Test
+    void shouldImportRecipeFromTextWithNestedSections() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Lasagne
+                Serves: 6
+                Prep: 20 minutes
+                Cook: 60 minutes
+                
+                Ingredients
+                Sauce
+                2 tbsp olive oil
+                Meat
+                500 g beef mince
+                                
+                Method
+                Make the sauce
+                Heat the oil.
+                Brown the meat
+                Brown the mince.
+                """);
+
+        assertEquals("Lasagne", result.getName());
+        assertEquals(6, result.getServings());
+        assertEquals(20, result.getPrepMinutes());
+        assertEquals(60, result.getCookMinutes());
+
+        // Ingredient sections
+        assertEquals(1, result.getIngredientSections().size());
+
+        ImportedIngredientSection sauceSection = result.getIngredientSections().get(0);
+
+        assertEquals("Sauce", sauceSection.getName());
+
+        assertEquals(1, sauceSection.getIngredients().size());
+        assertEquals("olive oil", sauceSection.getIngredients().get(0).getName());
+
+        assertEquals(1, sauceSection.getSections().size());
+
+        ImportedIngredientSection meatSection = sauceSection.getSections().get(0);
+
+        assertEquals("Meat", meatSection.getName());
+
+        assertEquals(1, meatSection.getIngredients().size());
+        assertEquals("beef mince", meatSection.getIngredients().get(0).getName());
+
+        // Instruction sections
+        assertEquals(1, result.getInstructionSections().size());
+
+        ImportedInstructionSection methodSection = result.getInstructionSections().get(0);
+
+        assertEquals("Make the sauce", methodSection.getName());
+
+        assertEquals(1, methodSection.getSteps().size());
+        assertEquals("Heat the oil.", methodSection.getSteps().get(0).getInstruction());
+
+        assertEquals(1, methodSection.getSections().size());
+
+        ImportedInstructionSection meatInstructionSection = methodSection.getSections().get(0);
+
+        assertEquals("Brown the meat", meatInstructionSection.getName());
+
+        assertEquals(1, meatInstructionSection.getSteps().size());
+        assertEquals("Brown the mince.",
+                meatInstructionSection.getSteps().get(0).getInstruction());
+
+    }
+
+    @Test
     void shouldFailWhenTextDoesNotContainRecipeContent() {
 
         String text = """

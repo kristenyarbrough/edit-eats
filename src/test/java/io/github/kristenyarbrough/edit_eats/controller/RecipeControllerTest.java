@@ -115,6 +115,108 @@ class RecipeControllerTest {
     }
 
     @Test
+    void shouldGetRecipeWithNestedSections() throws Exception {
+
+        RecipeStepResponse topLevelStep = RecipeStepResponse.builder()
+                .stepNumber(1)
+                .instruction("Prepare the ingredients.")
+                .build();
+
+        RecipeStepResponse nestedStep = RecipeStepResponse.builder()
+                .stepNumber(2)
+                .instruction("Add the sauce.")
+                .build();
+
+        RecipeIngredientResponse nestedIngredient = RecipeIngredientResponse.builder()
+                .ingredientId(2L)
+                .ingredientName("Salt")
+                .quantity(new BigDecimal("1"))
+                .unit(Unit.TSP)
+                .optional(false)
+                .build();
+
+        RecipeIngredientSectionResponse garnishSection =
+                RecipeIngredientSectionResponse.builder()
+                        .name("Garnish")
+                        .ingredients(List.of(nestedIngredient))
+                        .sections(List.of())
+                        .build();
+
+        RecipeIngredientSectionResponse sauceSection =
+                RecipeIngredientSectionResponse.builder()
+                        .name("Sauce")
+                        .ingredients(List.of())
+                        .sections(List.of(garnishSection))
+                        .build();
+
+        RecipeInstructionSectionResponse sauceInstructionSection =
+                RecipeInstructionSectionResponse.builder()
+                        .name("Sauce")
+                        .steps(List.of(nestedStep))
+                        .sections(List.of())
+                        .build();
+
+        RecipeInstructionSectionResponse methodSection =
+                RecipeInstructionSectionResponse.builder()
+                        .name("Method")
+                        .steps(List.of())
+                        .sections(List.of(sauceInstructionSection))
+                        .build();
+
+        RecipeResponse response = RecipeResponse.builder()
+                .id(1L)
+                .name("Scrambled Eggs")
+                .ingredients(List.of())
+                .ingredientSections(List.of(sauceSection))
+                .steps(List.of(topLevelStep))
+                .instructionSections(List.of(methodSection))
+                .categories(List.of())
+                .build();
+
+        when(recipeService.getRecipe(1L))
+                .thenReturn(response);
+
+        mockMvc.perform(get("/api/recipes/1"))
+                .andExpect(status().isOk())
+
+                // Top-level step
+                .andExpect(jsonPath("$.steps.length()").value(1))
+                .andExpect(jsonPath("$.steps[0].instruction")
+                        .value("Prepare the ingredients."))
+
+                // Nested ingredient sections
+                .andExpect(jsonPath("$.ingredientSections.length()").value(1))
+                .andExpect(jsonPath("$.ingredientSections[0].name")
+                        .value("Sauce"))
+                .andExpect(jsonPath("$.ingredientSections[0].ingredients.length()")
+                        .value(0))
+                .andExpect(jsonPath("$.ingredientSections[0].sections.length()")
+                        .value(1))
+                .andExpect(jsonPath("$.ingredientSections[0].sections[0].name")
+                        .value("Garnish"))
+                .andExpect(jsonPath(
+                        "$.ingredientSections[0].sections[0].ingredients[0].ingredientName")
+                        .value("Salt"))
+
+                // Nested instruction sections
+                .andExpect(jsonPath("$.instructionSections.length()").value(1))
+                .andExpect(jsonPath("$.instructionSections[0].name")
+                        .value("Method"))
+                .andExpect(jsonPath("$.instructionSections[0].steps.length()")
+                        .value(0))
+                .andExpect(jsonPath("$.instructionSections[0].sections.length()")
+                        .value(1))
+                .andExpect(jsonPath("$.instructionSections[0].sections[0].name")
+                        .value("Sauce"))
+                .andExpect(jsonPath(
+                        "$.instructionSections[0].sections[0].steps[0].instruction")
+                        .value("Add the sauce."));;
+
+        verify(recipeService).getRecipe(1L);
+
+    }
+
+    @Test
     void shouldReturn404WhenRecipeDoesNotExist() throws Exception {
 
         when(recipeService.getRecipe(99L))
@@ -379,6 +481,207 @@ class RecipeControllerTest {
         verify(recipeService).updateRecipe(
                 eq(1L),
                 any(UpdateRecipeRequest.class));
+
+    }
+
+    @Test
+    void shouldUpdateRecipeWithNestedSections() throws Exception {
+
+        UpdateRecipeRequest request = updateValidRequest();
+
+        CreateRecipeIngredientSectionRequest ingredientSection =
+                new CreateRecipeIngredientSectionRequest();
+        ingredientSection.setName("Sauce");
+
+        CreateRecipeIngredientSectionRequest nestedIngredientSection =
+                new CreateRecipeIngredientSectionRequest();
+        nestedIngredientSection.setName("Garnish");
+        nestedIngredientSection.setIngredients(List.of(createIngredient()));
+
+        ingredientSection.setSections(List.of(nestedIngredientSection));
+
+        request.setIngredientSections(List.of(ingredientSection));
+
+        CreateRecipeInstructionSectionRequest instructionSection =
+                new CreateRecipeInstructionSectionRequest();
+        instructionSection.setName("Prepare sauce");
+
+        CreateRecipeInstructionSectionRequest nestedInstructionSection =
+                new CreateRecipeInstructionSectionRequest();
+        nestedInstructionSection.setName("Finish");
+
+        CreateRecipeStepRequest nestedStep = new CreateRecipeStepRequest();
+        nestedStep.setInstruction("Serve immediately.");
+
+        nestedInstructionSection.setSteps(List.of(nestedStep));
+        instructionSection.setSections(List.of(nestedInstructionSection));
+
+        request.setInstructionSections(List.of(instructionSection));
+
+        Recipe recipe = createRecipe();
+
+        when(recipeService.updateRecipe(eq(1L), any(UpdateRecipeRequest.class)))
+                .thenReturn(recipe);
+
+        mockMvc.perform(put("/api/recipes/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<UpdateRecipeRequest> captor =
+                ArgumentCaptor.forClass(UpdateRecipeRequest.class);
+
+        verify(recipeService).updateRecipe(eq(1L), captor.capture());
+
+        UpdateRecipeRequest capturedRequest = captor.getValue();
+
+        assertEquals(1, capturedRequest.getIngredientSections().size());
+
+        CreateRecipeIngredientSectionRequest capturedIngredientSection =
+                capturedRequest.getIngredientSections().get(0);
+
+        assertEquals("Sauce", capturedIngredientSection.getName());
+        assertEquals(1, capturedIngredientSection.getSections().size());
+
+        assertEquals("Garnish",
+                capturedIngredientSection.getSections().get(0).getName());
+
+        assertEquals(1,
+                capturedIngredientSection.getSections().get(0).getIngredients().size());
+
+        assertEquals(1, capturedRequest.getInstructionSections().size());
+
+        CreateRecipeInstructionSectionRequest capturedInstructionSection =
+                capturedRequest.getInstructionSections().get(0);
+
+        assertEquals("Prepare sauce", capturedInstructionSection.getName());
+        assertEquals(1, capturedInstructionSection.getSections().size());
+
+        assertEquals("Finish",
+                capturedInstructionSection.getSections().get(0).getName());
+
+        assertEquals("Serve immediately.",
+                capturedInstructionSection.getSections().get(0).getSteps().get(0).getInstruction());
+
+    }
+
+    @Test
+    void shouldImportRecipeDraftFromTextWithNestedSections() throws Exception {
+
+        String text = """
+                Lasagne
+                Serves: 6
+                Prep: 20 minutes
+                Cook: 60 minutes
+                
+                Ingredients
+                Sauce
+                2 tbsp olive oil
+                Meat
+                500 g beef mince
+                
+                Method
+                Make the sauce
+                Heat the oil.
+                Brown the meat
+                Brown the mince.
+                """;
+
+        RecipeDraftResponse draft = RecipeDraftResponse.builder()
+                .name("Lasagne")
+                .prepMinutes(20)
+                .cookMinutes(60)
+                .activeMinutes(80)
+                .passiveMinutes(0)
+                .totalMinutes(80)
+                .servings(6)
+                .difficulty(Difficulty.MEDIUM)
+                .ingredientSections(List.of(
+                        ImportedIngredientSectionResponse.builder()
+                                .name("Sauce")
+                                .ingredients(List.of(
+                                        ImportedIngredientResponse.builder()
+                                                .ingredientName("Olive oil")
+                                                .quantity(new BigDecimal("2"))
+                                                .unit(Unit.TBSP)
+                                                .optional(false)
+                                                .build()
+                                ))
+                                .sections(List.of(
+                                        ImportedIngredientSectionResponse.builder()
+                                                .name("Meat")
+                                                .ingredients(List.of(
+                                                        ImportedIngredientResponse.builder()
+                                                                .ingredientName("Beef mince")
+                                                                .quantity(new BigDecimal("500"))
+                                                                .unit(Unit.G)
+                                                                .optional(false)
+                                                                .build()
+                                                ))
+                                                .sections(List.of())
+                                                .build()
+                                ))
+                                .build()
+                ))
+                .instructionSections(List.of(
+                        RecipeInstructionSectionResponse.builder()
+                                .name("Make the sauce")
+                                .steps(List.of(
+                                        RecipeStepResponse.builder()
+                                                .stepNumber(1)
+                                                .instruction("Heat the oil.")
+                                                .build()
+                                ))
+                                .sections(List.of(
+                                        RecipeInstructionSectionResponse.builder()
+                                                .name("Brown the meat")
+                                                .steps(List.of(
+                                                        RecipeStepResponse.builder()
+                                                                .stepNumber(2)
+                                                                .instruction("Brown the mince.")
+                                                                .build()
+                                                ))
+                                                .sections(List.of())
+                                                .build()
+                                ))
+                                .build()
+                ))
+                .ingredients(List.of())
+                .steps(List.of())
+                .categories(List.of())
+                .build();
+
+        when(recipeImportService.importRecipeDraftFromText(text))
+                .thenReturn(draft);
+
+        mockMvc.perform(post("/api/recipes/import/text").param("text", text))
+                .andExpect(status().isOk())
+
+                // Ingredient section
+                .andExpect(jsonPath("$.ingredientSections[0].name")
+                        .value("Sauce"))
+                .andExpect(jsonPath("$.ingredientSections[0].ingredients[0].ingredientName")
+                        .value("Olive oil"))
+
+                // Nested ingredient section
+                .andExpect(jsonPath("$.ingredientSections[0].sections[0].name")
+                        .value("Meat"))
+                .andExpect(jsonPath("$.ingredientSections[0].sections[0].ingredients[0].ingredientName")
+                        .value("Beef mince"))
+
+                // Instruction section
+                .andExpect(jsonPath("$.instructionSections[0].name")
+                        .value("Make the sauce"))
+                .andExpect(jsonPath("$.instructionSections[0].steps[0].instruction")
+                        .value("Heat the oil."))
+
+                // Nested instruction section
+                .andExpect(jsonPath("$.instructionSections[0].sections[0].name")
+                        .value("Brown the meat"))
+                .andExpect(jsonPath("$.instructionSections[0].sections[0].steps[0].instruction")
+                        .value("Brown the mince."));
+
+        verify(recipeImportService).importRecipeDraftFromText(text);
 
     }
 

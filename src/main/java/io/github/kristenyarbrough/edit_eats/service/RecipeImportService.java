@@ -103,7 +103,13 @@ public class RecipeImportService {
         Integer totalMinutes = null;
 
         List<ImportedIngredient> ingredients = new ArrayList<>();
+        List<ImportedIngredientSection> ingredientSections = new ArrayList<>();
+
         List<ImportedStep> steps = new ArrayList<>();
+        List<ImportedInstructionSection> instructionSections = new ArrayList<>();
+
+        ImportedIngredientSection currentIngredientSection = null;
+        ImportedInstructionSection currentInstructionSection = null;
 
         boolean readingIngredients = false;
         boolean readingMethod = false;
@@ -152,6 +158,7 @@ public class RecipeImportService {
 
                 totalMinutes = parseTimeValue(heading);
                 continue;
+
             }
 
             if (heading.toLowerCase().startsWith("serves")) {
@@ -166,34 +173,104 @@ public class RecipeImportService {
 
                 readingIngredients = true;
                 readingMethod = false;
+                currentIngredientSection = null;
                 continue;
 
             }
 
             if (heading.equalsIgnoreCase("method")
-                    || line.equalsIgnoreCase("instructions")) {
+                    || heading.equalsIgnoreCase("instructions")) {
 
                 readingIngredients = false;
                 readingMethod = true;
+                currentInstructionSection = null;
                 continue;
 
             }
 
             if (readingIngredients) {
 
-                ingredients.add(parseIngredient(line));
+                if (looksLikeIngredient(line)
+                        || !isLikelyIngredientSection(line, lines, i)) {
+
+                    ImportedIngredient ingredient = parseIngredient(line);
+
+                    if (currentIngredientSection != null) {
+
+                        currentIngredientSection.getIngredients().add(ingredient);
+
+                    } else {
+
+                        ingredients.add(ingredient);
+
+                    }
+
+                } else {
+
+                    ImportedIngredientSection section = ImportedIngredientSection.builder()
+                            .name(line)
+                            .ingredients(new ArrayList<>())
+                            .sections(new ArrayList<>())
+                            .build();
+
+                    if (currentIngredientSection == null) {
+
+                        ingredientSections.add(section);
+
+                    } else {
+
+                        currentIngredientSection.getSections().add(section);
+
+                    }
+
+                    currentIngredientSection = section;
+
+                }
+
                 continue;
 
             }
 
             if (readingMethod) {
 
-                steps.add(
-                        ImportedStep.builder()
-                                .stepNumber(steps.size() + 1)
-                                .instruction(line)
-                                .build()
-                );
+                if (looksLikeInstructionSection(line)) {
+
+                    ImportedInstructionSection section = ImportedInstructionSection.builder()
+                            .name(line)
+                            .steps(new ArrayList<>())
+                            .sections(new ArrayList<>())
+                            .build();
+
+                    if (currentInstructionSection == null) {
+
+                        instructionSections.add(section);
+
+                    } else {
+
+                        currentInstructionSection.getSections().add(section);
+
+                    }
+
+                    currentInstructionSection = section;
+
+                } else {
+
+                    ImportedStep step = ImportedStep.builder()
+                            .stepNumber(steps.size() + 1)
+                            .instruction(line)
+                            .build();
+
+                    if (currentInstructionSection != null) {
+
+                        currentInstructionSection.getSteps().add(step);
+
+                    } else {
+
+                        steps.add(step);
+
+                    }
+
+                }
 
             }
 
@@ -207,7 +284,9 @@ public class RecipeImportService {
                 .passiveMinutes(passiveMinutes)
                 .totalMinutes(totalMinutes)
                 .ingredients(ingredients)
+                .ingredientSections(ingredientSections)
                 .steps(steps)
+                .instructionSections(instructionSections)
                 .build();
 
         validateImportedRecipe(recipe);
@@ -534,6 +613,153 @@ public class RecipeImportService {
                 false
         );
 
+
+    }
+
+    private boolean looksLikeIngredient(String line) {
+
+        String[] parts = line.split("\\s+", 4);
+
+        // Examples:
+        // 1 ¼ cups flour
+        // 1 1/2 cups flour
+        if (parts.length >= 4
+                && isQuantity(parts[0] + " " + parts[1])
+                && isUnit(parts[2])) {
+
+            return true;
+
+        }
+
+        // Examples:
+        // 500 g chicken
+        // 2 tbsp butter
+        if (parts.length >= 3
+                && isQuantity(parts[0])
+                && isUnit(parts[1])) {
+
+            return true;
+
+        }
+
+        // Examples:
+        // 1 onion
+        // 2 eggs
+        if (parts.length >= 2
+                && isQuantity(parts[0])) {
+
+            return true;
+
+        }
+
+        // Examples:
+        // 50g ground almonds
+        // 400ml chicken stock
+        // 150g Greek yoghurt
+        if (parts.length >= 2
+                && parts[0].matches(
+                "\\d+(?:\\.\\d+)?(?:g|kg|ml|l|tsp|tbsp|cup|oz|lb)s?"
+        )) {
+
+            return true;
+
+        }
+
+        // Examples:
+        // thumb-sized piece ginger
+        // small bunch coriander
+        if (line.toLowerCase().startsWith("thumb-sized piece ")
+                || line.toLowerCase().startsWith("small bunch ")) {
+
+            return true;
+
+        }
+
+        // Examples:
+        // salt to taste
+        return line.toLowerCase().contains("to taste");
+
+    }
+
+    private boolean isLikelyIngredientSection(String line, String[] lines, int index) {
+
+        if (looksLikeIngredient(line)) {
+
+            return false;
+
+        }
+
+        if (index + 1 >= lines.length) {
+
+            return false;
+
+        }
+
+        String nextLine = lines[index + 1];
+
+        return looksLikeQuantifiedIngredient(nextLine);
+
+    }
+
+    private boolean looksLikeQuantifiedIngredient(String line) {
+
+        String[] parts = line.split("\\s+", 4);
+
+        // Examples:
+        // 1 ¼ cups flour
+        // 1 1/2 cups flour
+        if (parts.length >= 4
+                && isQuantity(parts[0] + " " + parts[1])
+                && isUnit(parts[2])) {
+
+            return true;
+
+        }
+
+        // Examples:
+        // 500 g chicken
+        // 2 tbsp butter
+        if (parts.length >= 3
+                && isQuantity(parts[0])
+                && isUnit(parts[1])) {
+
+            return true;
+
+        }
+
+        // Examples:
+        // 1 onion
+        // 4 eggs
+        if (parts.length >= 2
+                && isQuantity(parts[0])) {
+
+            return true;
+
+        }
+
+        // Examples:
+        // 50g ground almonds
+        // 400ml chicken stock
+        if (parts.length >= 2
+        && parts[0].matches(
+                "\\d+(?:\\.\\d+)?(?:g|kg|ml|l|tsp|tbsp|cup|oz|lb)s?"
+        )) {
+
+            return true;
+
+        }
+
+        return false;
+
+    }
+
+    private boolean looksLikeInstructionSection(String line) {
+
+        // For the current text-import format, section headings do not
+        // end with punctuation, while instruction steps do.
+        return !line.endsWith(".")
+                && !line.endsWith("!")
+                && !line.endsWith("?");
 
     }
 

@@ -485,6 +485,595 @@ class RecipeServiceTest {
     }
 
     @Test
+    void shouldGetRecipeWithCompleteNestedStructure() {
+
+        Recipe recipe = Recipe.builder()
+                .id(1L)
+                .name("Scrambled Eggs")
+                .build();
+
+        // Ingredients
+        Ingredient eggs = Ingredient.builder()
+                .id(1L)
+                .name("Eggs")
+                .build();
+
+        Ingredient salt = Ingredient.builder()
+                .id(2L)
+                .name("Salt")
+                .build();
+
+        RecipeIngredient topLevelIngredient = RecipeIngredient.builder()
+                .id(1L)
+                .recipe(recipe)
+                .ingredient(eggs)
+                .quantity(new BigDecimal("2"))
+                .unit(Unit.EACH)
+                .section(null)
+                .build();
+
+        RecipeIngredient nestedIngredient = RecipeIngredient.builder()
+                .id(2L)
+                .recipe(recipe)
+                .ingredient(salt)
+                .quantity(new BigDecimal("1"))
+                .unit(Unit.TSP)
+                .section(null)
+                .build();
+
+        // Ingredient sections
+        RecipeIngredientSection sauceSection = RecipeIngredientSection.builder()
+                .id(1L)
+                .recipe(recipe)
+                .name("Sauce")
+                .sortOrder(0)
+                .build();
+
+        RecipeIngredientSection garnishSection = RecipeIngredientSection.builder()
+                .id(2L)
+                .recipe(recipe)
+                .name("Garnish")
+                .sortOrder(0)
+                .parentSection(sauceSection)
+                .build();
+
+        nestedIngredient.setSection(garnishSection);
+
+        // Instruction sections
+        RecipeInstructionSection methodSection = RecipeInstructionSection.builder()
+                .id(1L)
+                .recipe(recipe)
+                .name("Method")
+                .sortOrder(0)
+                .build();
+
+        RecipeInstructionSection sauceInstructionSection = RecipeInstructionSection.builder()
+                .id(2L)
+                .recipe(recipe)
+                .name("Sauce")
+                .sortOrder(0)
+                .parentSection(methodSection)
+                .build();
+
+        // Steps
+        RecipeStep topLevelStep = RecipeStep.builder()
+                .id(1L)
+                .recipe(recipe)
+                .stepNumber(1)
+                .instruction("Prepare the ingredients.")
+                .section(null)
+                .build();
+
+        RecipeStep nestedStep = RecipeStep.builder()
+                .id(2L)
+                .recipe(recipe)
+                .stepNumber(2)
+                .instruction("Add the sauce.")
+                .section(sauceInstructionSection)
+                .build();
+
+        when(recipeRepository.findById(1L)).thenReturn(Optional.of(recipe));
+        when(recipeIngredientRepository.findByRecipeId(1L))
+                .thenReturn(List.of(topLevelIngredient, nestedIngredient));
+        when(recipeIngredientSectionRepository.findByRecipeIdOrderBySortOrder(1L))
+                .thenReturn(List.of(sauceSection, garnishSection));
+        when(recipeStepRepository.findByRecipeIdOrderByStepNumber(1L))
+                .thenReturn(List.of(topLevelStep, nestedStep));
+        when(recipeInstructionSectionRepository.findByRecipeIdOrderBySortOrder(1L))
+                .thenReturn(List.of(methodSection, sauceInstructionSection));
+        when(recipeCategoryAssignmentRepository.findByRecipeId(1L))
+                .thenReturn(List.of());
+
+        RecipeResponse response = recipeService.getRecipe(1L);
+
+        // Top level ingredients
+        assertEquals(1, response.getIngredients().size());
+        assertEquals("Eggs", response.getIngredients().get(0).getIngredientName());
+
+        // Nested ingredient sections
+        assertEquals(1, response.getIngredientSections().size());
+
+        RecipeIngredientSectionResponse sauceResponse = response.getIngredientSections().get(0);
+
+        assertEquals("Sauce", sauceResponse.getName());
+        assertEquals(0, sauceResponse.getIngredients().size());
+        assertEquals(1, sauceResponse.getSections().size());
+
+        RecipeIngredientSectionResponse garnishResponse = sauceResponse.getSections().get(0);
+
+        assertEquals("Garnish", garnishResponse.getName());
+        assertEquals(1, garnishResponse.getIngredients().size());
+        assertEquals("Salt", garnishResponse.getIngredients().get(0).getIngredientName());
+
+        // Top level steps
+        assertEquals(1, response.getSteps().size());
+        assertEquals("Prepare the ingredients.",
+                response.getSteps().get(0).getInstruction());
+
+        // Nested instruction sections
+        assertEquals(1, response.getInstructionSections().size());
+
+        RecipeInstructionSectionResponse methodResponse =
+                response.getInstructionSections().get(0);
+
+        assertEquals("Method", methodResponse.getName());
+        assertEquals(0, methodResponse.getSteps().size());
+        assertEquals(1, methodResponse.getSections().size());
+
+        RecipeInstructionSectionResponse sauceInstructionResponse =
+                methodResponse.getSections().get(0);
+
+        assertEquals("Sauce", sauceResponse.getName());
+        assertEquals(1, sauceInstructionResponse.getSteps().size());
+        assertEquals("Add the sauce.",
+                sauceInstructionResponse.getSteps().get(0).getInstruction());
+
+    }
+
+    @Test
+    void shouldGetRecipeWithMixedTopLevelAndNestedInstructionSteps() {
+
+        Recipe recipe = Recipe.builder()
+                .id(1L)
+                .name("Scrambled Eggs")
+                .build();
+
+        RecipeInstructionSection methodSection = RecipeInstructionSection.builder()
+                .id(1L)
+                .recipe(recipe)
+                .name("Method")
+                .sortOrder(0)
+                .build();
+
+        RecipeInstructionSection sauceSection = RecipeInstructionSection.builder()
+                .id(2L)
+                .recipe(recipe)
+                .name("Sauce")
+                .sortOrder(1)
+                .build();
+
+        RecipeStep topLevelStep1 = RecipeStep.builder()
+                .id(1L)
+                .recipe(recipe)
+                .stepNumber(1)
+                .instruction("Crack the eggs into a bowl.")
+                .section(null)
+                .build();
+
+        RecipeStep nestedStep = RecipeStep.builder()
+                .id(2L)
+                .recipe(recipe)
+                .stepNumber(2)
+                .instruction("Add the sauce.")
+                .section(sauceSection)
+                .build();
+
+        RecipeStep topLevelStep2 = RecipeStep.builder()
+                .id(3L)
+                .recipe(recipe)
+                .stepNumber(3)
+                .instruction("Cook the eggs.")
+                .section(null)
+                .build();
+
+        when(recipeRepository.findById(1L)).thenReturn(Optional.of(recipe));
+        when(recipeIngredientRepository.findByRecipeId(1L))
+                .thenReturn(List.of());
+        when(recipeIngredientSectionRepository.findByRecipeIdOrderBySortOrder(1L))
+                .thenReturn(List.of());
+        when(recipeStepRepository.findByRecipeIdOrderByStepNumber(1L))
+                .thenReturn(List.of(topLevelStep1, nestedStep, topLevelStep2));
+        when(recipeInstructionSectionRepository.findByRecipeIdOrderBySortOrder(1L))
+                .thenReturn(List.of(methodSection, sauceSection));
+        when(recipeCategoryAssignmentRepository.findByRecipeId(1L))
+                .thenReturn(List.of());
+
+        RecipeResponse response = recipeService.getRecipe(1L);
+
+        // Only top-level steps should appear directly on the recipe
+        assertEquals(2, response.getSteps().size());
+
+        assertEquals("Crack the eggs into a bowl.",
+                response.getSteps().get(0).getInstruction());
+
+        assertEquals("Cook the eggs.",
+                response.getSteps().get(1).getInstruction());
+
+        // Root instruction sections should be returned
+        assertEquals(2, response.getInstructionSections().size());
+
+        RecipeInstructionSectionResponse methodResponse =
+                response.getInstructionSections().get(0);
+
+        assertEquals("Method", methodResponse.getName());
+        assertTrue(methodResponse.getSteps().isEmpty());
+
+        RecipeInstructionSectionResponse sauceResponse =
+                response.getInstructionSections().get(1);
+
+        assertEquals("Sauce", sauceResponse.getName());
+
+        // The nested step should only appear inside its section
+        assertEquals(1, sauceResponse.getSteps().size());
+        assertEquals("Add the sauce.",
+                sauceResponse.getSteps().get(0).getInstruction());
+
+    }
+
+    @Test
+    void shouldGetRecipeWithBothIngredientAndInstructionSectionHierarchies() {
+
+        Recipe recipe = Recipe.builder()
+                .id(1L)
+                .name("Scrambled Eggs")
+                .build();
+
+        // Ingredients
+        Ingredient eggs = Ingredient.builder()
+                .id(1L)
+                .name("Eggs")
+                .build();
+
+        Ingredient salt = Ingredient.builder()
+                .id(2L)
+                .name("Salt")
+                .build();
+
+        // Ingredient sections
+        RecipeIngredientSection ingredientsSection = RecipeIngredientSection.builder()
+                .id(1L)
+                .recipe(recipe)
+                .name("Ingredients")
+                .sortOrder(0)
+                .build();
+
+        RecipeIngredientSection garnishSection = RecipeIngredientSection.builder()
+                .id(2L)
+                .recipe(recipe)
+                .name("Garnish")
+                .sortOrder(0)
+                .parentSection(ingredientsSection)
+                .build();
+
+        RecipeIngredient eggsIngredient = RecipeIngredient.builder()
+                .id(1L)
+                .recipe(recipe)
+                .ingredient(eggs)
+                .quantity(new BigDecimal("2"))
+                .unit(Unit.EACH)
+                .section(ingredientsSection)
+                .build();
+
+        RecipeIngredient saltIngredient = RecipeIngredient.builder()
+                .id(2L)
+                .recipe(recipe)
+                .ingredient(salt)
+                .quantity(new BigDecimal("1"))
+                .unit(Unit.TSP)
+                .section(garnishSection)
+                .build();
+
+        // Instruction sections
+        RecipeInstructionSection methodSection = RecipeInstructionSection.builder()
+                .id(1L)
+                .recipe(recipe)
+                .name("Method")
+                .sortOrder(0)
+                .build();
+
+        RecipeInstructionSection sauceSection = RecipeInstructionSection.builder()
+                .id(2L)
+                .recipe(recipe)
+                .name("Sauce")
+                .sortOrder(0)
+                .parentSection(methodSection)
+                .build();
+
+        // Steps
+        RecipeStep prepareStep = RecipeStep.builder()
+                .id(1L)
+                .recipe(recipe)
+                .stepNumber(1)
+                .instruction("Prepare the ingredients.")
+                .section(methodSection)
+                .build();
+
+        RecipeStep sauceStep = RecipeStep.builder()
+                .id(2L)
+                .recipe(recipe)
+                .stepNumber(2)
+                .instruction("Add the sauce.")
+                .section(sauceSection)
+                .build();
+
+        when(recipeRepository.findById(1L)).thenReturn(Optional.of(recipe));
+        when(recipeIngredientRepository.findByRecipeId(1L))
+                .thenReturn(List.of(eggsIngredient, saltIngredient));
+        when(recipeIngredientSectionRepository.findByRecipeIdOrderBySortOrder(1L))
+                .thenReturn(List.of(ingredientsSection, garnishSection));
+        when(recipeStepRepository.findByRecipeIdOrderByStepNumber(1L))
+                .thenReturn(List.of(prepareStep, sauceStep));
+        when(recipeInstructionSectionRepository.findByRecipeIdOrderBySortOrder(1L))
+                .thenReturn(List.of(methodSection, sauceSection));
+        when(recipeCategoryAssignmentRepository.findByRecipeId(1L))
+                .thenReturn(List.of());
+
+        RecipeResponse response = recipeService.getRecipe(1L);
+
+        // Ingredient hierarchy
+        assertEquals(1, response.getIngredientSections().size());
+
+        RecipeIngredientSectionResponse ingredientsResponse =
+                response.getIngredientSections().get(0);
+
+        assertEquals("Ingredients", ingredientsResponse.getName());
+        assertEquals(1, ingredientsResponse.getIngredients().size());
+        assertEquals("Eggs",
+                ingredientsResponse.getIngredients().get(0).getIngredientName());
+
+        assertEquals(1, ingredientsResponse.getSections().size());
+
+        RecipeIngredientSectionResponse garnishResponse = ingredientsResponse.getSections().get(0);
+
+        assertEquals("Garnish", garnishResponse.getName());
+        assertEquals(1, garnishResponse.getIngredients().size());
+        assertEquals("Salt", garnishResponse.getIngredients().get(0).getIngredientName());
+
+        // Instruction hierarchy
+        assertEquals(1, response.getInstructionSections().size());
+
+        RecipeInstructionSectionResponse methodResponse = response.getInstructionSections().get(0);
+
+        assertEquals("Method", methodResponse.getName());
+        assertEquals(1, methodResponse.getSteps().size());
+        assertEquals("Prepare the ingredients.",
+                methodResponse.getSteps().get(0).getInstruction());
+
+        assertEquals(1, methodResponse.getSections().size());
+
+        RecipeInstructionSectionResponse sauceResponse =
+                methodResponse.getSections().get(0);
+
+        assertEquals("Sauce", sauceResponse.getName());
+        assertEquals(1, sauceResponse.getSteps().size());
+        assertEquals("Add the sauce.",
+                sauceResponse.getSteps().get(0).getInstruction());
+
+    }
+
+
+    @Test
+    void shouldOrderIngredientSectionsBySortOrder() {
+
+        Recipe recipe = Recipe.builder()
+                .id(1L)
+                .name("Scrambled Eggs")
+                .build();
+
+        RecipeIngredientSection firstSection = RecipeIngredientSection.builder()
+                .id(1L)
+                .recipe(recipe)
+                .name("Egg Mixture")
+                .sortOrder(0)
+                .parentSection(null)
+                .build();
+
+        RecipeIngredientSection secondSection = RecipeIngredientSection.builder()
+                .id(2L)
+                .recipe(recipe)
+                .name("Garnish")
+                .sortOrder(1)
+                .parentSection(null)
+                .build();
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(recipeIngredientRepository.findByRecipeId(1L))
+                .thenReturn(List.of());
+
+        // Deliberately return the sections out of sort order
+        when(recipeIngredientSectionRepository.findByRecipeIdOrderBySortOrder(1L))
+                .thenReturn(List.of(secondSection, firstSection));
+
+        when(recipeStepRepository.findByRecipeIdOrderByStepNumber(1L))
+                .thenReturn(List.of());
+
+        when(recipeInstructionSectionRepository.findByRecipeIdOrderBySortOrder(1L))
+                .thenReturn(List.of());
+
+        when(recipeCategoryAssignmentRepository.findByRecipeId(1L))
+                .thenReturn(List.of());
+
+        RecipeResponse response = recipeService.getRecipe(1L);
+
+        assertEquals(2, response.getIngredientSections().size());
+
+        assertEquals("Egg Mixture", response.getIngredientSections().get(0).getName());
+
+        assertEquals("Garnish", response.getIngredientSections().get(1).getName());
+
+    }
+
+    @Test
+    void shouldOrderInstructionSectionsBySortOrder() {
+
+        Recipe recipe = Recipe.builder()
+                .id(1L)
+                .name("Scrambled Eggs")
+                .build();
+
+        RecipeInstructionSection firstSection = RecipeInstructionSection.builder()
+                .id(1L)
+                .recipe(recipe)
+                .name("Prepare")
+                .sortOrder(0)
+                .parentSection(null)
+                .build();
+
+        RecipeInstructionSection secondSection = RecipeInstructionSection.builder()
+                .id(2L)
+                .recipe(recipe)
+                .name("Cook")
+                .sortOrder(1)
+                .parentSection(null)
+                .build();
+
+        RecipeStep firstStep = RecipeStep.builder()
+                .id(1L)
+                .recipe(recipe)
+                .stepNumber(1)
+                .instruction("Prepare the ingredients.")
+                .section(firstSection)
+                .build();
+
+        RecipeStep secondStep = RecipeStep.builder()
+                .id(2L)
+                .recipe(recipe)
+                .stepNumber(2)
+                .instruction("Cook the eggs.")
+                .section(secondSection)
+                .build();
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(recipeIngredientRepository.findByRecipeId(1L))
+                .thenReturn(List.of());
+
+        when(recipeIngredientSectionRepository.findByRecipeIdOrderBySortOrder(1L))
+                .thenReturn(List.of());
+
+        when(recipeStepRepository.findByRecipeIdOrderByStepNumber(1L))
+                .thenReturn(List.of(firstStep, secondStep));
+
+        // Deliberately return the sections out of sort order
+        when(recipeInstructionSectionRepository.findByRecipeIdOrderBySortOrder(1L))
+                .thenReturn(List.of(secondSection, firstSection));
+
+        when(recipeCategoryAssignmentRepository.findByRecipeId(1L))
+                .thenReturn(List.of());
+
+        RecipeResponse response = recipeService.getRecipe(1L);
+
+        assertEquals(2, response.getInstructionSections().size());
+
+        assertEquals("Prepare", response.getInstructionSections().get(0).getName());
+
+        assertEquals("Cook", response.getInstructionSections().get(1).getName());
+
+    }
+
+    @Test
+    void shouldGetRecipeWithDeeplyNestedInstructionSections() {
+
+        Recipe recipe = Recipe.builder()
+                .id(1L)
+                .name("Scrambled Eggs")
+                .build();
+
+        RecipeInstructionSection methodSection = RecipeInstructionSection.builder()
+                .id(1L)
+                .recipe(recipe)
+                .name("Method")
+                .sortOrder(0)
+                .build();
+
+        RecipeInstructionSection sauceSection = RecipeInstructionSection.builder()
+                .id(2L)
+                .recipe(recipe)
+                .name("Sauce")
+                .sortOrder(0)
+                .parentSection(methodSection)
+                .build();
+
+        RecipeInstructionSection finishingSection = RecipeInstructionSection.builder()
+                .id(3L)
+                .recipe(recipe)
+                .name("Finishing")
+                .sortOrder(0)
+                .parentSection(sauceSection)
+                .build();
+
+        RecipeStep deeplyNestedStep = RecipeStep.builder()
+                .id(1L)
+                .recipe(recipe)
+                .stepNumber(1)
+                .instruction("Finish the eggs with the sauce.")
+                .section(finishingSection)
+                .build();
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(recipeIngredientRepository.findByRecipeId(1L))
+                .thenReturn(List.of());
+
+        when(recipeIngredientSectionRepository.findByRecipeIdOrderBySortOrder(1L))
+                .thenReturn(List.of());
+
+        when(recipeStepRepository.findByRecipeIdOrderByStepNumber(1L))
+                .thenReturn(List.of(deeplyNestedStep));
+
+        when(recipeInstructionSectionRepository.findByRecipeIdOrderBySortOrder(1L))
+                .thenReturn(List.of(methodSection, sauceSection, finishingSection));
+
+        when(recipeCategoryAssignmentRepository.findByRecipeId(1L))
+                .thenReturn(List.of());
+
+        RecipeResponse response = recipeService.getRecipe(1L);
+
+        assertEquals(0, response.getSteps().size());
+
+        assertEquals(1, response.getInstructionSections().size());
+
+        RecipeInstructionSectionResponse methodRepsonse =
+                response.getInstructionSections().get(0);
+
+        assertEquals("Method", methodRepsonse.getName());
+        assertEquals(0, methodRepsonse.getSteps().size());
+
+        assertEquals(1, methodRepsonse.getSections().size());
+
+        RecipeInstructionSectionResponse sauceResponse =
+                methodRepsonse.getSections().get(0);
+
+        assertEquals("Sauce", sauceResponse.getName());
+        assertEquals(0, sauceResponse.getSteps().size());
+
+        assertEquals(1, sauceResponse.getSections().size());
+
+        RecipeInstructionSectionResponse finishingResponse =
+                sauceResponse.getSections().get(0);
+
+        assertEquals("Finishing", finishingResponse.getName());
+        assertEquals(1, finishingResponse.getSteps().size());
+        assertEquals("Finish the eggs with the sauce.",
+                finishingResponse.getSteps().get(0).getInstruction());
+
+    }
+
+    @Test
     void shouldThrowWhenRecipeCategoryDoesNotExist() {
 
         CreateRecipeRequest request = createValidRequest();
