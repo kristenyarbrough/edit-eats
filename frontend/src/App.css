@@ -1,0 +1,36 @@
+.app {
+    min-height: 100vh;
+}
+
+.header {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 3rem;
+    font-weight: 700;
+}
+
+.header p {
+    margin-top: 10px;
+    font-size: 1.1rem;
+}
+
+.home {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 40px 20px;
+}
+
+.home button {
+    padding: 15px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #f6e497;
+    color: #415037;
+    font-weight: bold;
+}

@@ -256,7 +256,9 @@ public class RecipeImportService {
                 } else {
 
                     ImportedStep step = ImportedStep.builder()
-                            .stepNumber(steps.size() + 1)
+                            .stepNumber(currentInstructionSection == null
+                                    ? steps.size() + 1
+                                    : currentInstructionSection.getSteps().size() + 1)
                             .instruction(line)
                             .build();
 

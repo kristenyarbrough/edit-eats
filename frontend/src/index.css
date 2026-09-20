@@ -1,0 +1,14 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Fredoka', sans-serif;
+    background: #f6f3e7;
+    color: #415037;
+}
+
+button {
+    font: inherit;
+}
