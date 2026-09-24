@@ -278,11 +278,32 @@ public class RecipeImportService {
 
         }
 
+        if (passiveMinutes == null) {
+            passiveMinutes = 0;
+        }
+
+        Integer activeMinutes = null;
+
+        if (prepMinutes != null || cookMinutes != null) {
+
+            activeMinutes = (prepMinutes == null ? 0 : prepMinutes)
+                    + (cookMinutes == null ? 0 : cookMinutes);
+
+        }
+
+        if (totalMinutes == null) {
+
+            totalMinutes = (activeMinutes == null ? 0 : activeMinutes)
+                    + passiveMinutes;
+
+        }
+
         ImportedRecipe recipe = ImportedRecipe.builder()
                 .name(name)
                 .servings(servings)
                 .prepMinutes(prepMinutes)
                 .cookMinutes(cookMinutes)
+                .activeMinutes(activeMinutes)
                 .passiveMinutes(passiveMinutes)
                 .totalMinutes(totalMinutes)
                 .ingredients(ingredients)

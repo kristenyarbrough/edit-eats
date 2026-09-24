@@ -2,6 +2,11 @@
     min-height: 100vh;
 }
 
+.logo {
+    width: 300px;
+    height: auto;
+}
+
 .header {
     padding: 40px 20px;
     text-align: center;
@@ -33,4 +38,198 @@
     background: #f6e497;
     color: #415037;
     font-weight: bold;
+}
+
+.recipe-review {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.recipe-card {
+    padding: 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08)
+}
+
+.recipe-header {
+    margin-bottom: 2rem;
+}
+
+.recipe-review-label {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.recipe-header h1 {
+    margin: 0 0 1rem;
+}
+
+.recipe-name-input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 1rem;
+    padding: 0.5rem 0;
+    border: none;
+    border-bottom: 2px solid #d8cfae;
+    font-size: 2rem;
+    font-weight: 700;
+    background: transparent;
+}
+
+.recipe-name-input:focus {
+    outline: none;
+    border-bottom-color: #b5a46a;
+}
+
+.recipe-meta-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 999px;
+    background: #f3f0e8;
+}
+
+.recipe-meta-field input {
+    width: 3rem;
+    padding: 0.2rem;
+    border: 1px solid #d8cfae;
+    border-radius: 4px;
+    text-align: center;
+    background: white;
+}
+
+.recipe-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.recipe-meta span {
+    padding: 0.5rem 0.75rem;
+    border-radius: 999px;
+    background: #f3f0e8;
+}
+
+.recipe-section {
+    margin-bottom: 2.5rem;
+}
+
+.recipe-section h2 {
+    margin-bottom: 1.25rem;
+}
+
+.ingredient-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ingredient-list p {
+    margin: 0;
+}
+
+.ingredient-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.ingredient-row input,
+.ingredient-row select {
+    padding: 0.5rem;
+    border 1px solid #d8cfae;
+    border-radius: 6px;
+    background: white;
+    box-sizing: border-box;
+}
+
+.ingredient-row input[type="number"] {
+    width: 5rem;
+}
+
+.ingredient-row select {
+    width: 6rem;
+}
+
+.ingredient-row input[type="text"] {
+    flex: 1;
+    min-width: 10rem;
+}
+
+.ingredient-optional {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+}
+
+.remove-ingredient-button {
+    padding: 0.4rem 0.6rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.ingredient-section {
+    margin-top: 1.5rem;
+    padding-left: 1rem;
+    border-left: 3px solid #d8cfae;
+}
+
+.ingredient-section h3 {
+    margin: 0 0 0.75rem;
+}
+
+.ingredient-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.ingredient-section-header h3 {
+    margin: 0 0 0.75rem;
+}
+
+.remove-section-button {
+    padding: 0.4rem 0.6rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.instruction-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.instruction-list p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.step-number {
+    display: inline-block;
+    min-width: 1.5rem;
+    font-weight: 600;
+}
+
+.instruction-section {
+    margin-top: 1.5rem;
+    padding-left: 1rem;
+    border-left: 3px solid #d8cfae;
+}
+
+.instruction-section h3 {
+    margin 0 0 0.75rem;
 }

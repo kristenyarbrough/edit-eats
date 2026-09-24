@@ -1,50 +1,7 @@
 import { useState } from 'react'
 import './App.css'
+import RecipeReview from './components/RecipeReview'
 
-function IngredientSection({ section }) {
-    return (
-        <div>
-            <h3>{section.name}</h3>
-
-            {section.ingredients.map((ingredient, index) => (
-                <p key={index}>
-                    {ingredient.quantity && `${ingredient.quantity} `}
-                    {ingredient.unit && `${ingredient.unit.toLowerCase()} `}
-                    {ingredient.ingredientName}
-                    {ingredient.preparation && `, ${ingredient.preparation}`}
-                    {ingredient.optional && ' (optional)'}
-                </p>
-            ))}
-
-            {section.sections.map((nestedSection, index) => (
-                <IngredientSection
-                    key={index}
-                    section={nestedSection}
-                />
-            ))}
-        </div>
-    )
-}
-function InstructionSection({ section }) {
-    return (
-        <div>
-            <h3>{section.name}</h3>
-
-            {section.steps.map((step, index) => (
-                <p key={index}>
-                    {step.stepNumber}. {step.instruction}
-                </p>
-            ))}
-
-            {section.sections.map((nestedSection, index) => (
-                <InstructionSection
-                    key={index}
-                    section={nestedSection}
-                />
-            ))}
-        </div>
-    )
-}
 function App() {
     const [showImport, setShowImport] = useState(false)
     const [recipeText, setRecipeText] = useState('')
@@ -76,7 +33,12 @@ function App() {
 
         <div className="app">
             <header className="header">
-                <h1>Edit Eats</h1>
+                <img
+                    src="/edit-eats-logo.svg"
+                    alt="Edit Eats"
+                    className="logo"
+                />
+{/*                 <h1>Edit Eats</h1> */}
                 <p>Your recipes, organised your way.</p>
             </header>
 
@@ -114,49 +76,11 @@ function App() {
                     </div>
                 )}
                 {recipe && (
-                    <div>
-                        <h2>{recipe.name}</h2>
-
-                        <p>Serves: {recipe.servings}</p>
-
-                        <p>Prep: {recipe.prepMinutes} minutes</p>
-
-                        <p>Cook: {recipe.cookMinutes} minutes</p>
-
-                        <h2>Ingredients</h2>
-
-                        {recipe.ingredients.map((ingredient, index) => (
-                            <p key={index}>
-                                {ingredient.quantity && `${ingredient.quantity} `}
-                                {ingredient.unit && `${ingredient.unit.toLowerCase()} `}
-                                {ingredient.ingredientName}
-                                {ingredient.preparation && `, ${ingredient.preparation}`}
-                                {ingredient.optional && ' (optional)'}
-                            </p>
-                        ))}
-
-                        {recipe.ingredientSections.map((section, index) => (
-                            <IngredientSection
-                                key={index}
-                                section={section}
-                            />
-                        ))}
-
-                        <h2>Method</h2>
-                        {recipe.steps.map((step, index) => (
-                            <p key={index}>
-                                {step.stepNumber}. {step.instruction}
-                            </p>
-                        ))}
-
-                        {recipe.instructionSections.map((section, index) => (
-                            <InstructionSection
-                                key={index}
-                                section={section}
-                            />
-                        ))}
-
-                    </div>
+                    <RecipeReview
+                        recipe={recipe}
+                        onBack={() => setRecipe(null)}
+                        onSave={() => console.log('Save recipe')}
+                    />
                 )}
             </main>
         </div>

@@ -166,6 +166,103 @@ class RecipeImportServiceTest {
     }
 
     @Test
+    void shouldCalculateActiveAndTotalTimeWhenImportingRecipeFromText() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Chicken Curry
+                
+                Serves: 4
+                Prep Time: 15 minutes
+                Cook Time: 30 minutes
+                
+                Ingredients:
+                500 g  chicken breast
+                
+                Method:
+                Cook the chicken.
+                """);
+
+        assertEquals(15, result.getPrepMinutes());
+        assertEquals(30, result.getCookMinutes());
+        assertEquals(45, result.getActiveMinutes());
+        assertEquals(0, result.getPassiveMinutes());
+        assertEquals(45, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldCalculateTotalTimeWithPassiveTimeWhenImportingRecipeFromText() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Marinated Chicken
+                
+                Prep Time: 15 minutes
+                Cook Time: 10 minutes
+                Marinating Time: 2 hours
+                
+                Ingredients:
+                500 g chicken breast
+                
+                Method:
+                Marinate the chicken.
+                Cook the chicken.
+                """);
+
+        assertEquals(15, result.getPrepMinutes());
+        assertEquals(10, result.getCookMinutes());
+        assertEquals(25, result.getActiveMinutes());
+        assertEquals(120, result.getPassiveMinutes());
+        assertEquals(145, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldCalculateActiveAndTotalTimeFromPrepTimeOnlyWhenImportingRecipeFromText() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Simple Salad
+                
+                Prep Time: 15 minutes
+                
+                Ingredients:
+                100 g lettuce
+                
+                Method:
+                Prepare the salad.
+                """);
+
+        assertEquals(15, result.getPrepMinutes());
+        assertNull(result.getCookMinutes());
+        assertEquals(15, result.getActiveMinutes());
+        assertEquals(0, result.getPassiveMinutes());
+        assertEquals(15, result.getTotalMinutes());
+
+    }
+
+    @Test
+    void shouldCalculateActiveAndTotalTimeFromCookTimeOnlyWhenImportingRecipeFromText() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Roast Chicken
+                
+                Cook Time: 60 minutes
+                
+                Ingredients:
+                100 whole chicken
+                
+                Method:
+                Cook the chicken.
+                """);
+
+        assertNull(result.getPrepMinutes());
+        assertEquals(60, result.getCookMinutes());
+        assertEquals(60, result.getActiveMinutes());
+        assertEquals(0, result.getPassiveMinutes());
+        assertEquals(60, result.getTotalMinutes());
+
+    }
+
+    @Test
     void shouldImportRecipeFromTextWithNestedSections() {
 
         ImportedRecipe result = recipeImportService.importRecipeFromText("""
