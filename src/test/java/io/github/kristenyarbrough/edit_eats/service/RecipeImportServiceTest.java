@@ -263,7 +263,7 @@ class RecipeImportServiceTest {
     }
 
     @Test
-    void shouldImportRecipeFromTextWithNestedSections() {
+    void shouldImportRecipeFromTextWithMultipleSections() {
 
         ImportedRecipe result = recipeImportService.importRecipeFromText("""
                 Lasagne
@@ -290,43 +290,39 @@ class RecipeImportServiceTest {
         assertEquals(60, result.getCookMinutes());
 
         // Ingredient sections
-        assertEquals(1, result.getIngredientSections().size());
+        assertEquals(2, result.getIngredientSections().size());
 
         ImportedIngredientSection sauceSection = result.getIngredientSections().get(0);
 
         assertEquals("Sauce", sauceSection.getName());
-
         assertEquals(1, sauceSection.getIngredients().size());
         assertEquals("olive oil", sauceSection.getIngredients().get(0).getName());
+        assertTrue(sauceSection.getSections().isEmpty());
 
-        assertEquals(1, sauceSection.getSections().size());
-
-        ImportedIngredientSection meatSection = sauceSection.getSections().get(0);
+        ImportedIngredientSection meatSection = result.getIngredientSections().get(1);
 
         assertEquals("Meat", meatSection.getName());
-
         assertEquals(1, meatSection.getIngredients().size());
         assertEquals("beef mince", meatSection.getIngredients().get(0).getName());
+        assertTrue(meatSection.getSections().isEmpty());
 
         // Instruction sections
-        assertEquals(1, result.getInstructionSections().size());
+        assertEquals(2, result.getInstructionSections().size());
 
         ImportedInstructionSection methodSection = result.getInstructionSections().get(0);
 
         assertEquals("Make the sauce", methodSection.getName());
-
         assertEquals(1, methodSection.getSteps().size());
         assertEquals("Heat the oil.", methodSection.getSteps().get(0).getInstruction());
+        assertTrue(methodSection.getSections().isEmpty());
 
-        assertEquals(1, methodSection.getSections().size());
-
-        ImportedInstructionSection meatInstructionSection = methodSection.getSections().get(0);
+        ImportedInstructionSection meatInstructionSection = result.getInstructionSections().get(1);
 
         assertEquals("Brown the meat", meatInstructionSection.getName());
-
         assertEquals(1, meatInstructionSection.getSteps().size());
         assertEquals("Brown the mince.",
                 meatInstructionSection.getSteps().get(0).getInstruction());
+        assertTrue(meatInstructionSection.getSections().isEmpty());
 
     }
 

@@ -213,16 +213,7 @@ public class RecipeImportService {
                             .sections(new ArrayList<>())
                             .build();
 
-                    if (currentIngredientSection == null) {
-
-                        ingredientSections.add(section);
-
-                    } else {
-
-                        currentIngredientSection.getSections().add(section);
-
-                    }
-
+                    ingredientSections.add(section);
                     currentIngredientSection = section;
 
                 }
@@ -241,16 +232,7 @@ public class RecipeImportService {
                             .sections(new ArrayList<>())
                             .build();
 
-                    if (currentInstructionSection == null) {
-
-                        instructionSections.add(section);
-
-                    } else {
-
-                        currentInstructionSection.getSections().add(section);
-
-                    }
-
+                    instructionSections.add(section);
                     currentInstructionSection = section;
 
                 } else {

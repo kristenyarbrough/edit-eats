@@ -215,12 +215,12 @@ Relationships:
     - [ ] Filter by ingredient
   - [ ] Sort
 - [ ] ⭐ Favourite recipes
-- [ ] 📥 Recipe upload/import
+- [x] 📥 Recipe upload/import
 - [ ] ✏️ Edit imported recipe
 - [ ] 🥫 Pantry/inventory/fridge
 - [ ] ☑️ Shopping-list check-off/editing
   - [ ] provide totalMinutes and derive cookMinutes or prepMinutes?
-  - [ ] passiveTime - important if things need to be made in advance
+  - [x] passiveTime - important if things need to be made in advance
 - [ ] Better unit converter, converting between metric and US
 
 ###  Phase 5 — Make meal planning smarter
