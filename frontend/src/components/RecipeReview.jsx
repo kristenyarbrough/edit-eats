@@ -165,6 +165,32 @@ function RecipeReview ({ recipe, onBack, onSave }) {
             ),
         }))
     }
+    const addIngredient = () => {
+        setEditedRecipe((current) => ({
+            ...current,
+            ingredients: [
+                ...current.ingredients,
+                {
+                    quantity: null,
+                    unit: null,
+                    ingredientName: '',
+                    preparation: null,
+                    optional: false
+                }
+            ]
+        }))
+    }
+    const addStep = () => {
+        setEditedRecipe((current) => ({
+            ...current,
+            steps: [
+                ...current.steps,
+                {
+                    instruction: ''
+                }
+            ]
+        }))
+    }
     const updateSectionIngredient = (
         sectionPath,
         ingredientIndex,
@@ -529,6 +555,14 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                 <section className="recipe-section">
                     <h2>Ingredients</h2>
 
+                    <button
+                        type="button"
+                        className="add-item-button"
+                        onClick={addIngredient}
+                    >
+                        Add ingredient
+                    </button>
+
                     <div className="ingredient-list">
                         {editedRecipe.ingredients.map((ingredient, index) => (
                             <IngredientEditor
@@ -560,6 +594,14 @@ function RecipeReview ({ recipe, onBack, onSave }) {
 
                 <section className="recipe-section">
                     <h2>Method</h2>
+
+                    <button
+                        type="button"
+                        className="add-item-button"
+                        onClick={addStep}
+                    >
+                        Add step
+                    </button>
 
                     <div className="instruction-list">
                         {editedRecipe.steps.map((step, index) => (

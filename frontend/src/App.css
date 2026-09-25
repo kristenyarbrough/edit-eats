@@ -40,6 +40,10 @@
     font-weight: bold;
 }
 
+.home button:hover {
+    background: #ead77d;
+}
+
 .recipe-review {
     width: 100%;
     max-width: 800px;
@@ -177,13 +181,32 @@
     white-space: nowrap;
 }
 
-.remove-ingredient-button,
-.remove-section-button,
-.remove-step-button {
-    padding: 0.4rem 0.6rem;
+.recipe-review .remove-ingredient-button,
+.recipe-review .remove-section-button,
+.recipe-review .remove-step-button {
+    padding: 0.25rem 0.4rem;
     border: none;
     background: transparent;
+    color: #8a5a44;
+    font-size: 0.85rem;
+    font-weight: 500;
     cursor: pointer;
+    border-radius: 4px;
+}
+
+.recipe-review .remove-ingredient-button:hover,
+.recipe-review .remove-section-button:hover,
+.recipe-review .remove-step-button:hover {
+    background: #f3f0e8;
+    color: #6f4635;
+    text-decoration: none;
+}
+
+.recipe-review .remove-ingredient-button:focus-visible,
+.recipe-review .remove-section-button:focus-visible,
+.recipe-review .remove-step-button:focus-visible {
+    outline: 2px solid #b5a46a;
+    outline-offset: 2px;
 }
 
 .ingredient-section,
@@ -228,4 +251,19 @@
 
 .instruction-section h3 {
     margin: 0 0 0.75rem;
+}
+
+.add-item-button {
+    margin-bottom: 1rem;
+    padding: 0.5rem 0.9rem;
+    border: none;
+    border-radius: 6px;
+    background: #f6e497;
+    color: #415037;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.add-item-button:hover {
+    background: #ead77d;
 }
