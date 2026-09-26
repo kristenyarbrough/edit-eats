@@ -1,5 +1,9 @@
 import{ useState } from 'react'
 import { formatTime } from '../utils/formatTime'
+import {
+    updateNestedSection,
+    removeNestedSection
+} from '../utils/updateNestedSection'
 import IngredientEditor from './IngredientEditor'
 import InstructionStepEditor from './InstructionStepEditor'
 
@@ -9,7 +13,8 @@ function IngredientSection({
     onUpdateIngredient,
     onRemoveIngredient,
     onRemoveSection,
-    onUpdateSectionName
+    onUpdateSectionName,
+    onAddIngredient
 }) {
     return (
         <div className="ingredient-section">
@@ -33,6 +38,14 @@ function IngredientSection({
                     Remove section
                 </button>
             </div>
+
+            <button
+                type="button"
+                className="add-item-button"
+                onClick={() => onAddIngredient(sectionPath)}
+            >
+                Add ingredient
+            </button>
 
             {section.ingredients.map((ingredient, index) => (
                 <IngredientEditor
@@ -63,6 +76,7 @@ function IngredientSection({
                     onRemoveIngredient={onRemoveIngredient}
                     onRemoveSection={onRemoveSection}
                     onUpdateSectionName={onUpdateSectionName}
+                    onAddIngredient={onAddIngredient}
                 />
             ))}
         </div>
@@ -191,131 +205,115 @@ function RecipeReview ({ recipe, onBack, onSave }) {
             ]
         }))
     }
+    const addIngredientSection = () => {
+        setEditedRecipe((current) => ({
+            ...current,
+            ingredientSections: [
+                ...current.ingredientSections,
+                {
+                    name: 'New section',
+                    ingredients: [],
+                    sections: []
+                }
+            ]
+        }))
+    }
     const updateSectionIngredient = (
         sectionPath,
         ingredientIndex,
         updatedIngredient
     ) => {
-        setEditedRecipe((current) => {
-            const updateSection = (sections, pathIndex) => {
-                return sections.map((section, index) => {
-                    if (index !== sectionPath[pathIndex]) {
-                        return section
-                    }
-
-                    if (pathIndex === sectionPath.length - 1) {
-                        return {
-                            ...section,
-                            ingredients: section.ingredients.map(
-                                (ingredient, index) =>
-                                    index === ingredientIndex
-                                        ? updatedIngredient
-                                        : ingredient
-                            ),
-                        }
-                    }
-
-                    return {
-                        ...section,
-                        sections: updateSection(
-                            section.sections,
-                            pathIndex + 1
-                        ),
-                    }
+        setEditedRecipe((current) => ({
+            ...current,
+            ingredientSections: updateNestedSection(
+                current.ingredientSections,
+                sectionPath,
+                (section) => ({
+                    ...section,
+                    ingredients: section.ingredients.map(
+                        (ingredient, index) =>
+                            index === ingredientIndex
+                                ? updatedIngredient
+                                : ingredient
+                    )
                 })
-            }
-
-            return {
-                ...current,
-                ingredientSections: updateSection(
-                    current.ingredientSections,
-                    0
-                ),
-            }
-        })
+            )
+        }))
     }
     const removeSectionIngredient = (
         sectionPath,
         ingredientIndex
     ) => {
-        setEditedRecipe((current) => {
-            const updateSection = (sections, pathIndex) => {
-                return sections.map((section, index) => {
-                    if (index !== sectionPath[pathIndex]) {
-                        return section
-                    }
-
-                    if (pathIndex === sectionPath.length - 1) {
-                        return {
-                            ...section,
-                            ingredients: section.ingredients.filter(
-                                (_, index) =>
-                                    index !== ingredientIndex
-                            ),
-                        }
-                    }
-
-                    return {
-                        ...section,
-                        sections: updateSection(
-                            section.sections,
-                            pathIndex + 1
-                        ),
-                    }
+        setEditedRecipe((current) => ({
+            ...current,
+            ingredientSections: updateNestedSection(
+                current.ingredientSections,
+                sectionPath,
+                (section) => ({
+                    ...section,
+                    ingredients: section.ingredients.filter(
+                        (_, index) => index !== ingredientIndex
+                    )
                 })
-            }
-
-            return {
-                ...current,
-                ingredientSections: updateSection(
-                    current.ingredientSections,
-                    0
-                ),
-            }
-        })
+            )
+        }))
+    }
+    const addSectionIngredient = (sectionPath) => {
+        setEditedRecipe((current) => ({
+            ...current,
+            ingredientSections: updateNestedSection(
+                current.ingredientSections,
+                sectionPath,
+                (section) => ({
+                    ...section,
+                    ingredients: [
+                        ...section.ingredients,
+                        {
+                            quantity: null,
+                            unit: null,
+                            ingredientName: '',
+                            preparation: null,
+                            optional: false
+                        }
+                    ]
+                })
+            )
+        }))
+    }
+    const addInstructionSection = () => {
+        setEditedRecipe((current) => ({
+            ...current,
+            instructionSections: [
+                ...current.instructionSections,
+                {
+                    name: 'New section',
+                    steps: [],
+                    sections: []
+                }
+            ]
+        }))
     }
     const updateSectionStep = (
         sectionPath,
         stepIndex,
         updatedStep
     ) => {
-        setEditedRecipe((current) => {
-            const updateSection = (sections, pathIndex) => {
-                return sections.map((section, index) => {
-                    if (index !== sectionPath[pathIndex]) {
-                        return section
-                    }
-
-                    if (pathIndex === sectionPath.length - 1) {
-                        return {
-                            ...section,
-                            steps: section.steps.map(
-                                (step, index) =>
-                                    index === stepIndex
-                                        ? updatedStep
-                                        : step
-                            )
-                        }
-                    }
-
-                    return {
-                        ...section,
-                        sections: updateSection(
-                            section.sections,
-                            pathIndex + 1
-                        )
-                    }
+        setEditedRecipe((current) => ({
+            ...current,
+            instructionSections: updateNestedSection(
+                current.instructionSections,
+                sectionPath,
+                (section) => ({
+                    ...section,
+                    steps: section.steps.map(
+                        (step, index) =>
+                            index === stepIndex
+                                ? updatedStep
+                                : step
+                    )
                 })
-            }
-
-            return {
-                ...current,
-                instructionSections: updateSection(
-                    current.instructionSections,
-                    0
-                )
-            }
-        })
+            )
+        }))
     }
     const removeSectionStep = (
         sectionPath,
@@ -358,113 +356,45 @@ function RecipeReview ({ recipe, onBack, onSave }) {
         })
     }
     const removeSection = (sectionPath) => {
-        setEditedRecipe((current) => {
-            const removeFromSections = (sections, pathIndex) => {
-                const targetIndex = sectionPath[pathIndex]
-
-                if (pathIndex === sectionPath.length - 1) {
-                    return sections.filter(
-                        (_, index) => index !== targetIndex
-                    )
-                }
-
-                return sections.map((section, index) => {
-                    if (index !== targetIndex) {
-                        return section
-                    }
-
-                    return {
-                        ...section,
-                        sections: removeFromSections(
-                            section.sections,
-                            pathIndex + 1
-                        ),
-                    }
-                })
-            }
-
-            return {
-                ...current,
-                ingredientSections: removeFromSections(
-                    current.ingredientSections,
-                    0
-                ),
-            }
-        })
+        setEditedRecipe((current) => ({
+            ...current,
+            ingredientSections: removeNestedSection(
+                current.ingredientSections,
+                sectionPath
+            )
+        }))
     }
     const updateSectionName = (
         sectionPath,
         name
     ) => {
-        setEditedRecipe((current) => {
-            const updateSection = (sections, pathIndex) => {
-                return sections.map((section, index) => {
-                    if (index !== sectionPath[pathIndex]) {
-                        return section
-                    }
-
-                    if (pathIndex === sectionPath.length - 1) {
-                        return {
-                            ...section,
-                            name: name
-                        }
-                    }
-
-                    return {
-                        ...section,
-                        sections: updateSection(
-                            section.sections,
-                            pathIndex + 1
-                        )
-                    }
+        setEditedRecipe((current) => ({
+            ...current,
+            ingredientSections: updateNestedSection(
+                current.ingredientSections,
+                sectionPath,
+                (section) => ({
+                    ...section,
+                    name
                 })
-            }
-
-            return {
-                ...current,
-                ingredientSections: updateSection(
-                    current.ingredientSections,
-                    0
-                )
-            }
-        })
+            )
+        }))
     }
     const updateInstructionSectionName = (
         sectionPath,
         name
     ) => {
-        setEditedRecipe((current) => {
-            const updateSection = (sections, pathIndex) => {
-                return sections.map((section, index) => {
-                    if (index !== sectionPath[pathIndex]) {
-                        return section
-                    }
-
-                    if (pathIndex === sectionPath.length - 1) {
-                        return {
-                            ...section,
-                            name: name
-                        }
-                    }
-
-                    return {
-                        ...section,
-                        sections: updateSection(
-                            section.sections,
-                            pathIndex + 1
-                        )
-                    }
+        setEditedRecipe((current) => ({
+            ...current,
+            instructionSections: updateNestedSection(
+                current.instructionSections,
+                sectionPath,
+                (section) => ({
+                    ...section,
+                    name
                 })
-            }
-
-            return {
-                ...current,
-                instructionSections: updateSection(
-                    current.instructionSections,
-                    0
-                )
-            }
-        })
+            )
+        }))
     }
     const removeInstructionSection = (sectionPath) => {
         setEditedRecipe((current) => {
@@ -563,6 +493,14 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                         Add ingredient
                     </button>
 
+                    <button
+                        type="button"
+                        className="add-item-button"
+                        onClick={addIngredientSection}
+                    >
+                        Add section
+                    </button>
+
                     <div className="ingredient-list">
                         {editedRecipe.ingredients.map((ingredient, index) => (
                             <IngredientEditor
@@ -588,6 +526,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             onRemoveIngredient={removeSectionIngredient}
                             onRemoveSection={removeSection}
                             onUpdateSectionName={updateSectionName}
+                            onAddIngredient={addSectionIngredient}
                         />
                     ))}
                 </section>
@@ -601,6 +540,14 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                         onClick={addStep}
                     >
                         Add step
+                    </button>
+
+                    <button
+                        type="button"
+                        className="add-item-button"
+                        onClick={addInstructionSection}
+                    >
+                        Add section
                     </button>
 
                     <div className="instruction-list">
