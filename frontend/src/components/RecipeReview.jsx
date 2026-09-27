@@ -174,18 +174,33 @@ function RecipeReview ({ recipe, onBack, onSave }) {
             )
         }))
     }
-    const addInstructionSection = () => {
-        setEditedRecipe((current) => ({
-            ...current,
-            instructionSections: [
-                ...current.instructionSections,
-                {
-                    name: 'New section',
-                    steps: [],
-                    sections: []
+    const addInstructionSection = (sectionPath = null) => {
+        const newSection = {
+            name: 'New section',
+            steps: [],
+            sections: []
+        }
+
+        setEditedRecipe((current) => {
+            if (sectionPath === null) {
+                return {
+                    ...current,
+                    instructionSections: [
+                        ...current.instructionSections,
+                        newSection
+                    ]
                 }
-            ]
-        }))
+            }
+
+            return{
+                ...current,
+                instructionSections: addNestedSection(
+                    current.instructionSections,
+                    sectionPath,
+                    newSection
+                )
+            }
+        })
     }
     const updateSectionStep = (
         sectionPath,
@@ -430,7 +445,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                     <button
                         type="button"
                         className="add-item-button"
-                        onClick={addInstructionSection}
+                        onClick={() => addInstructionSection()}
                     >
                         Add section
                     </button>
@@ -475,6 +490,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             onRemoveSection={removeInstructionSection}
                             onUpdateSectionName={updateInstructionSectionName}
                             onAddStep={addSectionStep}
+                            onAddSection={addInstructionSection}
                         />
                     ))}
                 </section>

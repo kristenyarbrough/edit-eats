@@ -7,7 +7,8 @@ function InstructionSection({
     onRemoveStep,
     onRemoveSection,
     onUpdateSectionName,
-    onAddStep
+    onAddStep,
+    onAddSection
 }) {
     return (
         <div className="instruction-section">
@@ -37,6 +38,14 @@ function InstructionSection({
                     onClick={() => onAddStep(sectionPath)}
                 >
                     Add step
+                </button>
+
+                <button
+                    type="button"
+                    className="add-item-button"
+                    onClick={() => onAddSection(sectionPath)}
+                >
+                    Add section
                 </button>
             </div>
 
@@ -73,6 +82,7 @@ function InstructionSection({
                     onRemoveSection={onRemoveSection}
                     onUpdateSectionName={onUpdateSectionName}
                     onAddStep={onAddStep}
+                    onAddSection={onAddSection}
                 />
             ))}
         </div>

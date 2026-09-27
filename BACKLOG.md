@@ -232,6 +232,14 @@ Relationships:
 ### Phase 6 — Turn it into an app
 - [ ] 👥 Users and authentication
 - [ ] 📱 Frontend/mobile app
+  - [ ] Import a text recipe
+  - [ ] Import a recipe from URL
+  - [ ] Add a recipe from scratch
+  - [ ] Edit a recipe
+    - [ ] Reorder steps
+    - [ ] When adding a section add an ingredient/step (no empty sections)
+    - [ ] Add a photo
+    - [ ] Add source URL
 
 ###  Phase 7 — Personal dining
 - [ ] 🍽️ Restaurants
