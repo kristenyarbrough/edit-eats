@@ -51,3 +51,37 @@ export function removeNestedSection(
         }
     })
 }
+
+export function addNestedSection(
+    sections,
+    sectionPath,
+    newSection
+) {
+    const [index, ...remainingPath] = sectionPath
+
+    return sections.map((section, currentIndex) => {
+        if (currentIndex !== index) {
+            return section
+        }
+
+        if (remainingPath.length === 0) {
+            return {
+                ...section,
+                sections: [
+                    ...section.sections,
+                    newSection
+                ]
+            }
+        }
+
+        return {
+            ...section,
+            sections: addNestedSection(
+                section.sections,
+                remainingPath,
+                newSection
+            )
+        }
+    })
+}
+

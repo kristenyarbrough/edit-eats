@@ -1,164 +1,43 @@
 import{ useState } from 'react'
-import { formatTime } from '../utils/formatTime'
 import {
     updateNestedSection,
-    removeNestedSection
-} from '../utils/updateNestedSection'
+    removeNestedSection,
+    addNestedSection
+} from '../utils/nestedSectionUtils'
 import IngredientEditor from './IngredientEditor'
 import InstructionStepEditor from './InstructionStepEditor'
-
-function IngredientSection({
-    section,
-    sectionPath,
-    onUpdateIngredient,
-    onRemoveIngredient,
-    onRemoveSection,
-    onUpdateSectionName,
-    onAddIngredient
-}) {
-    return (
-        <div className="ingredient-section">
-            <div className="ingredient-section-header">
-                <input
-                    type="text"
-                    value={section.name}
-                    onChange={(event) =>
-                        onUpdateSectionName(
-                            sectionPath,
-                            event.target.value
-                        )
-                    }
-                />
-
-                <button
-                    type="button"
-                    className="remove-section-button"
-                    onClick={() => onRemoveSection(sectionPath)}
-                >
-                    Remove section
-                </button>
-            </div>
-
-            <button
-                type="button"
-                className="add-item-button"
-                onClick={() => onAddIngredient(sectionPath)}
-            >
-                Add ingredient
-            </button>
-
-            {section.ingredients.map((ingredient, index) => (
-                <IngredientEditor
-                    key={index}
-                    ingredient={ingredient}
-                    onChange={(updatedIngredient) =>
-                        onUpdateIngredient(
-                            sectionPath,
-                            index,
-                            updatedIngredient
-                        )
-                    }
-                    onRemove={() =>
-                        onRemoveIngredient(
-                            sectionPath,
-                            index
-                        )
-                    }
-                />
-            ))}
-
-            {section.sections.map((nestedSection, index) => (
-                <IngredientSection
-                    key={index}
-                    section={nestedSection}
-                    sectionPath={[...sectionPath, index]}
-                    onUpdateIngredient={onUpdateIngredient}
-                    onRemoveIngredient={onRemoveIngredient}
-                    onRemoveSection={onRemoveSection}
-                    onUpdateSectionName={onUpdateSectionName}
-                    onAddIngredient={onAddIngredient}
-                />
-            ))}
-        </div>
-    )
-}
-
-function InstructionSection({
-    section,
-    sectionPath,
-    onUpdateStep,
-    onRemoveStep,
-    onRemoveSection,
-    onUpdateSectionName
-}) {
-    return (
-        <div className="instruction-section">
-            <div className="instruction-section-header">
-                <input
-                    type="text"
-                    value={section.name}
-                    onChange={(event) =>
-                        onUpdateSectionName(
-                            sectionPath,
-                            event.target.value
-                        )
-                    }
-                />
-
-                <button
-                    type="button"
-                    className="remove-section-button"
-                    onClick={() => onRemoveSection(sectionPath)}
-                >
-                    Remove section
-                </button>
-            </div>
-
-            <div className="instruction-list">
-                {section.steps.map((step, index) => (
-                    <InstructionStepEditor
-                        key={index}
-                        step={step}
-                        stepNumber={index + 1}
-                        onChange={(updatedStep) =>
-                            onUpdateStep(
-                                sectionPath,
-                                index,
-                                updatedStep
-                            )
-                        }
-                        onRemove={() =>
-                            onRemoveStep(
-                                sectionPath,
-                                index
-                            )
-                        }
-                    />
-                ))}
-            </div>
-
-            {section.sections.map((nestedSection, index) => (
-                <InstructionSection
-                    key={index}
-                    section={nestedSection}
-                    sectionPath={[...sectionPath, index]}
-                    onUpdateStep={onUpdateStep}
-                    onRemoveStep={onRemoveStep}
-                    onRemoveSection={onRemoveSection}
-                    onUpdateSectionName={onUpdateSectionName}
-                />
-            ))}
-        </div>
-    )
-}
+import IngredientSection from './IngredientSection'
+import InstructionSection from './InstructionSection'
+import TimeEditor from './TimeEditor'
 
 function RecipeReview ({ recipe, onBack, onSave }) {
     const [editedRecipe, setEditedRecipe] = useState(recipe)
     const updateRecipeField = (field, value) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            [field]: value,
-        }))
+        setEditedRecipe((current) => {
+            const updatedRecipe = {
+                ...current,
+                [field]: value,
+            }
+
+            if (field === 'prepMinutes' || field === 'cookMinutes' || field === 'passiveMinutes') {
+                const prep = field === 'prepMinutes'
+                    ? value
+                    : current.prepMinutes
+
+                const cook = field === 'cookMinutes'
+                    ? value
+                    : current.cookMinutes
+
+                const passive = field === 'passiveMinutes'
+                    ? value
+                    : current.passiveMinutes
+
+                updatedRecipe.totalMinutes =
+                    (prep || 0) + (cook || 0) + (passive || 0)
+            }
+
+            return updatedRecipe
+        })
     }
     const updateIngredient = (index, updatedIngredient) => {
         setEditedRecipe((current) => ({
@@ -205,18 +84,33 @@ function RecipeReview ({ recipe, onBack, onSave }) {
             ]
         }))
     }
-    const addIngredientSection = () => {
-        setEditedRecipe((current) => ({
-            ...current,
-            ingredientSections: [
-                ...current.ingredientSections,
-                {
-                    name: 'New section',
-                    ingredients: [],
-                    sections: []
+    const addIngredientSection = (sectionPath = null) => {
+        const newSection = {
+            name: 'New section',
+            ingredients: [],
+            sections: []
+        }
+
+        setEditedRecipe((current) => {
+            if (sectionPath === null) {
+                return {
+                    ...current,
+                    ingredientSections: [
+                        ...current.ingredientSections,
+                        newSection
+                    ]
                 }
-            ]
-        }))
+            }
+
+            return {
+                ...current,
+                ingredientSections: addNestedSection(
+                    current.ingredientSections,
+                    sectionPath,
+                    newSection
+                )
+            }
+        })
     }
     const updateSectionIngredient = (
         sectionPath,
@@ -319,41 +213,37 @@ function RecipeReview ({ recipe, onBack, onSave }) {
         sectionPath,
         stepIndex
     ) => {
-        setEditedRecipe((current) => {
-            const updateSection = (sections, pathIndex) => {
-                return sections.map((section, index) => {
-                    if (index !== sectionPath[pathIndex]) {
-                        return section
-                    }
-
-                    if (pathIndex === sectionPath.length - 1) {
-                        return {
-                            ...section,
-                            steps: section.steps.filter(
-                                (_, index) =>
-                                    index !== stepIndex
-                            )
-                        }
-                    }
-
-                    return {
-                        ...section,
-                        sections: updateSection(
-                            section.sections,
-                            pathIndex + 1
-                        )
-                    }
+        setEditedRecipe((current) => ({
+            ...current,
+            instructionSections: updateNestedSection(
+                current.instructionSections,
+                sectionPath,
+                (section) => ({
+                    ...section,
+                    steps: section.steps.filter(
+                        (_, index) => index !== stepIndex
+                    )
                 })
-            }
-
-            return {
-                ...current,
-                instructionSections:updateSection(
-                    current.instructionSections,
-                    0
-                )
-            }
-        })
+            )
+        }))
+    }
+    const addSectionStep = (sectionPath) => {
+        setEditedRecipe((current) => ({
+            ...current,
+            instructionSections: updateNestedSection(
+                current.instructionSections,
+                sectionPath,
+                (section) => ({
+                    ...section,
+                    steps: [
+                        ...(section.steps ?? []),
+                        {
+                            instruction: ''
+                        }
+                    ]
+                })
+            )
+        }))
     }
     const removeSection = (sectionPath) => {
         setEditedRecipe((current) => ({
@@ -397,39 +287,13 @@ function RecipeReview ({ recipe, onBack, onSave }) {
         }))
     }
     const removeInstructionSection = (sectionPath) => {
-        setEditedRecipe((current) => {
-            const removeFromSections = (sections, pathIndex) => {
-                const targetIndex = sectionPath[pathIndex]
-
-                if (pathIndex === sectionPath.length - 1) {
-                    return sections.filter(
-                        (_, index) => index !== targetIndex
-                    )
-                }
-
-                return sections.map((section, index) => {
-                    if (index !== targetIndex) {
-                        return section
-                    }
-
-                    return {
-                        ...section,
-                        sections: removeFromSections(
-                            section.sections,
-                            pathIndex + 1
-                        ),
-                    }
-                })
-            }
-
-            return {
-                ...current,
-                instructionSections: removeFromSections(
-                    current.instructionSections,
-                    0
-                ),
-            }
-        })
+        setEditedRecipe((current) => ({
+            ...current,
+            instructionSections: removeNestedSection(
+                current.instructionSections,
+                sectionPath
+            )
+        }))
     }
 
     return (
@@ -468,17 +332,37 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             </label>
                         )}
 
-                        {recipe.prepMinutes != null && (
-                            <span>Prep: {formatTime(recipe.prepMinutes)}</span>
-                        )}
+                        <TimeEditor
+                            label="Prep:"
+                            value={editedRecipe.prepMinutes}
+                            onChange={(value) =>
+                                updateRecipeField('prepMinutes', value)
+                            }
+                        />
 
-                        {recipe.cookMinutes != null && (
-                            <span>Cook: {formatTime(recipe.cookMinutes)}</span>
-                        )}
+                        <TimeEditor
+                            label="Cook:"
+                            value={editedRecipe.cookMinutes}
+                            onChange={(value) =>
+                                updateRecipeField('cookMinutes', value)
+                            }
+                        />
 
-                        {recipe.totalMinutes != null && (
-                            <span>Total: {formatTime(recipe.totalMinutes)}</span>
-                        )}
+                        <TimeEditor
+                            label="Inactive:"
+                            value={editedRecipe.passiveMinutes}
+                            onChange={(value) =>
+                                updateRecipeField('passiveMinutes', value)
+                            }
+                        />
+
+                        <TimeEditor
+                            label="Total:"
+                            value={editedRecipe.totalMinutes}
+                            onChange={(value) =>
+                                updateRecipeField('totalMinutes', value)
+                            }
+                        />
                     </div>
                 </div>
 
@@ -496,7 +380,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                     <button
                         type="button"
                         className="add-item-button"
-                        onClick={addIngredientSection}
+                        onClick={() => addIngredientSection()}
                     >
                         Add section
                     </button>
@@ -527,6 +411,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             onRemoveSection={removeSection}
                             onUpdateSectionName={updateSectionName}
                             onAddIngredient={addSectionIngredient}
+                            onAddSection={addIngredientSection}
                         />
                     ))}
                 </section>
@@ -589,6 +474,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             onRemoveStep={removeSectionStep}
                             onRemoveSection={removeInstructionSection}
                             onUpdateSectionName={updateInstructionSectionName}
+                            onAddStep={addSectionStep}
                         />
                     ))}
                 </section>
