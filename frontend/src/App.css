@@ -174,6 +174,29 @@
     min-width: 10rem;
 }
 
+.instruction-step-row:active {
+    cursor: grabbing;
+}
+
+
+.drag-handle {
+    cursor: grab;
+    user-select: none;
+    padding 0 8px;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.instruction-step-row.dragging {
+    opacity: 0.5;
+}
+
+.instruction-step-row.drag-over {
+    border-top: 2px solid currentColor;
+}
+
 .ingredient-optional {
     display: flex;
     align-items: center;

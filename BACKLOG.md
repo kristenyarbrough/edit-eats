@@ -232,14 +232,22 @@ Relationships:
 ### Phase 6 — Turn it into an app
 - [ ] 👥 Users and authentication
 - [ ] 📱 Frontend/mobile app
-  - [ ] Import a text recipe
-  - [ ] Import a recipe from URL
-  - [ ] Add a recipe from scratch
-  - [ ] Edit a recipe
-    - [ ] Reorder steps
-    - [ ] When adding a section add an ingredient/step (no empty sections)
-    - [ ] Add a photo
-    - [ ] Add source URL
+  - [ ] Recipes
+    - [x] Import a text recipe
+    - [ ] Import a recipe from URL
+    - [ ] Add a recipe from scratch
+    - [x] Edit a recipe
+      - [x] Reorder steps
+      - [ ] When adding a section add an ingredient/step (no empty sections)
+      - [ ] Add a photo
+      - [ ] Add source URL
+    - [ ] Save a recipe
+    - [ ] Display recipes
+    - [ ] Filter recipes
+    - [ ] Search for recipes
+  - [ ] MealPlan
+  - [ ] ShoppingList
+  - [ ] Dining Eats
 
 ###  Phase 7 — Personal dining
 - [ ] 🍽️ Restaurants

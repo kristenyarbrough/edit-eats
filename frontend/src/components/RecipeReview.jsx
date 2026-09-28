@@ -4,6 +4,7 @@ import {
     removeNestedSection,
     addNestedSection
 } from '../utils/nestedSectionUtils'
+import { moveItem } from '../utils/reorderUtils'
 import IngredientEditor from './IngredientEditor'
 import InstructionStepEditor from './InstructionStepEditor'
 import IngredientSection from './IngredientSection'
@@ -12,6 +13,8 @@ import TimeEditor from './TimeEditor'
 
 function RecipeReview ({ recipe, onBack, onSave }) {
     const [editedRecipe, setEditedRecipe] = useState(recipe)
+    const [draggedStepIndex, setDraggedStepIndex] = useState(null)
+    const [dragOverStepIndex, setDragOverStepIndex] = useState(null)
     const updateRecipeField = (field, value) => {
         setEditedRecipe((current) => {
             const updatedRecipe = {
@@ -79,9 +82,20 @@ function RecipeReview ({ recipe, onBack, onSave }) {
             steps: [
                 ...current.steps,
                 {
+                    id: crypto.randomUUID(),
                     instruction: ''
                 }
             ]
+        }))
+    }
+    const moveStep = (fromIndex, toIndex) => {
+        setEditedRecipe((current) => ({
+            ...current,
+            steps: moveItem(
+                current.steps,
+                fromIndex,
+                toIndex
+            )
         }))
     }
     const addIngredientSection = (sectionPath = null) => {
@@ -253,9 +267,27 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                     steps: [
                         ...(section.steps ?? []),
                         {
+                            id: crypto.randomUUID(),
                             instruction: ''
                         }
                     ]
+                })
+            )
+        }))
+    }
+    const moveSectionStep = (sectionPath, fromIndex, toIndex) => {
+        setEditedRecipe((current) => ({
+            ...current,
+            instructionSections: updateNestedSection(
+                current.instructionSections,
+                sectionPath,
+                (section) => ({
+                    ...section,
+                    steps: moveItem(
+                        section.steps,
+                        fromIndex,
+                        toIndex
+                    )
                 })
             )
         }))
@@ -453,7 +485,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                     <div className="instruction-list">
                         {editedRecipe.steps.map((step, index) => (
                             <InstructionStepEditor
-                                key={index}
+                                key={step.id}
                                 step={step}
                                 stepNumber={index + 1}
                                 onChange={(updatedStep) =>
@@ -467,6 +499,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                                         )
                                     }))
                                 }
+
                                 onRemove={() =>
                                     setEditedRecipe((current) => ({
                                         ...current,
@@ -475,6 +508,50 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                                                 stepIndex !== index
                                         )
                                     }))
+                                }
+
+                                onDragStart={(event) => {
+                                    setDraggedStepIndex(index)
+
+                                    event.dataTransfer.effectAllowed = 'move'
+                                    event.dataTransfer.setData(
+                                        'text/plain',
+                                        index.toString()
+                                    )
+                                }}
+
+                                onDragOver={(event) => {
+                                    event.preventDefault()
+                                    setDragOverStepIndex(index)
+
+                                    event.dataTransfer.dropEffect = 'move'
+                                }}
+
+                                onDrop={(event) => {
+                                    event.preventDefault()
+
+                                    const draggedIndex = Number(
+                                        event.dataTransfer.getData('text/plain')
+                                    )
+
+                                    moveStep(
+                                        draggedIndex,
+                                        index
+                                    )
+
+                                    setDraggedStepIndex(null)
+                                    setDragOverStepIndex(null)
+                                }}
+
+                                onDragEnd={() => {
+                                    setDraggedStepIndex(null)
+                                    setDragOverStepIndex(null)
+                                }}
+
+                                isDragging={draggedStepIndex === index}
+                                isDragOver={
+                                    dragOverStepIndex === index &&
+                                    draggedStepIndex !== index
                                 }
                             />
                         ))}
@@ -491,6 +568,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             onUpdateSectionName={updateInstructionSectionName}
                             onAddStep={addSectionStep}
                             onAddSection={addInstructionSection}
+                            onMoveStep={moveSectionStep}
                         />
                     ))}
                 </section>
