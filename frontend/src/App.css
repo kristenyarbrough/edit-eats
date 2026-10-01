@@ -50,6 +50,46 @@
     margin: 0 auto;
 }
 
+.recipe-review .remove-ingredient-button {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.recipe-review .remove-ingredient-button,
+.recipe-review .remove-section-button,
+.recipe-review .remove-step-button {
+    padding: 0.25rem 0.4rem;
+    border: none;
+    background: transparent;
+    color: #8a5a44;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.recipe-review .remove-ingredient-button:hover,
+.recipe-review .remove-section-button:hover,
+.recipe-review .remove-step-button:hover {
+    background: #f3f0e8;
+    color: #6f4635;
+    text-decoration: none;
+}
+
+.recipe-review .remove-ingredient-button:focus-visible,
+.recipe-review .remove-section-button:focus-visible,
+.recipe-review .remove-step-button:focus-visible {
+    outline: 2px solid #b5a46a;
+    outline-offset: 2px;
+}
+
+.recipe-review-label {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
 .recipe-card {
     padding: 2rem;
     background: white;
@@ -59,13 +99,6 @@
 
 .recipe-header {
     margin-bottom: 2rem;
-}
-
-.recipe-review-label {
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
 }
 
 .recipe-header h1 {
@@ -128,6 +161,13 @@
     margin-bottom: 1.25rem;
 }
 
+.recipe-section-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0;
+}
+
 .ingredient-list {
     display: flex;
     flex-direction: column;
@@ -138,8 +178,7 @@
     margin: 0;
 }
 
-.ingredient-row,
-.instruction-step-row {
+.ingredient-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -150,7 +189,6 @@
 
 .ingredient-row input,
 .ingredient-row select,
-.recipe-section input,
 .instruction-step-row input,
 .instruction-step-row select {
     padding: 0.5rem;
@@ -162,43 +200,97 @@
 
 .ingredient-row input[type="number"] {
     width: 5rem;
+    flex: 0 0 5rem;
 }
 
 .ingredient-row select {
     width: 6rem;
+    flex: 0 0 6rem;
 }
 
-.ingredient-row input[type="text"],
+.ingredient-row input[type="text"]:not(.ingredient-preparation) {
+    flex: 1 1 10rem;
+    min-width: 8rem;
+}
+
+.ingredient-row input[type="text"]:first-of-type {
+    font-weight: 500;
+}
+
+.ingredient-row .ingredient-preparation {
+    flex: 1 1 8rem;
+    min-width: 6rem;
+    color: #555;
+}
+
+.ingredient-row .ingredient-preparation::placeholder {
+    color: #999;
+}
+
+.ingredient-optional {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+    color: #415037;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.ingredient-optional input {
+    width: auto;
+    margin: 0;
+}
+
+.ingredient-optional:hover {
+    background: #f3f0e8;
+}
+
+.ingredient-row .remove-ingredient-button {
+    flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+    .ingredient-row {
+        align-items: stretch;
+    }
+
+    .ingredient-row input[type="number"],
+    .ingredient-row select {
+        flex: 1 1 6rem;
+    }
+
+    .ingredient-row input[type="text"] {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .ingredient-row .ingredient-preparation {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .ingredient-row .remove-ingredient-button {
+        margin-left: auto;
+    }
+}
+
+.instruction-step-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #eee;
+}
+
 .instruction-step-row input[type="text"] {
     flex: 1;
     min-width: 10rem;
 }
 
 .instruction-step-row:active {
-    cursor: grabbing;
-}
-
-
-.drag-handle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 1.5rem;
-    height: 1.75rem;
-    padding: 0;
-    border-radius: 4px;
-    color: #6f765f;
-    cursor: grab;
-    user-select: none;
-}
-
-.drag-handle:hover {
-    background: #f3f0e8;
-    color: #415037;
-}
-
-.drag-handle:active {
     cursor: grabbing;
 }
 
@@ -215,68 +307,69 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.section-drop-indicator {
-    height: 4px;
-    margin: 0.5rem 0;
-    border-radius: 999px;
-    background: #b5a46a;
+.ingredient-section {
+    margin-top: 1.25rem;
+    padding: 1rem 1rem 1.25rem;
+    border: 1px solid #e3dcc5;
+    border-left: 4px solid #b5a46a;
+    border-radius: 10px;
+    background: #faf9f4;
 }
 
-.ingredient-optional {
+.ingredient-section-header {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    white-space: nowrap;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
 }
 
-.recipe-review .remove-ingredient-button,
-.recipe-review .remove-section-button,
-.recipe-review .remove-step-button {
-    padding: 0.25rem 0.4rem;
-    border: none;
+.ingredient-section-header input[type="text"] {
+    flex: 1;
+    min-width: 12rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid transparent;
+    border-radius: 6px;
     background: transparent;
-    color: #8a5a44;
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    border-radius: 4px;
+    color: #415037;
+    font-size: 1.05rem;
+    font-weight: 700;
 }
 
-.recipe-review .remove-ingredient-button:hover,
-.recipe-review .remove-section-button:hover,
-.recipe-review .remove-step-button:hover {
-    background: #f3f0e8;
-    color: #6f4635;
-    text-decoration: none;
+.ingredient-section-header input[type="text"]:hover {
+    border-color: #d8cfae;
+    background: white;
 }
 
-.recipe-review .remove-ingredient-button:focus-visible,
-.recipe-review .remove-section-button:focus-visible,
-.recipe-review .remove-step-button:focus-visible {
-    outline: 2px solid #b5a46a;
-    outline-offset: 2px;
+.ingredient-section-header input[type="text"]:focus {
+    outline: none;
+    border-color: #b5a46a;
+    background: white;
 }
 
-.ingredient-section, {
-    margin-top: 1.5rem;
-    padding-left: 1rem;
-    border-left: 3px solid #d8cfae;
-}
-
-.ingredient-section h3 {
-    margin: 0 0 0.75rem;
-}
-
-.ingredient-section-header,
-.instruction-section-header {
+.ingredient-section-actions {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
+    gap: 0.5rem;
 }
 
-.ingredient-section-header h3 {
-    margin: 0 0 0.75rem;
+.ingredient-section-actions .add-item-button {
+    margin-bottom: 0;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.85rem;
+}
+
+.ingredient-section-header .remove-section-button {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.ingredient-section .ingredient-section {
+    margin-top: 1rem;
+    background: white;
+    border-color: #e8e3d5;
+    border-left-color: #c8b98a;
 }
 
 .instruction-list {
@@ -296,9 +389,41 @@
     font-weight: 600;
 }
 
+.step-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.step-actions .move-step-button,
+.instruction-section-actions .move-section-button {
+    width: 0.7rem;
+    height: 1.75rem;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: #6f765f;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.step-actions .move-step-button:hover:not(:disabled),
+.instruction-section-actions .move-section-button:hover:not(:disabled) {
+    background: #f3f0e8;
+    color: #415037;
+}
+
+.step-actions .move-step-button:disabled,
+.instruction-section-actions .move-section-button:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
 .instruction-section {
     margin-top: 1.25rem;
-    padding-left: 1rem 1rem 1.25rem;
+    padding: 1rem 1rem 1.25rem;
     border: 1px solid #e3dcc5;
     border-left: 4px solid #b5a46a;
     border-radius: 10px;
@@ -310,11 +435,12 @@
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1rem;
+    flex-wrap: wrap;
 }
 
 .instruction-section-header input[type="text"] {
     flex: 1;
-    min-width: 8rem;
+    min-width: 12rem;
     padding: 0.45rem 0.6rem;
     border: 1px solid transparent;
     border-radius: 6px;
@@ -348,7 +474,6 @@
 
 .instruction-section .instruction-section {
     margin-top: 1rem;
-    margin-left: 0.5rem;
     background: white;
     border-color: #e8e3d5;
     border-left-color: #c8b98a;
@@ -393,4 +518,34 @@
 
 .add-item-button:hover {
     background: #ead77d;
+}
+
+.drag-handle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.5rem;
+    height: 1.75rem;
+    padding: 0;
+    border-radius: 4px;
+    color: #6f765f;
+    cursor: grab;
+    user-select: none;
+}
+
+.drag-handle:hover {
+    background: #f3f0e8;
+    color: #415037;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.section-drop-indicator {
+    height: 4px;
+    margin: 0.5rem 0;
+    border-radius: 999px;
+    background: #b5a46a;
 }

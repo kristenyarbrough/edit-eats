@@ -4,6 +4,8 @@ import InstructionStepEditor from './InstructionStepEditor'
 function InstructionSection({
     section,
     sectionPath,
+    sectionIndex,
+    sectionCount,
     onUpdateStep,
     onRemoveStep,
     onRemoveSection,
@@ -11,6 +13,7 @@ function InstructionSection({
     onAddStep,
     onAddSection,
     onMoveStep,
+    onMoveSection,
     onDragStart,
     onDragOver,
     onDrop,
@@ -85,6 +88,38 @@ function InstructionSection({
                     <div className="instruction-section-actions">
                         <button
                             type="button"
+                            className="move-section-button"
+                            onClick={() =>
+                                onMoveSection(
+                                    sectionPath.slice(0, -1),
+                                    sectionIndex,
+                                    sectionIndex - 1
+                                )
+                            }
+                            disabled={sectionIndex === 0}
+                            aria-label={`Move ${section.name} section up`}
+                        >
+                            ↑
+                        </button>
+
+                        <button
+                            type="button"
+                            className="move-section-button"
+                            onClick={() =>
+                                onMoveSection(
+                                    sectionPath.slice(0, -1),
+                                    sectionIndex,
+                                    sectionIndex + 1
+                                )
+                            }
+                            disabled={sectionIndex === sectionCount - 1}
+                            aria-label={`Move ${section.name} section down`}
+                        >
+                            ↓
+                        </button>
+
+                        <button
+                            type="button"
                             className="remove-section-button"
                             onClick={() => onRemoveSection(sectionPath)}
                         >
@@ -128,6 +163,22 @@ function InstructionSection({
                                     index
                                 )
                             }
+                            onMoveUp={() =>
+                                onMoveStep(
+                                    sectionPath,
+                                    index,
+                                    index - 1
+                                )
+                            }
+                            onMoveDown={() =>
+                                onMoveStep(
+                                    sectionPath,
+                                    index,
+                                    index + 1
+                                )
+                            }
+                            canMoveUp={index > 0}
+                            canMoveDown={index < section.steps.length - 1}
                             onDragStart={(event) => {
                                 setDraggedStepIndex(index)
 
@@ -193,6 +244,8 @@ function InstructionSection({
                         key={index}
                         section={nestedSection}
                         sectionPath={[...sectionPath, index]}
+                        sectionIndex={index}
+                        sectionCount={section.sections.length}
                         onUpdateStep={onUpdateStep}
                         onRemoveStep={onRemoveStep}
                         onRemoveSection={onRemoveSection}
@@ -200,6 +253,7 @@ function InstructionSection({
                         onAddStep={onAddStep}
                         onAddSection={onAddSection}
                         onMoveStep={onMoveStep}
+                        onMoveSection={onMoveSection}
                     />
                 ))}
             </div>

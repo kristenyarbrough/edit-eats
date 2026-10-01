@@ -58,6 +58,7 @@ function IngredientEditor({ ingredient, onChange, onRemove }) {
             />
 
             <input
+                className="ingredient-preparation"
                 type="text"
                 value={ingredient.preparation ?? ''}
                 onChange={(event) =>

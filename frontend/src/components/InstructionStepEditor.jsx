@@ -3,6 +3,10 @@ function InstructionStepEditor({
     stepNumber,
     onChange,
     onRemove,
+    onMoveUp,
+    onMoveDown,
+    canMoveUp,
+    canMoveDown,
     onDragStart,
     onDragOver,
     onDrop,
@@ -46,13 +50,35 @@ function InstructionStepEditor({
                 }
             />
 
-            <button
-                type="button"
-                className="remove-step-button"
-                onClick={onRemove}
-            >
-                Remove
-            </button>
+            <div className="step-actions">
+                <button
+                    type="button"
+                    className="move-step-button"
+                    onClick={onMoveUp}
+                    disabled={!canMoveUp}
+                    aria-label={`Move step ${stepNumber} up`}
+                >
+                    ↑
+                </button>
+
+                <button
+                    type="button"
+                    className="move-step-button"
+                    onClick={onMoveDown}
+                    disabled={!canMoveDown}
+                    aria-label={`Move step ${stepNumber} down`}
+                >
+                    ↓
+                </button>
+
+                <button
+                    type="button"
+                    className="remove-step-button"
+                    onClick={onRemove}
+                >
+                    Remove
+                </button>
+            </div>
         </div>
     )
 }

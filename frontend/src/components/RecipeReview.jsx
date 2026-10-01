@@ -100,15 +100,35 @@ function RecipeReview ({ recipe, onBack, onSave }) {
             )
         }))
     }
-    const moveInstructionSection = (fromIndex, toIndex) => {
-        setEditedRecipe((currentRecipe) => ({
-            ...currentRecipe,
-            instructionSections: moveItem(
-                currentRecipe.instructionSections,
-                fromIndex,
-                toIndex
-            )
-        }))
+    const moveInstructionSection = (sectionPath, fromIndex, toIndex) => {
+        setEditedRecipe((currentRecipe) => {
+            if (sectionPath.length === 0) {
+                return {
+                   ...currentRecipe,
+                    instructionSections: moveItem(
+                        currentRecipe.instructionSections,
+                        fromIndex,
+                        toIndex
+                    )
+                }
+            }
+
+            return {
+                ...currentRecipe,
+                instructionSections: updateNestedSection(
+                    currentRecipe.instructionSections,
+                    sectionPath,
+                    (section) => ({
+                        ...section,
+                        sections: moveItem(
+                            section.sections,
+                            fromIndex,
+                            toIndex
+                        )
+                    })
+                )
+            }
+        })
     }
     const addIngredientSection = (sectionPath = null) => {
         const newSection = {
@@ -442,21 +462,23 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                 <section className="recipe-section">
                     <h2>Ingredients</h2>
 
-                    <button
-                        type="button"
-                        className="add-item-button"
-                        onClick={addIngredient}
-                    >
-                        Add ingredient
-                    </button>
+                    <div className="recipe-section-actions">
+                        <button
+                            type="button"
+                            className="add-item-button"
+                            onClick={addIngredient}
+                        >
+                            Add ingredient
+                        </button>
 
-                    <button
-                        type="button"
-                        className="add-item-button"
-                        onClick={() => addIngredientSection()}
-                    >
-                        Add section
-                    </button>
+                        <button
+                            type="button"
+                            className="add-item-button"
+                            onClick={() => addIngredientSection()}
+                        >
+                            Add section
+                        </button>
+                    </div>
 
                     <div className="ingredient-list">
                         {editedRecipe.ingredients.map((ingredient, index) => (
@@ -538,6 +560,14 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                                     }))
                                 }
 
+                                onMoveUp={() => moveStep(index, index - 1)}
+
+                                onMoveDown={() => moveStep(index, index + 1)}
+
+                                canMoveUp={index > 0}
+
+                                canMoveDown={index < editedRecipe.steps.length - 1}
+
                                 onDragStart={(event) => {
                                     setDraggedStepIndex(index)
 
@@ -598,6 +628,8 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             key={section.id}
                             section={section}
                             sectionPath={[index]}
+                            sectionIndex={index}
+                            sectionCount={editedRecipe.instructionSections.length}
                             onUpdateStep={updateSectionStep}
                             onRemoveStep={removeSectionStep}
                             onRemoveSection={removeInstructionSection}
@@ -605,6 +637,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             onAddStep={addSectionStep}
                             onAddSection={addInstructionSection}
                             onMoveStep={moveSectionStep}
+                            onMoveSection={moveInstructionSection}
 
                             onDragStart={() => {
                                 setDraggedSectionIndex(index)

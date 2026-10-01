@@ -24,30 +24,33 @@ function IngredientSection({
                     }
                 />
 
-                <button
-                    type="button"
-                    className="remove-section-button"
-                    onClick={() => onRemoveSection(sectionPath)}
-                >
-                    Remove section
-                </button>
+                <div className="ingredient-section-actions">
+                    <button
+                        type="button"
+                        className="remove-section-button"
+                        onClick={() => onRemoveSection(sectionPath)}
+                    >
+                        Remove section
+                    </button>
 
-                <button
-                    type="button"
-                    className="add-item-button"
-                    onClick={() => onAddSection(sectionPath)}
-                >
-                    Add section
-                </button>
+                    <button
+                        type="button"
+                        className="add-item-button"
+                        onClick={() => onAddSection(sectionPath)}
+                    >
+                        Add section
+                    </button>
+
+                    <button
+                        type="button"
+                        className="add-item-button"
+                        onClick={() => onAddIngredient(sectionPath)}
+                    >
+                        Add ingredient
+                    </button>
+                </div>
             </div>
 
-            <button
-                type="button"
-                className="add-item-button"
-                onClick={() => onAddIngredient(sectionPath)}
-            >
-                Add ingredient
-            </button>
 
             {section.ingredients.map((ingredient, index) => (
                 <IngredientEditor
