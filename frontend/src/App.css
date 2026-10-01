@@ -161,7 +161,8 @@
     margin-bottom: 1.25rem;
 }
 
-.recipe-section-actions {
+.recipe-section-actions,
+.recipe-review-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
