@@ -64,7 +64,7 @@ function App() {
                             onChange={(event) => setRecipeText(event.target.value)}
                         />
 
-                        <div>
+                        <div className="import-recipe-actions">
                             <button onClick={() => setShowImport(false)}>
                                 Cancel
                             </button>

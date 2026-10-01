@@ -162,7 +162,8 @@
 }
 
 .recipe-section-actions,
-.recipe-review-actions {
+.recipe-review-actions,
+.import-recipe-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
