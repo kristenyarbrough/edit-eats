@@ -29,13 +29,13 @@ public class RecipeService {
     @Transactional
     public Recipe createRecipe(CreateRecipeRequest request) {
 
-        if (request.getIngredients() == null || request.getIngredients().isEmpty()) {
+        if (!hasIngredients(request.getIngredients(), request.getIngredientSections())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Recipe must contain at least one ingredient");
         }
 
-        if (request.getSteps() == null || request.getSteps().isEmpty()) {
+        if (!hasSteps(request.getSteps(), request.getInstructionSections())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Recipe must contain at least one step");
@@ -237,6 +237,18 @@ public class RecipeService {
     @Transactional
     public Recipe updateRecipe(Long id, UpdateRecipeRequest request) {
 
+        if (!hasIngredients(request.getIngredients(),request.getIngredientSections())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Recipe must contain at least one ingredient");
+        }
+
+        if (!hasSteps(request.getSteps(), request.getInstructionSections())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Recipe must contain at least one step");
+        }
+
         Recipe recipe = recipeRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
@@ -270,8 +282,14 @@ public class RecipeService {
 
         }
 
+        // Remove existing recipe contents
         recipeIngredientRepository.deleteByRecipeId(id);
+        recipeIngredientSectionRepository.deleteByRecipeId(id);
 
+        recipeStepRepository.deleteByRecipeId(id);
+        recipeInstructionSectionRepository.deleteByRecipeId(id);
+
+        // Save top-level ingredients
         for (int i = 0; i < request.getIngredients().size(); i++) {
 
             CreateRecipeIngredientRequest ingredientRequest = request.getIngredients().get(i);
@@ -289,8 +307,7 @@ public class RecipeService {
 
         }
 
-        recipeStepRepository.deleteByRecipeId(id);
-
+        // Save top-level steps
         List<CreateRecipeStepRequest> steps = request.getSteps();
 
         for (int i = 0; i < steps.size(); i++) {
@@ -304,6 +321,29 @@ public class RecipeService {
                     .build();
 
             recipeStepRepository.save(recipeStep);
+
+        }
+
+        // Save ingredient sections
+        if (request.getIngredientSections() != null) {
+
+            saveIngredientSections(
+                    recipe,
+                    request.getIngredientSections(),
+                    null
+            );
+
+        }
+
+        // Save instructions sections
+        if (request.getInstructionSections() != null) {
+
+            saveInstructionSections(
+                    recipe,
+                    request.getInstructionSections(),
+                    null,
+                    steps.size() + 1
+            );
 
         }
 
@@ -600,6 +640,76 @@ public class RecipeService {
                 .steps(sectionSteps)
                 .sections(childSections)
                 .build();
+
+    }
+
+    private boolean hasIngredients(
+            List<CreateRecipeIngredientRequest> ingredients,
+            List<CreateRecipeIngredientSectionRequest> sections) {
+
+        if (ingredients != null && !ingredients.isEmpty()) {
+
+            return true;
+
+        }
+
+        if (sections != null) {
+
+            for (CreateRecipeIngredientSectionRequest section : sections) {
+
+                if (section.getIngredients() != null
+                        && !section.getIngredients().isEmpty()) {
+
+                    return true;
+
+                }
+
+                if (hasIngredients(null, section.getSections())) {
+
+                    return true;
+
+                }
+
+            }
+
+        }
+
+        return false;
+
+    }
+
+    private boolean hasSteps(
+            List<CreateRecipeStepRequest> steps,
+            List<CreateRecipeInstructionSectionRequest> sections) {
+
+        if (steps != null && !steps.isEmpty()) {
+
+            return true;
+
+        }
+
+        if (sections != null) {
+
+            for (CreateRecipeInstructionSectionRequest section : sections) {
+
+                if (section.getSteps() != null
+                        && !section.getSteps().isEmpty()) {
+
+                    return true;
+
+                }
+
+                if (hasSteps(null, section.getSections())) {
+
+                    return true;
+
+                }
+
+            }
+
+        }
+
+        return false;
 
     }
 

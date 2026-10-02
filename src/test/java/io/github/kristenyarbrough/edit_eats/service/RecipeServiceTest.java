@@ -95,7 +95,7 @@ class RecipeServiceTest {
         when(recipeCategoryRepository.findById(1L))
                 .thenReturn(Optional.of(category));
 
-        Recipe recipe = createRecipe(request, true, false);
+        Recipe recipe = createRecipe(request, true, false, false);
 
         assertAll("created recipe",
                 () -> assertNotNull(recipe),
@@ -210,7 +210,7 @@ class RecipeServiceTest {
         when(ingredientRepository.findById(1L))
                 .thenReturn(Optional.of(eggs));
 
-        Recipe recipe = createRecipe(request, false, true);
+        Recipe recipe = createRecipe(request, false, true, true);
 
         assertNotNull(recipe);
 
@@ -1139,7 +1139,7 @@ class RecipeServiceTest {
         when(recipeCategoryRepository.findById(1L))
                 .thenReturn(Optional.of(category));
 
-        Recipe recipe = createRecipe(request, true, false);
+        Recipe recipe = createRecipe(request, true, false, false);
 
         assertAll("created recipe",
                 () -> assertNotNull(recipe),
@@ -1245,7 +1245,7 @@ class RecipeServiceTest {
         when(recipeCategoryRepository.findById(1L))
                 .thenReturn(Optional.of(category));
 
-        Recipe recipe = createRecipe(request, true, false);
+        Recipe recipe = createRecipe(request, true, false, false);
 
         assertAll("created recipe",
                 () -> assertNotNull(recipe),
@@ -1373,7 +1373,7 @@ class RecipeServiceTest {
         when(recipeCategoryRepository.findById(3L))
                 .thenReturn(Optional.of(quickMeals));
 
-        Recipe recipe = createRecipe(request, true, false);
+        Recipe recipe = createRecipe(request, true, false, false);
 
         assertAll("created recipe",
                 () -> assertNotNull(recipe),
@@ -1472,7 +1472,7 @@ class RecipeServiceTest {
         when(ingredientRepository.findById(1L))
                 .thenReturn(Optional.of(ingredient));
 
-        Recipe recipe = createRecipe(request, false, false);
+        Recipe recipe = createRecipe(request, false, false, false);
 
         assertAll("created recipe",
                 () -> assertNotNull(recipe),
@@ -1646,7 +1646,7 @@ class RecipeServiceTest {
         when(ingredientRepository.findById(1L))
                 .thenReturn(Optional.of(ingredient));
 
-        Recipe recipe = createRecipe(request, false, false);
+        Recipe recipe = createRecipe(request, false, false, false);
 
         assertAll(
                 () -> assertEquals(15, recipe.getPrepMinutes()),
@@ -1703,6 +1703,11 @@ class RecipeServiceTest {
         recipe.setCreatedAt(java.time.LocalDateTime.now().minusDays(1));
         recipe.setLastModifiedAt(java.time.LocalDateTime.now().minusHours(1));
 
+        Ingredient ingredient = createIngredient();
+
+        CreateRecipeStepRequest step = new CreateRecipeStepRequest();
+        step.setInstruction("Crack the eggs into a bowl.");
+
         UpdateRecipeRequest request = new UpdateRecipeRequest();
 
         request.setName("Creamy Scrambled Eggs");
@@ -1714,7 +1719,11 @@ class RecipeServiceTest {
         request.setImageUrl("https://example.com/eggs.jpg");
         request.setStorageInstructions("Store in the fridge.");
         request.setFreezerInstructions("Not recommended.");
-        request.setIngredients(List.of());
+        request.setIngredients(List.of(createIngredientRequest(1L, "4", Unit.EACH)));
+        request.setSteps(List.of(step));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(ingredient));
 
         when(recipeRepository.findById(1L))
                 .thenReturn(Optional.of(recipe));
@@ -1749,14 +1758,22 @@ class RecipeServiceTest {
 
         Recipe recipe = createRecipe();
 
+        Ingredient ingredient = createIngredient();
+
+        CreateRecipeStepRequest step = new CreateRecipeStepRequest();
+        step.setInstruction("Crack the eggs into a bowl.");
+
         UpdateRecipeRequest request = updateValidRequest();
 
         request.setPrepMinutes(15);
         request.setCookMinutes(10);
         request.setPassiveMinutes(120);
-        request.setIngredients(List.of());
-        request.setSteps(List.of());
+        request.setIngredients(List.of(createIngredientRequest(1L, "4", Unit.EACH)));
+        request.setSteps(List.of(step));
         request.setCategories(List.of());
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(ingredient));
 
         when(recipeRepository.findById(1L))
                 .thenReturn(Optional.of(recipe));
@@ -1789,6 +1806,12 @@ class RecipeServiceTest {
         request.setCookMinutes(10);
         request.setServings(4);
         request.setDifficulty(Difficulty.EASY);
+        request.setIngredients(List.of(createIngredientRequest(1L, "4", Unit.EACH)));
+
+        CreateRecipeStepRequest step = new CreateRecipeStepRequest();
+        step.setInstruction("Crack the eggs into a bowl.");
+
+        request.setSteps(List.of(step));
 
         when(recipeRepository.findById(99L))
                 .thenReturn(Optional.empty());
@@ -1857,6 +1880,11 @@ class RecipeServiceTest {
 
         request.setIngredients(List.of(ingredientRequest));
 
+        CreateRecipeStepRequest step = new CreateRecipeStepRequest();
+        step.setInstruction("Crack the eggs into a bowl.");
+
+        request.setSteps(List.of(step));
+
         when(recipeRepository.findById(1L))
                 .thenReturn(Optional.of(recipe));
 
@@ -1900,6 +1928,11 @@ class RecipeServiceTest {
 
         request.setIngredients(List.of(ingredientRequest));
 
+        CreateRecipeStepRequest step = new CreateRecipeStepRequest();
+        step.setInstruction("Crack the eggs into a bowl.");
+
+        request.setSteps(List.of(step));
+
         when(recipeRepository.findById(1L))
                 .thenReturn(Optional.of(recipe));
 
@@ -1927,8 +1960,10 @@ class RecipeServiceTest {
 
         Recipe recipe = createRecipe();
 
+        Ingredient ingredient = createIngredient();
+
         UpdateRecipeRequest request = updateValidRequest();
-        request.setIngredients(List.of());
+        request.setIngredients(List.of(createIngredientRequest(1L, "4", Unit.EACH)));
 
         CreateRecipeStepRequest firstStep = new CreateRecipeStepRequest();
         firstStep.setInstruction("Crack the eggs into a bowl.");
@@ -1937,6 +1972,9 @@ class RecipeServiceTest {
         secondStep.setInstruction("Whisk the eggs.");
 
         request.setSteps(List.of(firstStep, secondStep));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(ingredient));
 
         when(recipeRepository.findById(1L))
                 .thenReturn(Optional.of(recipe));
@@ -1963,9 +2001,14 @@ class RecipeServiceTest {
 
         Recipe recipe = createRecipe();
 
+        Ingredient ingredient = createIngredient();
+
+        CreateRecipeStepRequest step = new CreateRecipeStepRequest();
+        step.setInstruction("Crack the eggs into a bowl.");
+
         UpdateRecipeRequest request = updateValidRequest();
-        request.setIngredients(List.of());
-        request.setSteps(List.of());
+        request.setIngredients(List.of(createIngredientRequest(1L, "4", Unit.EACH)));
+        request.setSteps(List.of(step));
 
         CreateRecipeCategoryRequest categoryRequest = new CreateRecipeCategoryRequest();
 
@@ -1977,6 +2020,9 @@ class RecipeServiceTest {
                 .id(2L)
                 .name("Breakfast")
                 .build();
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(ingredient));
 
         when(recipeRepository.findById(1L))
                 .thenReturn(Optional.of(recipe));
@@ -2001,15 +2047,24 @@ class RecipeServiceTest {
 
         Recipe recipe = createRecipe();
 
+        Ingredient ingredient = createIngredient();
+
         UpdateRecipeRequest request = updateValidRequest();
-        request.setIngredients(List.of());
-        request.setSteps(List.of());
+        request.setIngredients(List.of(createIngredientRequest(1L, "4", Unit.EACH)));
+
+        CreateRecipeStepRequest step = new CreateRecipeStepRequest();
+        step.setInstruction("Crack the eggs into a bowl.");
+
+        request.setSteps(List.of(step));
 
         CreateRecipeCategoryRequest categoryRequest = new CreateRecipeCategoryRequest();
 
         categoryRequest.setRecipeCategoryId(99L);
 
         request.setCategories(List.of(categoryRequest));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(ingredient));
 
         when(recipeRepository.findById(1L))
                 .thenReturn(Optional.of(recipe));
@@ -2248,6 +2303,150 @@ class RecipeServiceTest {
 
     }
 
+    @Test
+    void shouldCreateRecipeWithOnlySectionedIngredients() {
+
+        CreateRecipeRequest request = createValidRequest();
+
+        Ingredient ingredient = createIngredient();
+
+        request.setIngredients(List.of());
+        request.setSteps(List.of(createStepRequest()));
+
+        CreateRecipeIngredientSectionRequest section = new CreateRecipeIngredientSectionRequest();
+
+        section.setName("Main");
+        section.setIngredients(List.of(createIngredientRequest()));
+
+        request.setIngredientSections(List.of(section));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(ingredient));
+
+        when(recipeRepository.save(any(Recipe.class)))
+                .thenAnswer(invocation -> {
+                    Recipe recipe = invocation.getArgument(0);
+                    recipe.setId(1L);
+                    return recipe;
+                });
+
+        Recipe recipe = recipeService.createRecipe(request);
+
+        assertNotNull(recipe);
+
+        verify(recipeIngredientSectionRepository)
+                .save(argThat(savedSection ->
+                        "Main".equals(savedSection.getName())
+                        && savedSection.getRecipe() == recipe));
+
+        verify(recipeIngredientRepository)
+                .save(argThat(savedIngredient ->
+                        savedIngredient.getRecipe() == recipe
+                        && savedIngredient.getIngredient() == ingredient));
+
+    }
+
+    @Test
+    void shouldCreateRecipeWithOnlySectionedSteps() {
+
+        CreateRecipeRequest request = createValidRequest();
+
+        Ingredient ingredient = createIngredient();
+
+        request.setIngredients(List.of(createIngredientRequest()));
+        request.setSteps(List.of());
+
+        CreateRecipeInstructionSectionRequest section = new CreateRecipeInstructionSectionRequest();
+
+        section.setName("Method");
+        section.setSteps(List.of(createStepRequest("Whisk the eggs.")));
+
+        request.setInstructionSections(List.of(section));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(ingredient));
+
+        Recipe recipe = createRecipe(request, false, false, true);
+
+        assertNotNull(recipe);
+
+        verify(recipeInstructionSectionRepository)
+                .save(argThat(savedSection ->
+                        "Method".equals(savedSection.getName())
+                        && savedSection.getRecipe() == recipe));
+
+        verify(recipeStepRepository)
+                .save(argThat(savedStep ->
+                        savedStep.getRecipe() == recipe
+                        && "Whisk the eggs.".equals(savedStep.getInstruction())
+                        && savedStep.getSection() != null));
+
+    }
+
+    @Test
+    void shouldThrowWhenRecipeHasNoSteps() {
+
+        CreateRecipeRequest request = createValidRequest();
+
+        request.setIngredients(List.of(createIngredientRequest()));
+        request.setSteps(List.of());
+        request.setInstructionSections(List.of());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> recipeService.createRecipe(request)
+        );
+
+        assertEquals(
+                "Recipe must contain at least one step",
+                exception.getReason()
+        );
+
+        verifyNoInteractions(recipeStepRepository);
+
+    }
+
+    @Test
+    void shouldUpdateRecipeWithOnlySectionedIngredients() {
+
+        Recipe recipe = createRecipe();
+        Ingredient ingredient = createIngredient();
+
+        UpdateRecipeRequest request = updateValidRequest();
+
+        request.setIngredients(List.of());
+        request.setSteps(List.of(createStepRequest()));
+
+        CreateRecipeIngredientSectionRequest section = new CreateRecipeIngredientSectionRequest();
+
+        section.setName("Main");
+        section.setIngredients(List.of(createIngredientRequest(1L, "4", Unit.EACH)));
+
+        request.setIngredientSections(List.of(section));
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(ingredient));
+
+        mockSaveIngredientSectionRepository();
+
+        recipeService.updateRecipe(1L, request);
+
+        verify(recipeIngredientSectionRepository)
+                .save(argThat(savedSection ->
+                        "Main".equals(savedSection.getName())
+                        && savedSection.getRecipe() == recipe));
+
+        verify(recipeIngredientRepository)
+                .save(argThat(savedIngredient ->
+                        savedIngredient.getRecipe() == recipe
+                        && savedIngredient.getIngredient() == ingredient
+                        && savedIngredient.getSection() != null));
+
+    }
+
     private CreateRecipeRequest createValidRequest() {
 
         CreateRecipeRequest request = new CreateRecipeRequest();
@@ -2334,13 +2533,24 @@ class RecipeServiceTest {
 
     }
 
-    private void mockSaveSectionRepositories() {
+    private void mockSaveIngredientSectionRepository() {
 
         when(recipeIngredientSectionRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
+    }
+
+    private void mockSaveInstructionSectionRepository() {
+
         when(recipeInstructionSectionRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+
+    }
+
+    private void mockSaveSectionRepositories() {
+
+        mockSaveIngredientSectionRepository();
+        mockSaveInstructionSectionRepository();
 
     }
 
@@ -2389,7 +2599,8 @@ class RecipeServiceTest {
 
     private Recipe createRecipe(CreateRecipeRequest request,
                                 boolean withCategories,
-                                boolean withSections) {
+                                boolean withIngredientSections,
+                                boolean withInstructionSections) {
 
         when(recipeRepository.save(any(Recipe.class)))
                 .thenAnswer(invocation -> {
@@ -2406,10 +2617,15 @@ class RecipeServiceTest {
 
         }
 
-        if (withSections) {
+        if (withIngredientSections) {
 
-            mockSaveSectionRepositories();
+            mockSaveIngredientSectionRepository();
 
+        }
+
+        if (withInstructionSections) {
+
+            mockSaveInstructionSectionRepository();
         }
 
         return recipeService.createRecipe(request);

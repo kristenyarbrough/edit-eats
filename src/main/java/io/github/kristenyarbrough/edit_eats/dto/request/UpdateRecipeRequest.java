@@ -40,14 +40,12 @@ public class UpdateRecipeRequest {
     private String storageInstructions;
     private String freezerInstructions;
 
-    @NotEmpty
     @Valid
     private List<CreateRecipeIngredientRequest> ingredients = new ArrayList<>();
 
     @Valid
     private List<CreateRecipeIngredientSectionRequest> ingredientSections = new ArrayList<>();
 
-    @NotEmpty
     @Valid
     private List<CreateRecipeStepRequest> steps = new ArrayList<>();
 

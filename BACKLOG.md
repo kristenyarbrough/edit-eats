@@ -193,7 +193,7 @@ Relationships:
 ### Phase 2 — Editing
 - [x] Update recipe
 - [x] Add/remove ingredients
-- [ ] Reorder steps
+- [x] Reorder steps
 - [x] Delete recipe
 
 ### Phase 3 — The exciting features
@@ -243,11 +243,15 @@ Relationships:
       - [ ] Add source URL
     - [ ] Save a recipe
     - [ ] Display recipes
+      - [ ] Ingredient checkboxes
+      - [ ] Strike out ingredients and method steps when completed
+      - [ ] Cook mode - keep screen on
     - [ ] Filter recipes
     - [ ] Search for recipes
   - [ ] MealPlan
   - [ ] ShoppingList
   - [ ] Dining Eats
+  - [ ] Recipe Notes
 
 ###  Phase 7 — Personal dining
 - [ ] 🍽️ Restaurants
