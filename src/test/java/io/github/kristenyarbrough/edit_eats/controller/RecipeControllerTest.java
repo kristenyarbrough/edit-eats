@@ -290,22 +290,46 @@ class RecipeControllerTest {
     }
 
     @Test
-    void shouldReturn400WhenIngredientsIsEmpty() throws Exception {
+    void shouldCreateRecipeWhenIngredientsAreOnlyInSection() throws Exception {
 
         CreateRecipeRequest request = createRequest();
         request.setIngredients(List.of());
 
-        assertInvalidRequest(request);
+        CreateRecipeIngredientSectionRequest ingredientSection = new CreateRecipeIngredientSectionRequest();
+
+        ingredientSection.setName("Sauce");
+        ingredientSection.setIngredients(List.of(createIngredient()));
+
+        request.setIngredientSections(List.of(ingredientSection));
+
+        mockMvc.perform(post("/api/recipes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        verify(recipeService).createRecipe(any(CreateRecipeRequest.class));
 
     }
 
     @Test
-    void shouldReturn400WhenStepsIsEmpty() throws Exception {
+    void shouldCreateRecipeWhenStepsAreOnlyInSection() throws Exception {
 
         CreateRecipeRequest request = createRequest();
         request.setSteps(List.of());
 
-        assertInvalidRequest(request);
+        CreateRecipeInstructionSectionRequest instructionSection = new CreateRecipeInstructionSectionRequest();
+
+        instructionSection.setName("Prepare sauce");
+        instructionSection.setSteps(List.of(createStep()));
+
+        request.setInstructionSections(List.of(instructionSection));
+
+        mockMvc.perform(post("/api/recipes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        verify(recipeService).createRecipe(any(CreateRecipeRequest.class));
 
     }
 

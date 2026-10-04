@@ -37,14 +37,12 @@ public class CreateRecipeRequest {
     private String storageInstructions;
     private String freezerInstructions;
 
-    @NotEmpty
     @Valid
     private List<CreateRecipeIngredientRequest> ingredients;
 
     @Valid
     private List<CreateRecipeIngredientSectionRequest> ingredientSections = new ArrayList<>();
 
-    @NotEmpty
     @Valid
     private List<CreateRecipeStepRequest> steps;
 

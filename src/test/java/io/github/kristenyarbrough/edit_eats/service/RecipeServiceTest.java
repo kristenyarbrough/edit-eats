@@ -2447,6 +2447,570 @@ class RecipeServiceTest {
 
     }
 
+    @Test
+    void shouldUpdateRecipeWithOnlySectionedSteps() {
+
+        Recipe recipe = createRecipe();
+
+        UpdateRecipeRequest request = updateValidRequest();
+
+        request.setIngredients(List.of(createIngredientRequest()));
+        request.setSteps(List.of());
+
+        CreateRecipeInstructionSectionRequest section = new CreateRecipeInstructionSectionRequest();
+
+        section.setName("Main");
+
+        section.setSteps(List.of(createStepRequest("Whisk eggs.")));
+
+        request.setInstructionSections(List.of(section));
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(createIngredient()));
+
+        when(recipeInstructionSectionRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        recipeService.updateRecipe(1L, request);
+
+        verify(recipeInstructionSectionRepository)
+                .save(argThat(savedSection ->
+                        "Main".equals(savedSection.getName())
+                        && savedSection.getRecipe() == recipe));
+
+        ArgumentCaptor<RecipeStep> stepCaptor = ArgumentCaptor.forClass(RecipeStep.class);
+
+        verify(recipeStepRepository).save(stepCaptor.capture());
+
+        RecipeStep savedStep = stepCaptor.getValue();
+
+        assertEquals(recipe, savedStep.getRecipe());
+        assertEquals("Whisk eggs.", savedStep.getInstruction());
+        assertNotNull(savedStep.getSection());
+
+    }
+
+    @Test
+    void shouldUpdateRecipeWithNestedInstructionSections() {
+
+        Recipe recipe = createRecipe();
+
+        UpdateRecipeRequest request = updateValidRequest();
+
+        request.setIngredients(List.of(createIngredientRequest()));
+        request.setSteps(List.of());
+
+        CreateRecipeInstructionSectionRequest parentSection = new CreateRecipeInstructionSectionRequest();
+
+        parentSection.setName("Main");
+
+        CreateRecipeInstructionSectionRequest childSection = new CreateRecipeInstructionSectionRequest();
+
+        childSection.setName("Preparation");
+        childSection.setSteps(List.of(createStepRequest("Whisk eggs.")));
+
+        parentSection.setSections(List.of(childSection));
+
+        request.setInstructionSections(List.of(parentSection));
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(createIngredient()));
+
+        when(recipeInstructionSectionRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        recipeService.updateRecipe(1L, request);
+
+        ArgumentCaptor<RecipeInstructionSection> sectionCaptor =
+                ArgumentCaptor.forClass(RecipeInstructionSection.class);
+
+        verify(recipeInstructionSectionRepository, times(2))
+                .save(sectionCaptor.capture());
+
+        List<RecipeInstructionSection> savedSections = sectionCaptor.getAllValues();
+
+        RecipeInstructionSection savedParent = savedSections.get(0);
+        RecipeInstructionSection savedChild = savedSections.get(1);
+
+        assertEquals("Main", savedParent.getName());
+        assertEquals(recipe, savedParent.getRecipe());
+        assertNull(savedParent.getParentSection());
+
+        assertEquals("Preparation", savedChild.getName());
+        assertEquals(recipe, savedChild.getRecipe());
+        assertEquals(savedParent, savedChild.getParentSection());
+
+        ArgumentCaptor<RecipeStep> stepCaptor =
+                ArgumentCaptor.forClass(RecipeStep.class);
+
+        verify(recipeStepRepository).save(stepCaptor.capture());
+
+        RecipeStep savedStep = stepCaptor.getValue();
+
+        assertEquals(recipe, savedStep.getRecipe());
+        assertEquals("Whisk eggs.", savedStep.getInstruction());
+        assertEquals(savedChild, savedStep.getSection());
+
+    }
+
+    @Test
+    void shouldUpdateRecipeWithTwoLevelsOfNestedInstructionSections() {
+
+        Recipe recipe = createRecipe();
+
+        UpdateRecipeRequest request = updateValidRequest();
+
+        request.setIngredients(List.of(createIngredientRequest()));
+        request.setSteps(List.of());
+
+        CreateRecipeInstructionSectionRequest mainSection = new CreateRecipeInstructionSectionRequest();
+
+        mainSection.setName("Main");
+
+        CreateRecipeInstructionSectionRequest preparationSection = new CreateRecipeInstructionSectionRequest();
+
+        preparationSection.setName("Preparation");
+
+        CreateRecipeInstructionSectionRequest finishingSection = new CreateRecipeInstructionSectionRequest();
+
+        finishingSection.setName("Finishing");
+        finishingSection.setSteps(List.of(createStepRequest("Garnish and serve.")));
+
+        preparationSection.setSections(List.of(finishingSection));
+        mainSection.setSections(List.of(preparationSection));
+
+        request.setInstructionSections(List.of(mainSection));
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(createIngredient()));
+
+        when(recipeInstructionSectionRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        recipeService.updateRecipe(1L, request);
+
+        ArgumentCaptor<RecipeInstructionSection> sectionCaptor =
+                ArgumentCaptor.forClass(RecipeInstructionSection.class);
+
+        verify(recipeInstructionSectionRepository, times(3))
+                .save(sectionCaptor.capture());
+
+        List<RecipeInstructionSection> savedSections = sectionCaptor.getAllValues();
+
+        RecipeInstructionSection savedMain = savedSections.get(0);
+        RecipeInstructionSection savedPreparation = savedSections.get(1);
+        RecipeInstructionSection savedFinishing = savedSections.get(2);
+
+        assertEquals("Main", savedMain.getName());
+        assertNull(savedMain.getParentSection());
+
+        assertEquals("Preparation", savedPreparation.getName());
+        assertEquals(savedMain, savedPreparation.getParentSection());
+
+        assertEquals("Finishing", savedFinishing.getName());
+        assertEquals(savedPreparation, savedFinishing.getParentSection());
+
+        ArgumentCaptor<RecipeStep> stepCaptor =
+                ArgumentCaptor.forClass(RecipeStep.class);
+
+        verify(recipeStepRepository).save(stepCaptor.capture());
+
+        RecipeStep savedStep = stepCaptor.getValue();
+
+        assertEquals("Garnish and serve.", savedStep.getInstruction());
+        assertEquals(savedFinishing, savedStep.getSection());
+
+    }
+
+    @Test
+    void shouldContinueStepNumberingAcrossNestedInstructionSections() {
+
+        Recipe recipe = createRecipe();
+
+        UpdateRecipeRequest request = updateValidRequest();
+
+        request.setIngredients(List.of(createIngredientRequest()));
+
+        // One top-level step
+        request.setSteps(List.of(createStepRequest("Preheat the oven.")));
+
+        CreateRecipeInstructionSectionRequest mainSection = new CreateRecipeInstructionSectionRequest();
+        mainSection.setName("Main");
+
+        // One step directly inside Main
+        mainSection.setSteps(List.of(createStepRequest("Mix the ingredients.")));
+
+        CreateRecipeInstructionSectionRequest preparationSection = new CreateRecipeInstructionSectionRequest();
+        preparationSection.setName("Preparation");
+
+        // One step inside the child section
+        preparationSection.setSteps(List.of(createStepRequest("Pour into the baking dish.")));
+
+        mainSection.setSections(List.of(preparationSection));
+
+        request.setInstructionSections(List.of(mainSection));
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(createIngredient()));
+
+        when(recipeInstructionSectionRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        recipeService.updateRecipe(1L, request);
+
+        ArgumentCaptor<RecipeStep> stepCaptor =
+                ArgumentCaptor.forClass(RecipeStep.class);
+
+        verify(recipeStepRepository, times(3))
+                .save(stepCaptor.capture());
+
+        List<RecipeStep> savedSteps = stepCaptor.getAllValues();
+
+        RecipeStep topLevelStep = savedSteps.get(0);
+        RecipeStep mainStep = savedSteps.get(1);
+        RecipeStep preparationStep = savedSteps.get(2);
+
+        assertEquals("Preheat the oven.", topLevelStep.getInstruction());
+        assertEquals(1, topLevelStep.getStepNumber());
+        assertNull(topLevelStep.getSection());
+
+        assertEquals("Mix the ingredients.", mainStep.getInstruction());
+        assertEquals(2, mainStep.getStepNumber());
+
+        assertEquals("Pour into the baking dish.", preparationStep.getInstruction());
+        assertEquals(3, preparationStep.getStepNumber());
+
+    }
+
+    @Test
+    void shouldSaveMultipleStepsAndSiblingInstructionSectionsInOrder() {
+
+        Recipe recipe = createRecipe();
+
+        UpdateRecipeRequest request = updateValidRequest();
+
+        request.setIngredients(List.of(createIngredientRequest()));
+        request.setSteps(List.of());
+
+        CreateRecipeInstructionSectionRequest mainSection = new CreateRecipeInstructionSectionRequest();
+        mainSection.setName("Main");
+        mainSection.setSteps(List.of(
+                createStepRequest("Step A"),
+                createStepRequest("Step B")
+        ));
+
+        CreateRecipeInstructionSectionRequest preparationSection = new CreateRecipeInstructionSectionRequest();
+        preparationSection.setName("Preparation");
+        preparationSection.setSteps(List.of(
+                createStepRequest("Step C"),
+                createStepRequest("Step D")
+        ));
+
+        CreateRecipeInstructionSectionRequest cookingSection = new CreateRecipeInstructionSectionRequest();
+        cookingSection.setName("Cooking");
+        cookingSection.setSteps(List.of(createStepRequest("Step E")));
+
+        mainSection.setSections(List.of(
+                preparationSection,
+                cookingSection
+        ));
+
+        request.setInstructionSections(List.of(mainSection));
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(createIngredient()));
+
+        when(recipeInstructionSectionRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        recipeService.updateRecipe(1L, request);
+
+        ArgumentCaptor<RecipeInstructionSection> sectionCaptor =
+                ArgumentCaptor.forClass(RecipeInstructionSection.class);
+
+        verify(recipeInstructionSectionRepository, times(3))
+                .save(sectionCaptor.capture());
+
+        List<RecipeInstructionSection> savedSections = sectionCaptor.getAllValues();
+
+        RecipeInstructionSection savedMain = savedSections.get(0);
+        RecipeInstructionSection savedPreparation = savedSections.get(1);
+        RecipeInstructionSection savedCooking = savedSections.get(2);
+
+        assertEquals("Main", savedMain.getName());
+        assertNull(savedMain.getParentSection());
+        assertEquals(0, savedMain.getSortOrder());
+
+        assertEquals("Preparation", savedPreparation.getName());
+        assertEquals(savedMain, savedPreparation.getParentSection());
+        assertEquals(0, savedPreparation.getSortOrder());
+
+        assertEquals("Cooking", savedCooking.getName());
+        assertEquals(savedMain, savedCooking.getParentSection());
+        assertEquals(1, savedCooking.getSortOrder());
+
+        ArgumentCaptor<RecipeStep> stepCaptor =
+                ArgumentCaptor.forClass(RecipeStep.class);
+
+        verify(recipeStepRepository, times(5)).save(stepCaptor.capture());
+
+        List<RecipeStep> savedSteps = stepCaptor.getAllValues();
+
+        assertEquals("Step A", savedSteps.get(0).getInstruction());
+        assertEquals(1, savedSteps.get(0).getStepNumber());
+        assertEquals(savedMain, savedSteps.get(0).getSection());
+
+        assertEquals("Step B", savedSteps.get(1).getInstruction());
+        assertEquals(2, savedSteps.get(1).getStepNumber());
+        assertEquals(savedMain, savedSteps.get(1).getSection());
+
+        assertEquals("Step C", savedSteps.get(2).getInstruction());
+        assertEquals(3, savedSteps.get(2).getStepNumber());
+        assertEquals(savedPreparation, savedSteps.get(2).getSection());
+
+        assertEquals("Step D", savedSteps.get(3).getInstruction());
+        assertEquals(4, savedSteps.get(3).getStepNumber());
+        assertEquals(savedPreparation, savedSteps.get(3).getSection());
+
+        assertEquals("Step E", savedSteps.get(4).getInstruction());
+        assertEquals(5, savedSteps.get(4).getStepNumber());
+        assertEquals(savedCooking, savedSteps.get(4).getSection());
+
+    }
+
+    @Test
+    void shouldAllowRecipeWithStepOnlyInDeeplyNestedInstructionSection() {
+
+        Recipe recipe = createRecipe();
+
+        UpdateRecipeRequest request = updateValidRequest();
+
+        request.setIngredients(List.of(createIngredientRequest()));
+        request.setSteps(List.of());
+
+        CreateRecipeInstructionSectionRequest mainSection = new CreateRecipeInstructionSectionRequest();
+        mainSection.setName("Main");
+
+        CreateRecipeInstructionSectionRequest preparationSection = new CreateRecipeInstructionSectionRequest();
+        preparationSection.setName("Preparation");
+
+        CreateRecipeInstructionSectionRequest finishingSection = new CreateRecipeInstructionSectionRequest();
+        finishingSection.setName("Finishing");
+        finishingSection.setSteps(List.of(createStepRequest("Garnish and serve.")));
+
+        preparationSection.setSections(List.of(finishingSection));
+        mainSection.setSections(List.of(preparationSection));
+
+        request.setInstructionSections(List.of(mainSection));
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(createIngredient()));
+
+        when(recipeInstructionSectionRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(recipeStepRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertDoesNotThrow(() -> recipeService.updateRecipe(1L, request));
+
+        verify(recipeStepRepository).save(any(RecipeStep.class));
+
+    }
+
+    @Test
+    void shouldUpdateRecipeWithNestedIngredientSections() {
+
+        Recipe recipe = createRecipe();
+
+        UpdateRecipeRequest request = updateValidRequest();
+
+        request.setIngredients(List.of());
+        request.setSteps(List.of(createStepRequest("Cook the meal.")));
+
+        CreateRecipeIngredientSectionRequest parentSection = new CreateRecipeIngredientSectionRequest();
+        parentSection.setName("Main");
+
+        CreateRecipeIngredientSectionRequest childSection = new CreateRecipeIngredientSectionRequest();
+        childSection.setName("Sauce");
+        childSection.setIngredients(List.of(createIngredientRequest()));
+
+        parentSection.setSections(List.of(childSection));
+
+        request.setIngredientSections(List.of(parentSection));
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(createIngredient()));
+
+        when(recipeIngredientSectionRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        recipeService.updateRecipe(1L, request);
+
+        ArgumentCaptor<RecipeIngredientSection> sectionCaptor =
+                ArgumentCaptor.forClass(RecipeIngredientSection.class);
+
+        verify(recipeIngredientSectionRepository, times(2))
+                .save(sectionCaptor.capture());
+
+        List<RecipeIngredientSection> savedSections = sectionCaptor.getAllValues();
+
+        RecipeIngredientSection savedParent = savedSections.get(0);
+        RecipeIngredientSection savedChild = savedSections.get(1);
+
+        assertEquals("Main", savedParent.getName());
+        assertEquals(recipe, savedParent.getRecipe());
+        assertNull(savedParent.getParentSection());
+
+        assertEquals("Sauce", savedChild.getName());
+        assertEquals(recipe, savedChild.getRecipe());
+        assertEquals(savedParent, savedChild.getParentSection());
+
+        ArgumentCaptor<RecipeIngredient> ingredientCaptor =
+                ArgumentCaptor.forClass(RecipeIngredient.class);
+
+        verify(recipeIngredientRepository).save(ingredientCaptor.capture());
+
+        RecipeIngredient savedIngredient = ingredientCaptor.getValue();
+
+        assertEquals(recipe, savedIngredient.getRecipe());
+        assertEquals(savedChild, savedIngredient.getSection());
+
+    }
+
+    @Test
+    void shouldUpdateRecipeWithTwoLevelsOfNestedIngredientSections() {
+
+        Recipe recipe = createRecipe();
+
+        UpdateRecipeRequest request = updateValidRequest();
+
+        request.setIngredients(List.of());
+        request.setSteps(List.of(createStepRequest("Cook the meal.")));
+
+        CreateRecipeIngredientSectionRequest mainSection = new CreateRecipeIngredientSectionRequest();
+        mainSection.setName("Main");
+
+        CreateRecipeIngredientSectionRequest preparationSection = new CreateRecipeIngredientSectionRequest();
+        preparationSection.setName("Preparation");
+
+        CreateRecipeIngredientSectionRequest finishingSection = new CreateRecipeIngredientSectionRequest();
+        finishingSection.setName("Finishing");
+        finishingSection.setIngredients(List.of(createIngredientRequest()));
+
+        preparationSection.setSections(List.of(finishingSection));
+        mainSection.setSections(List.of(preparationSection));
+
+        request.setIngredientSections(List.of(mainSection));
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(createIngredient()));
+
+        when(recipeIngredientSectionRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        recipeService.updateRecipe(1L, request);
+
+        ArgumentCaptor<RecipeIngredientSection> sectionCaptor =
+                ArgumentCaptor.forClass(RecipeIngredientSection.class);
+
+        verify(recipeIngredientSectionRepository, times(3))
+                .save(sectionCaptor.capture());
+
+        List<RecipeIngredientSection> savedSections = sectionCaptor.getAllValues();
+
+        RecipeIngredientSection savedMain = savedSections.get(0);
+        RecipeIngredientSection savedPreparation = savedSections.get(1);
+        RecipeIngredientSection savedFinishing = savedSections.get(2);
+
+        assertEquals("Main", savedMain.getName());
+        assertNull(savedMain.getParentSection());
+
+        assertEquals("Preparation", savedPreparation.getName());
+        assertEquals(savedMain, savedPreparation.getParentSection());
+
+        assertEquals("Finishing", savedFinishing.getName());
+        assertEquals(savedPreparation, savedFinishing.getParentSection());
+
+        ArgumentCaptor<RecipeIngredient> stepCaptor =
+                ArgumentCaptor.forClass(RecipeIngredient.class);
+
+        verify(recipeIngredientRepository).save(stepCaptor.capture());
+
+        RecipeIngredient savedIngredient = stepCaptor.getValue();
+
+        assertEquals(1L, savedIngredient.getIngredient().getId());
+        assertEquals(savedFinishing, savedIngredient.getSection());
+
+    }
+
+    @Test
+    void shouldAllowRecipeWithIngredientOnlyInDeeplyNestedIngredientSection() {
+
+        Recipe recipe = createRecipe();
+
+        UpdateRecipeRequest request = updateValidRequest();
+
+        request.setIngredients(List.of());
+        request.setSteps(List.of(createStepRequest("Cook the meal.")));
+
+        CreateRecipeIngredientSectionRequest mainSection = new CreateRecipeIngredientSectionRequest();
+        mainSection.setName("Main");
+
+        CreateRecipeIngredientSectionRequest preparationSection = new CreateRecipeIngredientSectionRequest();
+        preparationSection.setName("Preparation");
+
+        CreateRecipeIngredientSectionRequest sauceSection = new CreateRecipeIngredientSectionRequest();
+        sauceSection.setName("Sauce");
+        sauceSection.setIngredients(List.of(createIngredientRequest()));
+
+        preparationSection.setSections(List.of(sauceSection));
+        mainSection.setSections(List.of(preparationSection));
+
+        request.setIngredientSections(List.of(mainSection));
+
+        when(recipeRepository.findById(1L))
+                .thenReturn(Optional.of(recipe));
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(createIngredient()));
+
+        when(recipeIngredientSectionRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(recipeIngredientRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertDoesNotThrow(() -> recipeService.updateRecipe(1L, request));
+
+        verify(recipeIngredientRepository).save(any(RecipeIngredient.class));
+
+    }
+
     private CreateRecipeRequest createValidRequest() {
 
         CreateRecipeRequest request = new CreateRecipeRequest();
