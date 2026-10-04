@@ -3,9 +3,9 @@ package io.github.kristenyarbrough.edit_eats.service;
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
 import io.github.kristenyarbrough.edit_eats.dto.imported.*;
 import io.github.kristenyarbrough.edit_eats.dto.response.RecipeDraftResponse;
+import io.github.kristenyarbrough.edit_eats.repository.IngredientRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -27,6 +28,9 @@ class RecipeImportServiceTest {
 
     @Mock
     private RecipePageFetcher pageFetcher;
+
+    @Mock
+    private IngredientRepository ingredientRepository;
 
     @InjectMocks
     private RecipeImportService recipeImportService;
@@ -2271,6 +2275,12 @@ class RecipeImportServiceTest {
 
         when(structuredDataParser.parse(anyString()))
                 .thenReturn(recipe);
+
+        when(ingredientRepository.findByNameIgnoreCase("butter"))
+                .thenReturn(Optional.empty());
+
+        when(ingredientRepository.findByNameIgnoreCase("garlic"))
+                .thenReturn(Optional.empty());
 
         RecipeDraftResponse result = recipeImportService.importRecipeDraftFromUrl(
                 "https://example.com/recipe"

@@ -1,8 +1,10 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
+import io.github.kristenyarbrough.edit_eats.domain.Ingredient;
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
 import io.github.kristenyarbrough.edit_eats.dto.imported.*;
 import io.github.kristenyarbrough.edit_eats.dto.response.*;
+import io.github.kristenyarbrough.edit_eats.repository.IngredientRepository;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -23,6 +25,7 @@ public class RecipeImportService {
 
     private final RecipeStructuredDataParser structuredDataParser;
     private final RecipePageFetcher pageFetcher;
+    private final IngredientRepository ingredientRepository;
 
     public ImportedRecipe importRecipeFromUrl(String url) {
 
@@ -1022,7 +1025,12 @@ public class RecipeImportService {
     private ImportedIngredientResponse toIngredientResponse(
             ImportedIngredient ingredient) {
 
+        Long ingredientId = ingredientRepository.findByNameIgnoreCase(ingredient.getName())
+                .map(Ingredient::getId)
+                .orElse(null);
+
         return ImportedIngredientResponse.builder()
+                .ingredientId(ingredientId)
                 .ingredientName(ingredient.getName())
                 .quantity(ingredient.getQuantity())
                 .unit(ingredient.getUnit())

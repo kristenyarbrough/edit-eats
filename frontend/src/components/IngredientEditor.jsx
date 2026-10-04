@@ -19,7 +19,7 @@ function IngredientEditor({ ingredient, onChange, onRemove }) {
                             : Number(event.target.value)
                     )
                 }
-                placeHolder="Qty"
+                placeholder="Qty"
             />
 
             <select
@@ -54,7 +54,7 @@ function IngredientEditor({ ingredient, onChange, onRemove }) {
                         event.target.value
                     )
                 }
-                placeHolder="Ingredient"
+                placeholder="Ingredient"
             />
 
             <input
@@ -67,7 +67,7 @@ function IngredientEditor({ ingredient, onChange, onRemove }) {
                         event.target.value || null
                     )
                 }
-                placeHolder="Preparation"
+                placeholder="Preparation"
             />
 
             <label className="ingredient-optional">

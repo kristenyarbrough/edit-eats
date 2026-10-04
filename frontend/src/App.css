@@ -141,6 +141,18 @@
     background: white;
 }
 
+.recipe-meta-field select {
+    padding: 0.2rem;
+    border: 1px solid #d8cfae;
+    border-radius: 6px;
+    background: white;
+    box-sizing: border-box;
+}
+
+.recipe-meta-field select option:first-child {
+    color: #555;
+}
+
 .recipe-meta {
     display: flex;
     flex-wrap: wrap;

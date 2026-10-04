@@ -41,6 +41,8 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                     (prep || 0) + (cook || 0) + (passive || 0)
             }
 
+            console.log('Update recipe field:', field, value)
+
             return updatedRecipe
         })
     }
@@ -388,6 +390,62 @@ function RecipeReview ({ recipe, onBack, onSave }) {
             )
         }))
     }
+    const buildIngredientSectionRequest = (section) => ({
+        name: section.name,
+
+        ingredients: section.ingredients.map((ingredient) => ({
+            ingredientId: ingredient.ingredientId,
+            quantity: ingredient.quantity,
+            unit: ingredient.unit,
+            preparation: ingredient.preparation,
+            optional: ingredient.optional
+        })),
+
+        sections: section.sections.map(buildIngredientSectionRequest),
+    })
+    const buildInstructionSectionRequest = (section) => ({
+        name: section.name,
+
+        steps: section.steps.map((step) => ({
+            instruction: step.instruction
+        })),
+
+        sections: section.sections.map(buildInstructionSectionRequest),
+    })
+    const buildSaveRequest =() => {
+        return {
+            name: editedRecipe.name,
+            prepMinutes: editedRecipe.prepMinutes,
+            cookMinutes: editedRecipe.cookMinutes,
+            passiveMinutes: editedRecipe.passiveMinutes,
+            servings: editedRecipe.servings,
+            difficulty: editedRecipe.difficulty,
+            sourceUrl: editedRecipe.sourceUrl,
+            imageUrl: editedRecipe.imageUrl,
+            storageInstructions: editedRecipe.storageInstructions,
+            freezerInstructions: editedRecipe.freezerInstructions,
+
+            ingredients: (editedRecipe.ingredients ?? []).map((ingredient) => ({
+                ingredientId: ingredient.ingredientId,
+                quantity: ingredient.quantity,
+                unit: ingredient.unit,
+                preparation: ingredient.preparation,
+                optional: ingredient.optional
+            })),
+
+            steps: (editedRecipe.steps ?? []).map((step) => ({
+                instruction: step.instruction
+            })),
+
+            ingredientSections: (editedRecipe.ingredientSections ?? []).map(
+                buildIngredientSectionRequest
+            ),
+            instructionSections: (editedRecipe.instructionSections ?? []).map(
+                buildInstructionSectionRequest
+            ),
+            categories: editedRecipe.categories
+        }
+    }
 
     return (
         <div className="recipe-review">
@@ -424,6 +482,25 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                                 people
                             </label>
 {/*                         )} */}
+
+                        <label className="recipe-meta-field">
+                            Difficulty:
+                            <select
+                                value={editedRecipe.difficulty ?? ''}
+                                onChange={(event) =>
+                                    updateRecipeField(
+                                        'difficulty',
+                                        event.target.value || null
+                                    )
+                                }
+                            >
+                                <option value="">Select difficulty</option>
+                                <option value="EASY">Easy</option>
+                                <option value="MEDIUM">Medium</option>
+                                <option value="HARD">Hard</option>
+                                <option value="EXPERT">Expert</option>
+                            </select>
+                        </label>
 
                         <TimeEditor
                             label="Prep:"
@@ -677,7 +754,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                         Back
                     </button>
 
-                    <button onClick={() => onSave(editedRecipe)}>
+                    <button onClick={() => onSave(buildSaveRequest())}>
                         Save Recipe
                     </button>
                 </div>

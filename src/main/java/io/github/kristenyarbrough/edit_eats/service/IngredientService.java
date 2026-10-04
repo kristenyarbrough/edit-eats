@@ -27,7 +27,7 @@ public class IngredientService {
 
     public Ingredient createIngredient(CreateIngredientRequest request) {
 
-        ingredientRepository.findByName(request.getName())
+        ingredientRepository.findByNameIgnoreCase(request.getName())
                 .ifPresent(ingredient -> {
                     throw new IllegalArgumentException(
                             "An ingredient with the name '" + request.getName() + "' already exists.");

@@ -22,10 +22,39 @@ function App() {
 
         const data = await response.json()
 
+        console.log('Recipe import response:', JSON.stringify(data, null, 2))
+
         setRecipe(data)
 
         } catch (error) {
             console.error(`Recipe import failed: `, error)
+        }
+    }
+    const handleSave = async (recipeToSave) => {
+        try {
+            console.log('Recipe save request:', JSON.stringify(recipeToSave, null, 2))
+
+            const response = await fetch('/api/recipes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(recipeToSave),
+            })
+
+            if (!response.ok) {
+                const errorText = await response.text()
+                throw new Error(
+                    errorText || `Save failed (${response.status})`
+                )
+            }
+
+            const data = await response.json()
+
+            console.log('Recipe saved:', data)
+
+        } catch (error) {
+            console.error('Recipe save failed:', error)
         }
     }
 
@@ -79,7 +108,7 @@ function App() {
                     <RecipeReview
                         recipe={recipe}
                         onBack={() => setRecipe(null)}
-                        onSave={() => console.log('Save recipe')}
+                        onSave={handleSave}
                     />
                 )}
             </main>

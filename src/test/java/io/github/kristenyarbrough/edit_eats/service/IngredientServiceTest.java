@@ -43,7 +43,7 @@ class IngredientServiceTest {
 
         IngredientCategory category = createCategory();
 
-        when(ingredientRepository.findByName("Egg"))
+        when(ingredientRepository.findByNameIgnoreCase("Egg"))
                 .thenReturn(Optional.empty());
 
         when(ingredientCategoryRepository.findById(1L))
@@ -61,7 +61,7 @@ class IngredientServiceTest {
         assertEquals(Unit.EACH, ingredient.getDefaultUnit());
         assertEquals(category, ingredient.getIngredientCategory());
 
-        verify(ingredientRepository).findByName("Egg");
+        verify(ingredientRepository).findByNameIgnoreCase("Egg");
         verify(ingredientCategoryRepository).findById(1L);
         verify(ingredientRepository).save(any(Ingredient.class));
 
@@ -78,7 +78,7 @@ class IngredientServiceTest {
                 .defaultUnit(Unit.EACH)
                 .build();
 
-        when(ingredientRepository.findByName("Egg"))
+        when(ingredientRepository.findByNameIgnoreCase("Egg"))
                 .thenReturn(Optional.of(existingIngredient));
 
         IllegalArgumentException exception = assertThrows(
@@ -91,7 +91,7 @@ class IngredientServiceTest {
                 exception.getMessage()
         );
 
-        verify(ingredientRepository).findByName("Egg");
+        verify(ingredientRepository).findByNameIgnoreCase("Egg");
         verifyNoInteractions(ingredientCategoryRepository);
         verify(ingredientRepository, never()).save(any());
 
@@ -102,7 +102,7 @@ class IngredientServiceTest {
 
         CreateIngredientRequest request = createValidRequest();
 
-        when(ingredientRepository.findByName("Egg"))
+        when(ingredientRepository.findByNameIgnoreCase("Egg"))
                 .thenReturn(Optional.empty());
 
         when(ingredientCategoryRepository.findById(1L))
@@ -116,7 +116,7 @@ class IngredientServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         assertEquals("Ingredient category not found: 1", exception.getReason());
 
-        verify(ingredientRepository).findByName("Egg");
+        verify(ingredientRepository).findByNameIgnoreCase("Egg");
         verify(ingredientCategoryRepository).findById(1L);
         verify(ingredientRepository, never()).save(any());
 
