@@ -25,7 +25,7 @@ public class RecipeImportService {
 
     private final RecipeStructuredDataParser structuredDataParser;
     private final RecipePageFetcher pageFetcher;
-    private final IngredientRepository ingredientRepository;
+//    private final IngredientRepository ingredientRepository;
 
     public ImportedRecipe importRecipeFromUrl(String url) {
 
@@ -1025,12 +1025,12 @@ public class RecipeImportService {
     private ImportedIngredientResponse toIngredientResponse(
             ImportedIngredient ingredient) {
 
-        Long ingredientId = ingredientRepository.findByNameIgnoreCase(ingredient.getName())
-                .map(Ingredient::getId)
-                .orElse(null);
+//        Long ingredientId = ingredientRepository.findByNameIgnoreCase(ingredient.getName())
+//                .map(Ingredient::getId)
+//                .orElse(null);
 
         return ImportedIngredientResponse.builder()
-                .ingredientId(ingredientId)
+                .ingredientId(null)
                 .ingredientName(ingredient.getName())
                 .quantity(ingredient.getQuantity())
                 .unit(ingredient.getUnit())

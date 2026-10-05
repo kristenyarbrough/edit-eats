@@ -2,10 +2,13 @@ package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.Ingredient;
 import io.github.kristenyarbrough.edit_eats.domain.IngredientCategory;
+import io.github.kristenyarbrough.edit_eats.domain.User;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateIngredientRequest;
 import io.github.kristenyarbrough.edit_eats.dto.response.IngredientResponse;
 import io.github.kristenyarbrough.edit_eats.repository.IngredientCategoryRepository;
 import io.github.kristenyarbrough.edit_eats.repository.IngredientRepository;
+import io.github.kristenyarbrough.edit_eats.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,20 +17,18 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class IngredientService {
 
     private final IngredientRepository ingredientRepository;
     private final IngredientCategoryRepository ingredientCategoryRepository;
-
-    public IngredientService(IngredientRepository ingredientRepository,
-                             IngredientCategoryRepository ingredientCategoryRepository) {
-        this.ingredientRepository = ingredientRepository;
-        this.ingredientCategoryRepository = ingredientCategoryRepository;
-    }
+    private final UserRepository userRepository;
 
     public Ingredient createIngredient(CreateIngredientRequest request) {
 
-        ingredientRepository.findByNameIgnoreCase(request.getName())
+        User user = getDevelopmentUser();
+
+        ingredientRepository.findByUserIdAndNameIgnoreCase(user.getId(), request.getName())
                 .ifPresent(ingredient -> {
                     throw new IllegalArgumentException(
                             "An ingredient with the name '" + request.getName() + "' already exists.");
@@ -51,12 +52,22 @@ public class IngredientService {
     }
 
     public List<Ingredient> getAllIngredients() {
-        return ingredientRepository.findAll(
-                Sort.by(Sort.Direction.ASC, "name"));
+
+        User user = getDevelopmentUser();
+
+        return ingredientRepository.findAllByUserIdOrderByNameAsc(user.getId());
+
     }
 
     public List<Ingredient> findIngredients(String name) {
-        return ingredientRepository.findTop20ByNameContainingIgnoreCase(name);
+
+        User user = getDevelopmentUser();
+
+        return ingredientRepository.findTop20ByUserIdAndNameContainingIgnoreCase(
+                user.getId(),
+                name
+        );
+
     }
 
     public IngredientResponse getIngredient(Long id) {
@@ -73,4 +84,14 @@ public class IngredientService {
                 .ingredientCategory(ingredient.getIngredientCategory())
                 .build();
     }
+
+    private User getDevelopmentUser() {
+
+        return userRepository.findByUsername("development-user")
+                .orElseThrow(() -> new IllegalStateException(
+                        "Development user not found"
+                ));
+
+    }
+
 }

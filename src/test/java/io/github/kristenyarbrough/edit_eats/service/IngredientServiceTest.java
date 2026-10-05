@@ -3,16 +3,17 @@ package io.github.kristenyarbrough.edit_eats.service;
 import io.github.kristenyarbrough.edit_eats.domain.Ingredient;
 import io.github.kristenyarbrough.edit_eats.domain.IngredientCategory;
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
+import io.github.kristenyarbrough.edit_eats.domain.User;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateIngredientRequest;
 import io.github.kristenyarbrough.edit_eats.dto.response.IngredientResponse;
 import io.github.kristenyarbrough.edit_eats.repository.IngredientCategoryRepository;
 import io.github.kristenyarbrough.edit_eats.repository.IngredientRepository;
+import io.github.kristenyarbrough.edit_eats.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -32,6 +33,9 @@ class IngredientServiceTest {
 
     @Mock
     IngredientCategoryRepository ingredientCategoryRepository;
+    
+    @Mock
+    UserRepository userRepository;
 
     @InjectMocks
     private IngredientService ingredientService;
@@ -43,13 +47,18 @@ class IngredientServiceTest {
 
         IngredientCategory category = createCategory();
 
-        when(ingredientRepository.findByNameIgnoreCase("Egg"))
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
+        when(ingredientRepository.findByUserIdAndNameIgnoreCase(user.getId(), "Egg"))
                 .thenReturn(Optional.empty());
 
         when(ingredientCategoryRepository.findById(1L))
                 .thenReturn(Optional.of(category));
 
-        Ingredient savedIngredient = createIngredient(category);
+        Ingredient savedIngredient = createIngredient(category, user);
 
         when(ingredientRepository.save(any(Ingredient.class)))
                 .thenReturn(savedIngredient);
@@ -61,7 +70,7 @@ class IngredientServiceTest {
         assertEquals(Unit.EACH, ingredient.getDefaultUnit());
         assertEquals(category, ingredient.getIngredientCategory());
 
-        verify(ingredientRepository).findByNameIgnoreCase("Egg");
+        verify(ingredientRepository).findByUserIdAndNameIgnoreCase(user.getId(), "Egg");
         verify(ingredientCategoryRepository).findById(1L);
         verify(ingredientRepository).save(any(Ingredient.class));
 
@@ -72,13 +81,18 @@ class IngredientServiceTest {
 
         CreateIngredientRequest request = createValidRequest();
 
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         Ingredient existingIngredient = Ingredient.builder()
                 .id(1L)
                 .name("Egg")
                 .defaultUnit(Unit.EACH)
                 .build();
 
-        when(ingredientRepository.findByNameIgnoreCase("Egg"))
+        when(ingredientRepository.findByUserIdAndNameIgnoreCase(user.getId(), "Egg"))
                 .thenReturn(Optional.of(existingIngredient));
 
         IllegalArgumentException exception = assertThrows(
@@ -91,7 +105,7 @@ class IngredientServiceTest {
                 exception.getMessage()
         );
 
-        verify(ingredientRepository).findByNameIgnoreCase("Egg");
+        verify(ingredientRepository).findByUserIdAndNameIgnoreCase(user.getId(), "Egg");
         verifyNoInteractions(ingredientCategoryRepository);
         verify(ingredientRepository, never()).save(any());
 
@@ -102,7 +116,12 @@ class IngredientServiceTest {
 
         CreateIngredientRequest request = createValidRequest();
 
-        when(ingredientRepository.findByNameIgnoreCase("Egg"))
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
+        when(ingredientRepository.findByUserIdAndNameIgnoreCase(user.getId(), "Egg"))
                 .thenReturn(Optional.empty());
 
         when(ingredientCategoryRepository.findById(1L))
@@ -116,7 +135,7 @@ class IngredientServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         assertEquals("Ingredient category not found: 1", exception.getReason());
 
-        verify(ingredientRepository).findByNameIgnoreCase("Egg");
+        verify(ingredientRepository).findByUserIdAndNameIgnoreCase(user.getId(), "Egg");
         verify(ingredientCategoryRepository).findById(1L);
         verify(ingredientRepository, never()).save(any());
 
@@ -127,7 +146,9 @@ class IngredientServiceTest {
 
         IngredientCategory category = createCategory();
 
-        Ingredient ingredient = createIngredient(category);
+        User user = createUser();
+
+        Ingredient ingredient = createIngredient(category, user);
 
         when(ingredientRepository.findById(1L))
                 .thenReturn(Optional.of(ingredient));
@@ -163,18 +184,24 @@ class IngredientServiceTest {
 
     @Test
     void shouldReturnAllIngredientsSortedByName() {
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
 
         Ingredient egg = Ingredient.builder()
                 .id(1L)
                 .name("Egg")
+                .user(user)
                 .build();
 
         Ingredient butter = Ingredient.builder()
                 .id(2L)
                 .name("Butter")
+                .user(user)
                 .build();
 
-        when(ingredientRepository.findAll(any(Sort.class)))
+        when(ingredientRepository.findAllByUserIdOrderByNameAsc(user.getId()))
                 .thenReturn(List.of(butter, egg));
 
         List<Ingredient> ingredients = ingredientService.getAllIngredients();
@@ -184,12 +211,17 @@ class IngredientServiceTest {
         assertEquals("Egg", ingredients.get(1).getName());
 
         verify(ingredientRepository)
-                .findAll(Sort.by(Sort.Direction.ASC, "name"));
+                .findAllByUserIdOrderByNameAsc(user.getId());
 
     }
 
     @Test
     void shouldFindIngredientsByName() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
 
         Ingredient egg = Ingredient.builder()
                 .id(1L)
@@ -201,7 +233,7 @@ class IngredientServiceTest {
                 .name("Eggplant")
                 .build();
 
-        when(ingredientRepository.findTop20ByNameContainingIgnoreCase("egg"))
+        when(ingredientRepository.findTop20ByUserIdAndNameContainingIgnoreCase(user.getId(), "egg"))
                 .thenReturn(List.of(egg, eggplant));
 
         List<Ingredient> ingredients = ingredientService.findIngredients("egg");
@@ -211,7 +243,7 @@ class IngredientServiceTest {
         assertEquals("Eggplant", ingredients.get(1).getName());
 
         verify(ingredientRepository)
-                .findTop20ByNameContainingIgnoreCase("egg");
+                .findTop20ByUserIdAndNameContainingIgnoreCase(user.getId(), "egg");
 
     }
 
@@ -236,13 +268,23 @@ class IngredientServiceTest {
 
     }
 
-    private Ingredient createIngredient(IngredientCategory category) {
+    private Ingredient createIngredient(IngredientCategory category, User user) {
 
         return Ingredient.builder()
                 .id(1L)
                 .name("Egg")
                 .defaultUnit(Unit.EACH)
                 .ingredientCategory(category)
+                .user(user)
+                .build();
+
+    }
+
+    private User createUser() {
+
+        return User.builder()
+                .id(1L)
+                .username("development-user")
                 .build();
 
     }

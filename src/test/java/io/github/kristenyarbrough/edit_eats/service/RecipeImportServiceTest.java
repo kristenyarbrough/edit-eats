@@ -1,9 +1,11 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
+import io.github.kristenyarbrough.edit_eats.domain.User;
 import io.github.kristenyarbrough.edit_eats.dto.imported.*;
 import io.github.kristenyarbrough.edit_eats.dto.response.RecipeDraftResponse;
 import io.github.kristenyarbrough.edit_eats.repository.IngredientRepository;
+import io.github.kristenyarbrough.edit_eats.repository.UserRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.Test;
@@ -31,6 +33,9 @@ class RecipeImportServiceTest {
 
     @Mock
     private IngredientRepository ingredientRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private RecipeImportService recipeImportService;
@@ -2275,12 +2280,6 @@ class RecipeImportServiceTest {
 
         when(structuredDataParser.parse(anyString()))
                 .thenReturn(recipe);
-
-        when(ingredientRepository.findByNameIgnoreCase("butter"))
-                .thenReturn(Optional.empty());
-
-        when(ingredientRepository.findByNameIgnoreCase("garlic"))
-                .thenReturn(Optional.empty());
 
         RecipeDraftResponse result = recipeImportService.importRecipeDraftFromUrl(
                 "https://example.com/recipe"

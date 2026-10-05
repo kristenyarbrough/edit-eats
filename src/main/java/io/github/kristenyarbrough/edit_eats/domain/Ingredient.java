@@ -27,4 +27,8 @@ public class Ingredient {
     @JoinColumn(name = "ingredient_category_id")
     private IngredientCategory ingredientCategory;
 
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "user_id")
+    private User user;
+
 }

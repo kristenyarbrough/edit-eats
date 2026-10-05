@@ -8,8 +8,10 @@ import java.util.Optional;
 
 public interface IngredientRepository extends JpaRepository<Ingredient, Long> {
 
-    Optional<Ingredient> findByNameIgnoreCase(String name);
+    Optional<Ingredient> findByUserIdAndNameIgnoreCase(Long userId, String name);
 
-    List<Ingredient> findTop20ByNameContainingIgnoreCase(String name);
+    List<Ingredient> findTop20ByUserIdAndNameContainingIgnoreCase(Long userId, String name);
+
+    List<Ingredient> findAllByUserIdOrderByNameAsc(Long userId);
 
 }
