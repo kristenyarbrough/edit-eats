@@ -87,7 +87,7 @@
 - [x] Extract ingredients
 - [x] Extract method
 - [ ] Download recipe image
-- [ ] Save source URL
+- [x] Save source URL
 
 ---
 
@@ -126,16 +126,20 @@
 - name
 - prepMinutes
 - cookMinutes
+- passiveMinutes
 - servings
 - difficulty
 - sourceUrl
 - imageUrl
 - storageInstructions
 - freezerInstructions
+- user
 
 Relationships:
 - RecipeIngredients
+- RecipeIngredientSections
 - RecipeSteps
+- RecipeInstructionSections
 - RecipeCategories
 
 ## RecipeIngredient
@@ -216,7 +220,7 @@ Relationships:
   - [ ] Sort
 - [ ] ⭐ Favourite recipes
 - [x] 📥 Recipe upload/import
-- [ ] ✏️ Edit imported recipe
+- [x] ✏️ Edit imported recipe
 - [ ] 🥫 Pantry/inventory/fridge
 - [ ] ☑️ Shopping-list check-off/editing
   - [ ] provide totalMinutes and derive cookMinutes or prepMinutes?
@@ -236,9 +240,10 @@ Relationships:
     - [x] Import a text recipe
     - [ ] Import a recipe from URL
     - [ ] Add a recipe from scratch
+    - [ ] Import from a photo
     - [x] Edit a recipe
       - [x] Reorder steps
-      - [ ] When adding a section add an ingredient/step (no empty sections)
+      - [x] When adding a section add an ingredient/step (no empty sections)
       - [ ] Add a photo
       - [ ] Add source URL
     - [ ] Save a recipe

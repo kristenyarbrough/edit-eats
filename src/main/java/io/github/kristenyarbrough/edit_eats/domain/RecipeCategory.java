@@ -19,4 +19,8 @@ public class RecipeCategory {
     @Column(nullable = false, unique = true)
     private String name;
 
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
 }

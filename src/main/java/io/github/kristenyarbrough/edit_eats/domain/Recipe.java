@@ -49,6 +49,10 @@ public class Recipe {
     @Column(nullable = false)
     private LocalDateTime lastModifiedAt;
 
+    @ManyToOne  (optional = false)
+    @JoinColumn(name = "user_id")
+    private User user;
+
     @Transient
     public int getTotalMinutes() {
 
@@ -64,7 +68,6 @@ public class Recipe {
                 + valueOrZero(cookMinutes);
 
     }
-
 
     @Transient
 

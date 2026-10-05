@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.swing.text.html.Option;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,11 +49,19 @@ class RecipeServiceTest {
     @Mock
     private RecipeCategoryAssignmentRepository recipeCategoryAssignmentRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     @InjectMocks
     private RecipeService recipeService;
 
     @Test
     void shouldThrowWhenIngredientDoesNotExist() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
 
         CreateRecipeRequest request = createValidRequest();
 
@@ -76,6 +85,11 @@ class RecipeServiceTest {
 
     @Test
     void shouldCreateRecipe() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
 
         CreateRecipeRequest request = createValidRequest();
 
@@ -170,6 +184,11 @@ class RecipeServiceTest {
 
     @Test
     void shouldCreateRecipeWithNestedSections() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
 
         CreateRecipeRequest request = createValidRequest();
 
@@ -1076,6 +1095,11 @@ class RecipeServiceTest {
     @Test
     void shouldThrowWhenRecipeCategoryDoesNotExist() {
 
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         CreateRecipeRequest request = createValidRequest();
 
         request.setIngredients(List.of(createIngredientRequest()));
@@ -1109,6 +1133,11 @@ class RecipeServiceTest {
 
     @Test
     void shouldCreateRecipeWithMultipleIngredients() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
 
         CreateRecipeRequest request = createValidRequest();
 
@@ -1223,6 +1252,11 @@ class RecipeServiceTest {
     @Test
     void shouldCreateRecipeWithMultipleSteps() {
 
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         CreateRecipeRequest request = createValidRequest();
 
         Ingredient ingredient = createIngredient();
@@ -1334,6 +1368,11 @@ class RecipeServiceTest {
 
     @Test
     void shouldCreateRecipeWithMultipleCategories() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
 
         CreateRecipeRequest request = createValidRequest();
 
@@ -1462,6 +1501,12 @@ class RecipeServiceTest {
 
     @Test
     void shouldCreateRecipeWithoutCategories() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         CreateRecipeRequest request = createValidRequest();
 
         Ingredient ingredient = createIngredient();
@@ -1632,6 +1677,11 @@ class RecipeServiceTest {
     @Test
     void shouldCreateRecipeWithPassiveMinutes() {
 
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         CreateRecipeRequest request = createValidRequest();
 
         request.setPrepMinutes(15);
@@ -1659,6 +1709,11 @@ class RecipeServiceTest {
 
     @Test
     void shouldThrowWhenRecipeHasNoIngredients() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
 
         CreateRecipeRequest request = createValidRequest();
 
@@ -2306,6 +2361,11 @@ class RecipeServiceTest {
     @Test
     void shouldCreateRecipeWithOnlySectionedIngredients() {
 
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         CreateRecipeRequest request = createValidRequest();
 
         Ingredient ingredient = createIngredient();
@@ -2349,6 +2409,11 @@ class RecipeServiceTest {
     @Test
     void shouldCreateRecipeWithOnlySectionedSteps() {
 
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         CreateRecipeRequest request = createValidRequest();
 
         Ingredient ingredient = createIngredient();
@@ -2385,6 +2450,11 @@ class RecipeServiceTest {
 
     @Test
     void shouldThrowWhenRecipeHasNoSteps() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
 
         CreateRecipeRequest request = createValidRequest();
 
@@ -3011,6 +3081,109 @@ class RecipeServiceTest {
 
     }
 
+    @Test
+    void shouldAllowUniversalRecipeCategory() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
+        RecipeCategory category = RecipeCategory.builder()
+                .id(1L)
+                .name("Dinner")
+                .user(null)
+                .build();
+
+        when(recipeCategoryRepository.findById(1L))
+                .thenReturn(Optional.of(category));
+
+        Ingredient ingredient = Ingredient.builder()
+                .id(1L)
+                .name("Egg")
+                .build();
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(ingredient));
+
+        CreateRecipeCategoryRequest categoryRequest = new CreateRecipeCategoryRequest();
+        categoryRequest.setRecipeCategoryId(1L);
+
+        CreateRecipeRequest request = createValidRequest();
+        request.setCategories(List.of(categoryRequest));
+
+        CreateRecipeIngredientRequest ingredientRequest = createIngredientRequest();
+        request.setIngredients(List.of(ingredientRequest));
+
+        CreateRecipeStepRequest stepRequest = createStepRequest();
+        request.setSteps(List.of(stepRequest));
+
+        when(recipeRepository.save(any(Recipe.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        recipeService.createRecipe(request);
+
+        verify(recipeCategoryAssignmentRepository)
+                .saveAll(anyList());
+
+    }
+
+    @Test
+    void shouldRejectRecipeCategoryBelongingToAnotherUser() {
+
+        User user = createUser();
+
+        User otherUser = User.builder()
+                .id(2L)
+                .username("other-user")
+                .build();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
+        RecipeCategory category = RecipeCategory.builder()
+                .id(1L)
+                .name("BBQ")
+                .user(otherUser)
+                .build();
+
+        when(recipeCategoryRepository.findById(1L))
+                .thenReturn(Optional.of(category));
+
+        Ingredient ingredient = Ingredient.builder()
+                .id(1L)
+                .name("Egg")
+                .build();
+
+        when(ingredientRepository.findById(1L))
+                .thenReturn(Optional.of(ingredient));
+
+        CreateRecipeCategoryRequest categoryRequest = new CreateRecipeCategoryRequest();
+        categoryRequest.setRecipeCategoryId(1L);
+
+        CreateRecipeRequest request = createValidRequest();
+        request.setCategories(List.of(categoryRequest));
+
+        CreateRecipeIngredientRequest ingredientRequest = createIngredientRequest();
+        request.setIngredients(List.of(ingredientRequest));
+
+        CreateRecipeStepRequest stepRequest = createStepRequest();
+        request.setSteps(List.of(stepRequest));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> recipeService.createRecipe(request)
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+
+        verify(recipeCategoryAssignmentRepository, never())
+                .saveAll(anyList());
+
+        verify(recipeRepository, never()).save(any(Recipe.class));
+
+    }
+
     private CreateRecipeRequest createValidRequest() {
 
         CreateRecipeRequest request = new CreateRecipeRequest();
@@ -3108,13 +3281,6 @@ class RecipeServiceTest {
 
         when(recipeInstructionSectionRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
-
-    }
-
-    private void mockSaveSectionRepositories() {
-
-        mockSaveIngredientSectionRepository();
-        mockSaveInstructionSectionRepository();
 
     }
 
@@ -3248,6 +3414,15 @@ class RecipeServiceTest {
         categoryCaptor.getValue().forEach(list::add);
 
         return list;
+
+    }
+
+    private User createUser() {
+
+        return User.builder()
+                .id(1L)
+                .username("development-user")
+                .build();
 
     }
 

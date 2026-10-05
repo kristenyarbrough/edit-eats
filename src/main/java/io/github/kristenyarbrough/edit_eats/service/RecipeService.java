@@ -25,9 +25,15 @@ public class RecipeService {
     private final RecipeInstructionSectionRepository recipeInstructionSectionRepository;
     private final RecipeCategoryAssignmentRepository recipeCategoryAssignmentRepository;
     private final RecipeCategoryRepository recipeCategoryRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public Recipe createRecipe(CreateRecipeRequest request) {
+
+        User user = userRepository.findByUsername("development-user")
+                .orElseThrow(() -> new IllegalStateException(
+                        "Development user not found"
+                ));
 
         if (!hasIngredients(request.getIngredients(), request.getIngredientSections())) {
             throw new ResponseStatusException(
@@ -58,6 +64,7 @@ public class RecipeService {
                 .freezerInstructions(request.getFreezerInstructions())
                 .createdAt(now)
                 .lastModifiedAt(now)
+                .user(user)
                 .build();
 
         // Validate ingredients before saving recipe
@@ -113,6 +120,16 @@ public class RecipeService {
                                 .orElseThrow(() -> new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Recipe category not found: " + recipeCategoryRequest.getRecipeCategoryId()));
+
+                if (recipeCategory.getUser() != null
+                        && !recipeCategory.getUser().getId().equals(user.getId())) {
+
+                    throw new ResponseStatusException(
+                            HttpStatus.FORBIDDEN,
+                            "Recipe category does not belong to the current user: "
+                                    + recipeCategoryRequest.getRecipeCategoryId());
+
+                }
 
                 categoryAssignments.add(
                         RecipeCategoryAssignment.builder()
