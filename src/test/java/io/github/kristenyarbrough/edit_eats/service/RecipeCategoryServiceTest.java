@@ -2,6 +2,7 @@ package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.RecipeCategory;
 import io.github.kristenyarbrough.edit_eats.domain.User;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeCategoryResponse;
 import io.github.kristenyarbrough.edit_eats.repository.RecipeCategoryRepository;
 import io.github.kristenyarbrough.edit_eats.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -54,7 +55,7 @@ class RecipeCategoryServiceTest {
                 .findAllByUserIdIsNullOrUserIdOrderByNameAsc(user.getId()))
                 .thenReturn(List.of(universalCategory, userCategory));
 
-        List<RecipeCategory> result = recipeCategoryService.getAvailableCategories();
+        List<RecipeCategoryResponse> result = recipeCategoryService.getAvailableCategories();
 
         assertEquals(2, result.size());
         assertEquals("Dinner", result.get(0).getName());
@@ -74,8 +75,8 @@ class RecipeCategoryServiceTest {
                 .thenReturn(Optional.of(user));
 
         when(recipeCategoryRepository
-                .findByUserIdAndNameIgnoreCase(user.getId(), "Quick Meals"))
-                .thenReturn(Optional.empty());
+                .existsAvailableCategoryForUser(user.getId(), "Quick Meals"))
+                .thenReturn(false);
 
         RecipeCategory savedCategory = RecipeCategory.builder()
                 .id(1L)
@@ -86,10 +87,10 @@ class RecipeCategoryServiceTest {
         when(recipeCategoryRepository.save(any(RecipeCategory.class)))
                 .thenReturn(savedCategory);
 
-        RecipeCategory result = recipeCategoryService.createCategory("Quick Meals");
+        RecipeCategoryResponse result = recipeCategoryService.createCategory("Quick Meals");
 
+        assertEquals(1L, result.getId());
         assertEquals("Quick Meals", result.getName());
-        assertEquals(user, result.getUser());
 
         verify(recipeCategoryRepository).save(any(RecipeCategory.class));
 
@@ -100,18 +101,12 @@ class RecipeCategoryServiceTest {
 
         User user = createUser();
 
-        RecipeCategory existingCategory = RecipeCategory.builder()
-                .id(1L)
-                .name("Quick Meals")
-                .user(user)
-                .build();
-
         when(userRepository.findByUsername("development-user"))
                 .thenReturn(Optional.of(user));
 
         when(recipeCategoryRepository
-                .findByUserIdAndNameIgnoreCase(user.getId(), "Quick Meals"))
-                .thenReturn(Optional.of(existingCategory));
+                .existsAvailableCategoryForUser(user.getId(), "Quick Meals"))
+                .thenReturn(true);
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -120,6 +115,33 @@ class RecipeCategoryServiceTest {
 
         assertEquals(
                 "A recipe category with the name 'Quick Meals' already exists.",
+                exception.getMessage()
+        );
+
+        verify(recipeCategoryRepository, never())
+                .save(any(RecipeCategory.class));
+
+    }
+
+    @Test
+    void shouldRejectUserCategoryWithSameNameAsUniversalCategory() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
+        when(recipeCategoryRepository
+                .existsAvailableCategoryForUser(user.getId(), "Breakfast"))
+                .thenReturn(true);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> recipeCategoryService.createCategory("Breakfast")
+        );
+
+        assertEquals(
+                "A recipe category with the name 'Breakfast' already exists.",
                 exception.getMessage()
         );
 

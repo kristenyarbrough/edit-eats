@@ -2,6 +2,7 @@ package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.RecipeCategory;
 import io.github.kristenyarbrough.edit_eats.domain.User;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeCategoryResponse;
 import io.github.kristenyarbrough.edit_eats.repository.RecipeCategoryRepository;
 import io.github.kristenyarbrough.edit_eats.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,32 +17,45 @@ public class RecipeCategoryService {
     private final RecipeCategoryRepository recipeCategoryRepository;
     private final UserRepository userRepository;
 
-    public List<RecipeCategory> getAvailableCategories() {
+    public List<RecipeCategoryResponse> getAvailableCategories() {
 
         User user = getDevelopmentUser();
 
-        return recipeCategoryRepository.findAllByUserIdIsNullOrUserIdOrderByNameAsc(user.getId());
+        return recipeCategoryRepository
+                .findAllByUserIdIsNullOrUserIdOrderByNameAsc(user.getId())
+                .stream()
+                .map(category -> RecipeCategoryResponse.builder()
+                        .id(category.getId())
+                        .name(category.getName())
+                        .build())
+                .toList();
 
     }
 
-    public RecipeCategory createCategory(String name) {
+    public RecipeCategoryResponse createCategory(String name) {
 
         User user = getDevelopmentUser();
 
-        recipeCategoryRepository
-                .findByUserIdAndNameIgnoreCase(user.getId(), name)
-                .ifPresent(category -> {
-                    throw new IllegalArgumentException(
-                            "A recipe category with the name '" + name + "' already exists."
-                    );
-                });
+        if (recipeCategoryRepository.existsAvailableCategoryForUser(
+                user.getId(),
+                name
+        )) {
+            throw new IllegalArgumentException(
+                    "A recipe category with the name '" + name + "' already exists."
+            );
+        }
 
         RecipeCategory category = RecipeCategory.builder()
                 .name(name)
                 .user(user)
                 .build();
 
-        return recipeCategoryRepository.save(category);
+        RecipeCategory savedCategory = recipeCategoryRepository.save(category);
+
+        return RecipeCategoryResponse.builder()
+                .id(savedCategory.getId())
+                .name(savedCategory.getName())
+                .build();
 
     }
 

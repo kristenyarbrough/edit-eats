@@ -254,6 +254,11 @@ public class RecipeService {
     @Transactional
     public Recipe updateRecipe(Long id, UpdateRecipeRequest request) {
 
+        User user = userRepository.findByUsername("development-user")
+                .orElseThrow(() -> new IllegalStateException(
+                        "Development user not found"
+                ));
+
         if (!hasIngredients(request.getIngredients(),request.getIngredientSections())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -374,6 +379,16 @@ public class RecipeService {
                     HttpStatus.NOT_FOUND,
                     "Recipe category not found: " + categoryRequest.getRecipeCategoryId()
             ));
+
+            if (category.getUser() != null
+                    && !category.getUser().getId().equals(user.getId())) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Recipe category does not belong to the current user: "
+                                + categoryRequest.getRecipeCategoryId());
+
+            }
 
             categories.add(category);
 
