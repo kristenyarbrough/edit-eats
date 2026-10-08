@@ -45,6 +45,7 @@ public class IngredientService {
                 .name(request.getName())
                 .defaultUnit(request.getDefaultUnit())
                 .ingredientCategory(category)
+                .user(user)
                 .build();
 
         return ingredientRepository.save(ingredient);

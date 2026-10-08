@@ -314,6 +314,11 @@ class RecipeServiceTest {
     @Test
     void shouldGetRecipeWithNestedIngredientSections() {
 
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         Recipe recipe = createRecipe();
 
         Ingredient eggs = Ingredient.builder()
@@ -371,7 +376,7 @@ class RecipeServiceTest {
                 .section(null)
                 .build();
 
-        when(recipeRepository.findById(recipe.getId()))
+        when(recipeRepository.findByIdAndUserId(recipe.getId(), user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(recipeIngredientRepository.findByRecipeId(recipe.getId()))
@@ -430,6 +435,11 @@ class RecipeServiceTest {
     @Test
     void shouldGetRecipeWithNestedInstructionSections() {
 
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         Recipe recipe = Recipe.builder()
                 .id(1L)
                 .name("Scrambled Eggs")
@@ -466,7 +476,7 @@ class RecipeServiceTest {
                 .section(sauceSection)
                 .build();
 
-        when(recipeRepository.findById(1L)).thenReturn(Optional.of(recipe));
+        when(recipeRepository.findByIdAndUserId(1L, user.getId())).thenReturn(Optional.of(recipe));
         when(recipeIngredientRepository.findByRecipeId(1L))
                 .thenReturn(List.of());
         when(recipeIngredientSectionRepository.findByRecipeIdOrderBySortOrder(1L))
@@ -505,6 +515,11 @@ class RecipeServiceTest {
 
     @Test
     void shouldGetRecipeWithCompleteNestedStructure() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
 
         Recipe recipe = Recipe.builder()
                 .id(1L)
@@ -591,7 +606,7 @@ class RecipeServiceTest {
                 .section(sauceInstructionSection)
                 .build();
 
-        when(recipeRepository.findById(1L)).thenReturn(Optional.of(recipe));
+        when(recipeRepository.findByIdAndUserId(1L, user.getId())).thenReturn(Optional.of(recipe));
         when(recipeIngredientRepository.findByRecipeId(1L))
                 .thenReturn(List.of(topLevelIngredient, nestedIngredient));
         when(recipeIngredientSectionRepository.findByRecipeIdOrderBySortOrder(1L))
@@ -652,6 +667,11 @@ class RecipeServiceTest {
     @Test
     void shouldGetRecipeWithMixedTopLevelAndNestedInstructionSteps() {
 
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         Recipe recipe = Recipe.builder()
                 .id(1L)
                 .name("Scrambled Eggs")
@@ -695,7 +715,7 @@ class RecipeServiceTest {
                 .section(null)
                 .build();
 
-        when(recipeRepository.findById(1L)).thenReturn(Optional.of(recipe));
+        when(recipeRepository.findByIdAndUserId(1L, user.getId())).thenReturn(Optional.of(recipe));
         when(recipeIngredientRepository.findByRecipeId(1L))
                 .thenReturn(List.of());
         when(recipeIngredientSectionRepository.findByRecipeIdOrderBySortOrder(1L))
@@ -741,6 +761,11 @@ class RecipeServiceTest {
 
     @Test
     void shouldGetRecipeWithBothIngredientAndInstructionSectionHierarchies() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
 
         Recipe recipe = Recipe.builder()
                 .id(1L)
@@ -825,7 +850,7 @@ class RecipeServiceTest {
                 .section(sauceSection)
                 .build();
 
-        when(recipeRepository.findById(1L)).thenReturn(Optional.of(recipe));
+        when(recipeRepository.findByIdAndUserId(1L, user.getId())).thenReturn(Optional.of(recipe));
         when(recipeIngredientRepository.findByRecipeId(1L))
                 .thenReturn(List.of(eggsIngredient, saltIngredient));
         when(recipeIngredientSectionRepository.findByRecipeIdOrderBySortOrder(1L))
@@ -884,6 +909,11 @@ class RecipeServiceTest {
     @Test
     void shouldOrderIngredientSectionsBySortOrder() {
 
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         Recipe recipe = Recipe.builder()
                 .id(1L)
                 .name("Scrambled Eggs")
@@ -905,7 +935,7 @@ class RecipeServiceTest {
                 .parentSection(null)
                 .build();
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(recipeIngredientRepository.findByRecipeId(1L))
@@ -936,6 +966,11 @@ class RecipeServiceTest {
 
     @Test
     void shouldOrderInstructionSectionsBySortOrder() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
 
         Recipe recipe = Recipe.builder()
                 .id(1L)
@@ -974,7 +1009,7 @@ class RecipeServiceTest {
                 .section(secondSection)
                 .build();
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(recipeIngredientRepository.findByRecipeId(1L))
@@ -1005,6 +1040,11 @@ class RecipeServiceTest {
 
     @Test
     void shouldGetRecipeWithDeeplyNestedInstructionSections() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
 
         Recipe recipe = Recipe.builder()
                 .id(1L)
@@ -1042,7 +1082,7 @@ class RecipeServiceTest {
                 .section(finishingSection)
                 .build();
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(recipeIngredientRepository.findByRecipeId(1L))
@@ -1581,6 +1621,11 @@ class RecipeServiceTest {
     @Test
     void shouldGetRecipe() {
 
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         Recipe recipe = createRecipe();
 
         Ingredient ingredient = createIngredient();
@@ -1607,7 +1652,7 @@ class RecipeServiceTest {
                         .recipeCategory(category)
                         .build();
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(recipeIngredientRepository.findByRecipeId(1L))
@@ -1661,7 +1706,7 @@ class RecipeServiceTest {
                 () -> assertEquals("Breakfast", categoryResult.getName())
         );
 
-        verify(recipeRepository).findById(1L);
+        verify(recipeRepository).findByIdAndUserId(1L, user.getId());
         verify(recipeIngredientRepository).findByRecipeId(1L);
         verify(recipeStepRepository).findByRecipeIdOrderByStepNumber(1L);
         verify(recipeCategoryAssignmentRepository).findByRecipeId(1L);
@@ -1730,7 +1775,12 @@ class RecipeServiceTest {
     @Test
     void shouldThrowWhenGettingNonExistentRecipe() {
 
-        when(recipeRepository.findById(99L))
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
+        when(recipeRepository.findByIdAndUserId(99L, user.getId()))
                 .thenReturn(Optional.empty());
 
         ResponseStatusException exception = assertThrows(
@@ -1741,7 +1791,7 @@ class RecipeServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         assertEquals("Recipe not found: 99", exception.getReason());
 
-        verify(recipeRepository).findById(99L);
+        verify(recipeRepository).findByIdAndUserId(99L, user.getId());
 
         verifyNoInteractions(
                 recipeIngredientRepository,
@@ -1785,7 +1835,7 @@ class RecipeServiceTest {
         when(ingredientRepository.findById(1L))
                 .thenReturn(Optional.of(ingredient));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(recipeRepository.save(recipe))
@@ -1808,7 +1858,7 @@ class RecipeServiceTest {
 
         assertNotNull(result.getLastModifiedAt());
 
-        verify(recipeRepository).findById(1L);
+        verify(recipeRepository).findByIdAndUserId(1L, user.getId());
         verify(recipeRepository).save(recipe);
 
     }
@@ -1840,7 +1890,7 @@ class RecipeServiceTest {
         when(ingredientRepository.findById(1L))
                 .thenReturn(Optional.of(ingredient));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(recipeRepository.save(recipe))
@@ -1856,7 +1906,7 @@ class RecipeServiceTest {
                 () -> assertEquals(145, result.getTotalMinutes())
         );
 
-        verify(recipeRepository).findById(1L);
+        verify(recipeRepository).findByIdAndUserId(1L, user.getId());
         verify(recipeRepository).save(recipe);
 
     }
@@ -1883,7 +1933,7 @@ class RecipeServiceTest {
 
         request.setSteps(List.of(step));
 
-        when(recipeRepository.findById(99L))
+        when(recipeRepository.findByIdAndUserId(99L, user.getId()))
                 .thenReturn(Optional.empty());
 
         ResponseStatusException exception = assertThrows(
@@ -1894,7 +1944,7 @@ class RecipeServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         assertEquals("Recipe not found: 99", exception.getReason());
 
-        verify(recipeRepository).findById(99L);
+        verify(recipeRepository).findByIdAndUserId(99L, user.getId());
         verify(recipeRepository, never()).save(any());
 
     }
@@ -1902,14 +1952,19 @@ class RecipeServiceTest {
     @Test
     void shouldDeleteRecipe() {
 
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         Recipe recipe = createRecipe();
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         recipeService.deleteRecipe(1L);
 
-        verify(recipeRepository).findById(1L);
+        verify(recipeRepository).findByIdAndUserId(1L, user.getId());
         verify(recipeRepository).delete(recipe);
 
     }
@@ -1917,7 +1972,12 @@ class RecipeServiceTest {
     @Test
     void shouldThrowWhenDeletingNonExistentRecipe() {
 
-        when(recipeRepository.findById(99L))
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
+        when(recipeRepository.findByIdAndUserId(99L, user.getId()))
                 .thenReturn(Optional.empty());
 
         ResponseStatusException exception = assertThrows(
@@ -1928,7 +1988,7 @@ class RecipeServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         assertEquals("Recipe not found: 99", exception.getReason());
 
-        verify(recipeRepository).findById(99L);
+        verify(recipeRepository).findByIdAndUserId(99L, user.getId());
         verify(recipeRepository, never()).delete(any(Recipe.class));
 
     }
@@ -1960,7 +2020,7 @@ class RecipeServiceTest {
 
         request.setSteps(List.of(step));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         Ingredient ingredient = Ingredient.builder()
@@ -2013,7 +2073,7 @@ class RecipeServiceTest {
 
         request.setSteps(List.of(step));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(ingredientRepository.findById(99L))
@@ -2027,7 +2087,7 @@ class RecipeServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         assertEquals("Ingredient not found: 99", exception.getReason());
 
-        verify(recipeRepository).findById(1L);
+        verify(recipeRepository).findByIdAndUserId(1L, user.getId());
         verify(ingredientRepository).findById(99l);
         verify(recipeIngredientRepository, never()).deleteByRecipeId(anyLong());
         verify(recipeIngredientRepository, never()).save(any());
@@ -2061,7 +2121,7 @@ class RecipeServiceTest {
         when(ingredientRepository.findById(1L))
                 .thenReturn(Optional.of(ingredient));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         recipeService.updateRecipe(1L, request);
@@ -2114,7 +2174,7 @@ class RecipeServiceTest {
         when(ingredientRepository.findById(1L))
                 .thenReturn(Optional.of(ingredient));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(recipeCategoryRepository.findById(2L))
@@ -2161,7 +2221,7 @@ class RecipeServiceTest {
         when(ingredientRepository.findById(1L))
                 .thenReturn(Optional.of(ingredient));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(recipeCategoryRepository.findById(99L))
@@ -2187,14 +2247,19 @@ class RecipeServiceTest {
     @Test
     void shouldDeleteRecipeAndItsRelatedData() {
 
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         Recipe recipe = createRecipe();
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         recipeService.deleteRecipe(1L);
 
-        verify(recipeRepository).findById(1L);
+        verify(recipeRepository).findByIdAndUserId(1L, user.getId());
         verify(recipeIngredientRepository).deleteByRecipeId(1L);
         verify(recipeStepRepository).deleteByRecipeId(1L);
         verify(recipeCategoryAssignmentRepository).deleteByRecipeId(1L);
@@ -2205,7 +2270,12 @@ class RecipeServiceTest {
     @Test
     void shouldNotDeleteRelatedDataWhenRecipeDoesNotExist() {
 
-        when(recipeRepository.findById(99L))
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
+        when(recipeRepository.findByIdAndUserId(99L, user.getId()))
                 .thenReturn(Optional.empty());
 
         assertThrows(
@@ -2230,6 +2300,11 @@ class RecipeServiceTest {
     @Test
     void shouldFindRecipesByName() {
 
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         Recipe chicken = Recipe.builder()
                 .id(1L)
                 .name("Chicken Curry")
@@ -2242,7 +2317,7 @@ class RecipeServiceTest {
                 .servings(4)
                 .build();
 
-        when(recipeRepository.findByNameContainingIgnoreCase("chicken"))
+        when(recipeRepository.findByUserIdAndNameContainingIgnoreCase(user.getId(), "chicken"))
                 .thenReturn(List.of(chicken, pasta));
 
         List<RecipeResponse> result = recipeService.findRecipes("chicken");
@@ -2251,12 +2326,17 @@ class RecipeServiceTest {
         assertEquals("Chicken Curry", result.get(0).getName());
         assertEquals("Chicken Pasta", result.get(1).getName());
 
-        verify(recipeRepository).findByNameContainingIgnoreCase("chicken");
+        verify(recipeRepository).findByUserIdAndNameContainingIgnoreCase(user.getId(), "chicken");
 
     }
 
     @Test
     void shouldFindRecipeSummaries() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
 
         Recipe recipe = Recipe.builder()
                 .id(1L)
@@ -2269,7 +2349,7 @@ class RecipeServiceTest {
                 .imageUrl("chicken-curry.jpg")
                 .build();
 
-        when(recipeRepository.findByNameContainingIgnoreCase("chicken"))
+        when(recipeRepository.findByUserIdAndNameContainingIgnoreCase(user.getId(), "chicken"))
                 .thenReturn(List.of(recipe));
 
         List<RecipeSummaryResponse> result = recipeService.findRecipeSummaries("chicken");
@@ -2291,12 +2371,17 @@ class RecipeServiceTest {
                 () -> assertEquals("chicken-curry.jpg", summary.getImageUrl())
         );
 
-        verify(recipeRepository).findByNameContainingIgnoreCase("chicken");
+        verify(recipeRepository).findByUserIdAndNameContainingIgnoreCase(user.getId(), "chicken");
 
     }
 
     @Test
     void shouldFindRecipeSummariesWithCategories() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
 
         Recipe chicken = Recipe.builder()
                 .id(1L)
@@ -2338,7 +2423,7 @@ class RecipeServiceTest {
                 .recipeCategory(pastaCategory)
                 .build();
 
-        when(recipeRepository.findByNameContainingIgnoreCase("chicken"))
+        when(recipeRepository.findByUserIdAndNameContainingIgnoreCase(user.getId(), "chicken"))
                 .thenReturn(List.of(chicken, pasta));
 
         when(recipeCategoryAssignmentRepository.findByRecipeId(1L))
@@ -2392,7 +2477,7 @@ class RecipeServiceTest {
                         pastaResult.getCategories().get(0).getName())
         );
 
-        verify(recipeRepository).findByNameContainingIgnoreCase("chicken");
+        verify(recipeRepository).findByUserIdAndNameContainingIgnoreCase(user.getId(), "chicken");
         verify(recipeCategoryAssignmentRepository).findByRecipeId(1L);
         verify(recipeCategoryAssignmentRepository).findByRecipeId(2L);
 
@@ -2539,7 +2624,7 @@ class RecipeServiceTest {
 
         request.setIngredientSections(List.of(section));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(ingredientRepository.findById(1L))
@@ -2585,7 +2670,7 @@ class RecipeServiceTest {
 
         request.setInstructionSections(List.of(section));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(ingredientRepository.findById(1L))
@@ -2641,7 +2726,7 @@ class RecipeServiceTest {
 
         request.setInstructionSections(List.of(parentSection));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(ingredientRepository.findById(1L))
@@ -2717,7 +2802,7 @@ class RecipeServiceTest {
 
         request.setInstructionSections(List.of(mainSection));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(ingredientRepository.findById(1L))
@@ -2794,7 +2879,7 @@ class RecipeServiceTest {
 
         request.setInstructionSections(List.of(mainSection));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(ingredientRepository.findById(1L))
@@ -2869,7 +2954,7 @@ class RecipeServiceTest {
 
         request.setInstructionSections(List.of(mainSection));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(ingredientRepository.findById(1L))
@@ -2963,7 +3048,7 @@ class RecipeServiceTest {
 
         request.setInstructionSections(List.of(mainSection));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(ingredientRepository.findById(1L))
@@ -3007,7 +3092,7 @@ class RecipeServiceTest {
 
         request.setIngredientSections(List.of(parentSection));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(ingredientRepository.findById(1L))
@@ -3079,7 +3164,7 @@ class RecipeServiceTest {
 
         request.setIngredientSections(List.of(mainSection));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(ingredientRepository.findById(1L))
@@ -3153,7 +3238,7 @@ class RecipeServiceTest {
 
         request.setIngredientSections(List.of(mainSection));
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(ingredientRepository.findById(1L))
@@ -3309,7 +3394,7 @@ class RecipeServiceTest {
                 .user(otherUser)
                 .build();
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(ingredientRepository.findById(1L))
@@ -3362,7 +3447,7 @@ class RecipeServiceTest {
                 .user(user)
                 .build();
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(ingredientRepository.findById(1L))
@@ -3413,7 +3498,7 @@ class RecipeServiceTest {
                 .user(null)
                 .build();
 
-        when(recipeRepository.findById(1L))
+        when(recipeRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(recipe));
 
         when(ingredientRepository.findById(1L))

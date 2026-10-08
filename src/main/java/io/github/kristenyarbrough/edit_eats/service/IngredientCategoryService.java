@@ -5,6 +5,8 @@ import io.github.kristenyarbrough.edit_eats.dto.request.CreateIngredientCategory
 import io.github.kristenyarbrough.edit_eats.repository.IngredientCategoryRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class IngredientCategoryService {
 
@@ -29,4 +31,11 @@ public class IngredientCategoryService {
         return ingredientCategoryRepository.save(category);
 
     }
+
+    public List<IngredientCategory> getAllIngredientCategories() {
+
+        return ingredientCategoryRepository.findAll();
+
+    }
+
 }

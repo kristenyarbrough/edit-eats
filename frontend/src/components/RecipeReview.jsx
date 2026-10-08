@@ -1,4 +1,4 @@
-import{ useState } from 'react'
+import{ useEffect, useState } from 'react'
 import {
     updateNestedSection,
     removeNestedSection,
@@ -13,10 +13,72 @@ import TimeEditor from './TimeEditor'
 
 function RecipeReview ({ recipe, onBack, onSave }) {
     const [editedRecipe, setEditedRecipe] = useState(recipe)
+    const [availableCategories, setAvailableCategories] = useState([])
+    const [availableIngredients, setAvailableIngredients] = useState([])
+    const [availableIngredientCategories, setAvailableIngredientCategories] = useState([])
     const [draggedStepIndex, setDraggedStepIndex] = useState(null)
     const [dragOverStepIndex, setDragOverStepIndex] = useState(null)
     const [draggedSectionIndex, setDraggedSectionIndex] = useState(null)
     const [dragOverSectionIndex, setDragOverSectionIndex] = useState(null)
+
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                const [
+                    categoryResponse,
+                    ingredientResponse,
+                    ingredientCategoryResponse
+                ] = await Promise.all([
+                    fetch('/api/recipe-categories'),
+                    fetch('/api/ingredients'),
+                    fetch('/api/ingredient-categories')
+                ])
+
+                if (!categoryResponse.ok) {
+                    throw new Error(`Failed to load recipe categories (${categoryResponse.status})`)
+                }
+
+                if (!ingredientResponse.ok) {
+                    throw new Error(`Failed to load ingredients (${ingredientResponse.status})`)
+                }
+
+                if (!ingredientCategoryResponse.ok) {
+                    throw new Error(`Failed to load ingredient categories (${ingredientCategoryResponse.status})`)
+                }
+
+                const categories = await categoryResponse.json()
+                const ingredients = await ingredientResponse.json()
+                const ingredientCategories = await ingredientCategoryResponse.json()
+
+                setAvailableCategories(categories)
+                setAvailableIngredients(ingredients)
+                setAvailableIngredientCategories(ingredientCategories)
+
+                setEditedRecipe((currentRecipe) => ({
+                    ...currentRecipe,
+
+                    ingredients: currentRecipe.ingredients.map((ingredient) => {
+                        const matchingIngredient = ingredients.find(
+                            (availableIngredient) =>
+                                availableIngredient.name.trim().toLowerCase() ===
+                                ingredient.ingredientName?.trim().toLowerCase()
+                        )
+
+                        return matchingIngredient
+                            ? {
+                                ...ingredient,
+                                ingredientId: matchingIngredient.id
+                            }
+                            : ingredient
+                    })
+                }))
+            } catch (error) {
+                console.error('Failed to load recipe review data:', error)
+            }
+        }
+
+        loadData()
+    }, [])
     const updateRecipeField = (field, value) => {
         setEditedRecipe((current) => {
             const updatedRecipe = {
@@ -381,6 +443,36 @@ function RecipeReview ({ recipe, onBack, onSave }) {
             )
         }))
     }
+    const toggleCategory = (categoryId) => {
+        setEditedRecipe((current) => {
+            const currentCategories = current.categories ?? []
+
+            const isSelected = currentCategories.some(
+                (category) => category.recipeCategoryId === categoryId
+            )
+
+            return {
+                ...current,
+                categories: isSelected
+                    ? currentCategories.filter(
+                        (category) =>
+                            category.recipeCategoryId !== categoryId
+                    )
+                    : [
+                        ...currentCategories,
+                        {
+                            recipeCategoryId: categoryId
+                        }
+                    ]
+            }
+        })
+    }
+    const handleIngredientCreated = (createdIngredient) => {
+        setAvailableIngredients((currentIngredients) => [
+            ...currentIngredients,
+            createdIngredient,
+        ])
+    }
     const removeInstructionSection = (sectionPath) => {
         setEditedRecipe((current) => ({
             ...current,
@@ -537,6 +629,31 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                 </div>
 
                 <section className="recipe-section">
+                    <h2>Categories</h2>
+
+                    <div className="category-list">
+                        {availableCategories.map((category) => {
+                            const isSelected = (editedRecipe.categories ?? []).some(
+                                (selectedCategory) =>
+                                    selectedCategory.recipeCategoryId === category.id
+                            )
+
+                            return (
+                                <label key={category.id} className="category-option">
+                                    <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => toggleCategory(category.id)}
+                                    />
+
+                                    {category.name}
+                                </label>
+                            )
+                        })}
+                    </div>
+                </section>
+
+                <section className="recipe-section">
                     <h2>Ingredients</h2>
 
                     <div className="recipe-section-actions">
@@ -562,6 +679,9 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             <IngredientEditor
                                 key={index}
                                 ingredient={ingredient}
+                                availableIngredients={availableIngredients}
+                                availableIngredientCategories={availableIngredientCategories}
+                                onIngredientCreated={handleIngredientCreated}
                                 onChange={(updatedIngredient) =>
                                     updateIngredient(
                                         index,
@@ -578,6 +698,9 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             key={index}
                             section={section}
                             sectionPath={[index]}
+                            availableIngredients={availableIngredients}
+                            availableIngredientCategories={availableIngredientCategories}
+                            onIngredientCreated={handleIngredientCreated}
                             onUpdateIngredient={updateSectionIngredient}
                             onRemoveIngredient={removeSectionIngredient}
                             onRemoveSection={removeSection}

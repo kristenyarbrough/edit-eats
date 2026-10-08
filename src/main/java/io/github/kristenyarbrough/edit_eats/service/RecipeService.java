@@ -172,7 +172,12 @@ public class RecipeService {
 
     public RecipeResponse getRecipe(Long recipeId) {
 
-        Recipe recipe = recipeRepository.findById(recipeId)
+        User user = userRepository.findByUsername("development-user")
+                .orElseThrow(() -> new IllegalStateException(
+                        "Development user not found"
+                ));
+
+        Recipe recipe = recipeRepository.findByIdAndUserId(recipeId, user.getId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Recipe not found: " + recipeId));
@@ -271,7 +276,7 @@ public class RecipeService {
                     "Recipe must contain at least one step");
         }
 
-        Recipe recipe = recipeRepository.findById(id)
+        Recipe recipe = recipeRepository.findByIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Recipe not found: " + id));
@@ -416,7 +421,12 @@ public class RecipeService {
     @Transactional
     public void deleteRecipe(Long id) {
 
-        Recipe recipe = recipeRepository.findById(id)
+        User user = userRepository.findByUsername("development-user")
+                .orElseThrow(() -> new IllegalStateException(
+                        "Development user not found"
+                ));
+
+        Recipe recipe = recipeRepository.findByIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Recipe not found: " + id));
@@ -432,7 +442,12 @@ public class RecipeService {
     @Transactional(readOnly = true)
     public List<RecipeSummaryResponse> findRecipeSummaries(String name) {
 
-        List<Recipe> recipes = recipeRepository.findByNameContainingIgnoreCase(name);
+        User user = userRepository.findByUsername("development-user")
+                .orElseThrow(() -> new IllegalStateException(
+                        "Development user not found"
+                ));
+
+        List<Recipe> recipes = recipeRepository.findByUserIdAndNameContainingIgnoreCase(user.getId(), name);
 
         return recipes.stream()
                 .map(recipe -> RecipeSummaryResponse.builder()
@@ -467,7 +482,12 @@ public class RecipeService {
     @Transactional(readOnly = true)
     public List<RecipeResponse> findRecipes(String name) {
 
-        return recipeRepository.findByNameContainingIgnoreCase(name)
+        User user = userRepository.findByUsername("development-user")
+                .orElseThrow(() -> new IllegalStateException(
+                        "Development user not found"
+                ));
+
+        return recipeRepository.findByUserIdAndNameContainingIgnoreCase(user.getId(), name)
                 .stream()
                 .map(recipe -> RecipeResponse.builder()
                         .id(recipe.getId())

@@ -3,6 +3,9 @@ import IngredientEditor from './IngredientEditor'
 function IngredientSection({
     section,
     sectionPath,
+    availableIngredients = [],
+    availableIngredientCategories = [],
+    onIngredientCreated,
     onUpdateIngredient,
     onRemoveIngredient,
     onRemoveSection,
@@ -56,6 +59,9 @@ function IngredientSection({
                 <IngredientEditor
                     key={index}
                     ingredient={ingredient}
+                    availableIngredients={availableIngredients}
+                    availableIngredientCategories={availableIngredientCategories}
+                    onIngredientCreated={onIngredientCreated}
                     onChange={(updatedIngredient) =>
                         onUpdateIngredient(
                             sectionPath,
@@ -77,6 +83,9 @@ function IngredientSection({
                     key={index}
                     section={nestedSection}
                     sectionPath={[...sectionPath, index]}
+                    availableIngredients={availableIngredients}
+                    availableIngredientCategories={availableIngredientCategories}
+                    onIngredientCreated={onIngredientCreated}
                     onUpdateIngredient={onUpdateIngredient}
                     onRemoveIngredient={onRemoveIngredient}
                     onRemoveSection={onRemoveSection}
