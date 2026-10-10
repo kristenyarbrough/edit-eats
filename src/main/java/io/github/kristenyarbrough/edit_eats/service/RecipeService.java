@@ -72,8 +72,10 @@ public class RecipeService {
 
         for (CreateRecipeIngredientRequest ingredientRequest : request.getIngredients()) {
 
-            Ingredient ingredient = ingredientRepository.findById(
-                    ingredientRequest.getIngredientId())
+            Ingredient ingredient = ingredientRepository.findByIdAndUserId(
+                    ingredientRequest.getIngredientId(),
+                    user.getId()
+            )
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.NOT_FOUND,
                             "Ingredient not found: " + ingredientRequest.getIngredientId()));
@@ -150,7 +152,7 @@ public class RecipeService {
 
         if (request.getIngredientSections() != null) {
 
-            saveIngredientSections(recipe, request.getIngredientSections(), null);
+            saveIngredientSections(recipe, request.getIngredientSections(), null, user);
 
         }
 
@@ -299,7 +301,10 @@ public class RecipeService {
 
         for (CreateRecipeIngredientRequest ingredientRequest : request.getIngredients()) {
 
-            Ingredient ingredient = ingredientRepository.findById(ingredientRequest.getIngredientId())
+            Ingredient ingredient = ingredientRepository.findByIdAndUserId(
+                    ingredientRequest.getIngredientId(),
+                    user.getId()
+            )
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.NOT_FOUND,
                             "Ingredient not found: " + ingredientRequest.getIngredientId()
@@ -357,7 +362,8 @@ public class RecipeService {
             saveIngredientSections(
                     recipe,
                     request.getIngredientSections(),
-                    null
+                    null,
+                    user
             );
 
         }
@@ -515,7 +521,8 @@ public class RecipeService {
     private void saveIngredientSections(
             Recipe recipe,
             List<CreateRecipeIngredientSectionRequest> sectionRequests,
-            RecipeIngredientSection parentSection) {
+            RecipeIngredientSection parentSection,
+            User user) {
 
         for (int i = 0; i < sectionRequests.size(); i++) {
 
@@ -534,8 +541,9 @@ public class RecipeService {
             for (CreateRecipeIngredientRequest ingredientRequest :
                 sectionRequest.getIngredients()) {
 
-                Ingredient ingredient = ingredientRepository.findById(
-                        ingredientRequest.getIngredientId()
+                Ingredient ingredient = ingredientRepository.findByIdAndUserId(
+                        ingredientRequest.getIngredientId(),
+                        user.getId()
                 ).orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Ingredient not found: " + ingredientRequest.getIngredientId()
@@ -556,7 +564,7 @@ public class RecipeService {
             }
 
             // Recursively save any child sections
-            saveIngredientSections(recipe, sectionRequest.getSections(), section);
+            saveIngredientSections(recipe, sectionRequest.getSections(), section, user);
 
         }
 

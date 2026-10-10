@@ -2,6 +2,7 @@
 
     import io.github.kristenyarbrough.edit_eats.domain.IngredientCategory;
     import io.github.kristenyarbrough.edit_eats.dto.request.CreateIngredientCategoryRequest;
+    import io.github.kristenyarbrough.edit_eats.dto.response.IngredientCategoryResponse;
     import io.github.kristenyarbrough.edit_eats.service.IngredientCategoryService;
     import jakarta.validation.Valid;
     import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@
 
         @PostMapping
         @ResponseStatus(HttpStatus.CREATED)
-        public IngredientCategory createIngredientCategory(
+        public IngredientCategoryResponse createIngredientCategory(
                 @Valid @RequestBody CreateIngredientCategoryRequest request) {
 
             return ingredientCategoryService.createIngredientCategory(request);
@@ -27,7 +28,7 @@
         }
 
         @GetMapping
-        public List<IngredientCategory> getIngredientCategories() {
+        public List<IngredientCategoryResponse> getIngredientCategories() {
 
             return ingredientCategoryService.getAllIngredientCategories();
 

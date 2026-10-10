@@ -9,7 +9,6 @@ import io.github.kristenyarbrough.edit_eats.repository.IngredientCategoryReposit
 import io.github.kristenyarbrough.edit_eats.repository.IngredientRepository;
 import io.github.kristenyarbrough.edit_eats.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -41,6 +40,13 @@ public class IngredientService {
                                 HttpStatus.NOT_FOUND,
                                 "Ingredient category not found: " + request.getIngredientCategoryId()));
 
+        if (category.getUser() != null
+                && !category.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Ingredient category not found: " + request.getIngredientCategoryId());
+        }
+
         Ingredient ingredient = Ingredient.builder()
                 .name(request.getName())
                 .defaultUnit(request.getDefaultUnit())
@@ -60,6 +66,15 @@ public class IngredientService {
 
     }
 
+    public List<IngredientCategory> getAvailableIngredientCategories() {
+
+        User user = getDevelopmentUser();
+
+        return ingredientCategoryRepository
+                .findByUserIdOrUserIsNullOrderByNameAsc(user.getId());
+
+    }
+
     public List<Ingredient> findIngredients(String name) {
 
         User user = getDevelopmentUser();
@@ -73,7 +88,9 @@ public class IngredientService {
 
     public IngredientResponse getIngredient(Long id) {
 
-        Ingredient ingredient = ingredientRepository.findById(id)
+        User user = getDevelopmentUser();
+
+        Ingredient ingredient = ingredientRepository.findByIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Ingredient not found: " + id));

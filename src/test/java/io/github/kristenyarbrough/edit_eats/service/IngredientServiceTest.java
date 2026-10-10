@@ -11,6 +11,7 @@ import io.github.kristenyarbrough.edit_eats.repository.IngredientRepository;
 import io.github.kristenyarbrough.edit_eats.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -20,8 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -69,10 +69,15 @@ class IngredientServiceTest {
         assertEquals("Egg", ingredient.getName());
         assertEquals(Unit.EACH, ingredient.getDefaultUnit());
         assertEquals(category, ingredient.getIngredientCategory());
+        assertNull(ingredient.getIngredientCategory().getUser());
 
         verify(ingredientRepository).findByUserIdAndNameIgnoreCase(user.getId(), "Egg");
         verify(ingredientCategoryRepository).findById(1L);
-        verify(ingredientRepository).save(any(Ingredient.class));
+
+        ArgumentCaptor<Ingredient> ingredientCaptor = ArgumentCaptor.forClass(Ingredient.class);
+        verify(ingredientRepository).save(ingredientCaptor.capture());
+        Ingredient savedRequest = ingredientCaptor.getValue();
+        assertEquals(user, savedRequest.getUser());
 
     }
 
@@ -148,9 +153,12 @@ class IngredientServiceTest {
 
         User user = createUser();
 
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
         Ingredient ingredient = createIngredient(category, user);
 
-        when(ingredientRepository.findById(1L))
+        when(ingredientRepository.findByIdAndUserId(1L, user.getId()))
                 .thenReturn(Optional.of(ingredient));
 
         IngredientResponse response = ingredientService.getIngredient(1L);
@@ -160,14 +168,19 @@ class IngredientServiceTest {
         assertEquals(Unit.EACH, response.getDefaultUnit());
         assertEquals(category, response.getIngredientCategory());
 
-        verify(ingredientRepository).findById(1L);
+        verify(ingredientRepository).findByIdAndUserId(1L, user.getId());
 
     }
 
     @Test
     void shouldThrowExceptionWhenIngredientDoesNotExist() {
 
-        when(ingredientRepository.findById(99L))
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
+        when(ingredientRepository.findByIdAndUserId(99L, user.getId()))
                 .thenReturn(Optional.empty());
 
         ResponseStatusException exception = assertThrows(
@@ -178,7 +191,7 @@ class IngredientServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         assertEquals("Ingredient not found: 99", exception.getReason());
 
-        verify(ingredientRepository).findById(99L);
+        verify(ingredientRepository).findByIdAndUserId(99L, user.getId());
 
     }
 
@@ -244,6 +257,119 @@ class IngredientServiceTest {
 
         verify(ingredientRepository)
                 .findTop20ByUserIdAndNameContainingIgnoreCase(user.getId(), "egg");
+
+    }
+
+    @Test
+    void shouldNotReturnIngredientWhenItDoesNotBelongToCurrentUser() {
+
+        User user = createUser();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
+        when(ingredientRepository.findByIdAndUserId(1L, user.getId()))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> ingredientService.getIngredient(1L)
+        );
+
+        assertAll(
+                () -> assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode()),
+                () -> assertEquals("Ingredient not found: 1", exception.getReason())
+        );
+
+    }
+
+    @Test
+    void shouldThrowExceptionWhenDevelopmentUserDoesNotExist() {
+
+        CreateIngredientRequest request = createValidRequest();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.empty());
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> ingredientService.createIngredient(request)
+        );
+
+        assertEquals("Development user not found", exception.getMessage());
+
+        verifyNoInteractions(ingredientRepository, ingredientCategoryRepository);
+
+    }
+
+    @Test
+    void shouldRejectIngredientCategoryOwnedByAnotherUser() {
+
+        CreateIngredientRequest request = createValidRequest();
+        User currentUser = createUser();
+        User anotherUser = User.builder()
+                .id(2L)
+                .username("another-user")
+                .build();
+
+        IngredientCategory category = IngredientCategory.builder()
+                .id(1L)
+                .name("Baking")
+                .user(anotherUser)
+                .build();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(currentUser));
+        when(ingredientRepository.findByUserIdAndNameIgnoreCase(currentUser.getId(), "Egg"))
+                .thenReturn(Optional.empty());
+        when(ingredientCategoryRepository.findById(1L))
+                .thenReturn(Optional.of(category));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> ingredientService.createIngredient(request)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertEquals("Ingredient category not found: 1", exception.getReason());
+
+        verify(ingredientRepository, never()).save(any(Ingredient.class));
+
+    }
+
+    @Test
+    void shouldReturnStandardAndCurrentUsersIngredientCategories() {
+
+        User user = createUser();
+
+        IngredientCategory standardCategory= IngredientCategory.builder()
+                .id(1L)
+                .name("Baking")
+                .build();
+
+        IngredientCategory customCategory = IngredientCategory.builder()
+                .id(2L)
+                .name("Meal Prep")
+                .user(user)
+                .build();
+
+        when(userRepository.findByUsername("development-user"))
+                .thenReturn(Optional.of(user));
+
+        when(ingredientCategoryRepository
+                .findByUserIdOrUserIsNullOrderByNameAsc(user.getId()))
+                .thenReturn(List.of(standardCategory, customCategory));
+
+        List<IngredientCategory> categories = ingredientService.getAvailableIngredientCategories();
+
+        assertEquals(2, categories.size());
+        assertEquals("Baking", categories.get(0).getName());
+        assertEquals("Meal Prep", categories.get(1).getName());
+
+        assertNull(categories.get(0).getUser());
+        assertEquals(user, categories.get(1).getUser());
+
+        verify(ingredientCategoryRepository).findByUserIdOrUserIsNullOrderByNameAsc(user.getId());
 
     }
 
