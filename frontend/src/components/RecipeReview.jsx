@@ -584,6 +584,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                         <label className="recipe-meta-field">
                             Difficulty:
                             <select
+                                className={!editedRecipe.difficulty ? 'placeholder-selected' : ''}
                                 value={editedRecipe.difficulty ?? ''}
                                 onChange={(event) =>
                                     updateRecipeField(
@@ -592,7 +593,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                                     )
                                 }
                             >
-                                <option value="">Select difficulty</option>
+                                <option value="" disabled>Select difficulty</option>
                                 <option value="EASY">Easy</option>
                                 <option value="MEDIUM">Medium</option>
                                 <option value="HARD">Hard</option>

@@ -244,6 +244,9 @@ Relationships:
     - [x] Edit a recipe
       - [x] Reorder steps
       - [x] When adding a section add an ingredient/step (no empty sections)
+      - [ ] Error messages
+      - [ ] Add a new recipe category
+      - [ ] Success messages
       - [ ] Add a photo
       - [ ] Add source URL
     - [ ] Save a recipe

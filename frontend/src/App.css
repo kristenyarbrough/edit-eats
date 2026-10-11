@@ -196,9 +196,11 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid #eee;
+    gap: 0.6rem;
+    padding: 1rem;
+    border: 1px solid #e8e3d5;
+    border-radius: 10px;
+    background: #fff;
 }
 
 .ingredient-row input,
@@ -288,6 +290,159 @@
     .ingredient-row .remove-ingredient-button {
         margin-left: auto;
     }
+}
+
+.ingredient-row > .ingredient-match-select {
+    flex: 0 1 12rem;
+    width: auto;
+    margin-top: 0.25rem;
+}
+
+.ingredient-row > .new-ingredient-form {
+    margin-top: 0;
+}
+
+.ingredient-row select.placeholder-selected,
+.recipe-meta-field select.placeholder-selected {
+    color: #999;
+}
+
+.ingredient-row select option,
+.recipe-meta-field select option {
+    color: #333;
+}
+
+.ingredient-row select option:disabled,
+.recipe-meta-field select option:disabled {
+    color: #999;
+}
+
+.new-ingredient-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 0.5rem;
+    padding: 1rem;
+    border: 1px solid #e8e3d5;
+    border-radius: 8px;
+    background: #faf9f4;
+}
+
+.new-ingredient-form input,
+.new-ingredient-form select {
+    max-width: 100%;
+}
+
+.ingredient-row .new-ingredient-form input.new-ingredient-name {
+    flex: 0 1 9.25rem;
+    width: 8rem;
+    min-width: 0;
+}
+
+.new-ingredient-form select {
+    flex: 0 1 6.75rem;
+}
+
+.new-ingredient-form .ingredient-category-match-select {
+    flex: 0 1 9.5rem;
+}
+
+.new-ingredient-form .create-ingredient-button,
+.new-ingredient-form .cancel-ingredient-button {
+    padding: 0.4rem 0.7rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.new-ingredient-form .create-ingredient-button {
+    background: #f6e497;
+    color: #415037;
+    margin-left: auto
+}
+
+.new-ingredient-form .create-ingredient-button:hover {
+    background: #ead77d;
+}
+
+.new-ingredient-form .cancel-ingredient-button {
+    background:transparent;
+    color: #6f765f;
+    padding: 0.35rem 0.5rem;
+}
+
+.new-ingredient-form .cancel-ingredient-button:hover {
+    background: #f3f0e8;
+}
+
+.new-category-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.75rem;
+    border: 1px solid #e3dcc5;
+    border-radius: 8px;
+    background: white;
+}
+
+.new-category-form input[type="text"] {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+.new-category-form .form-error {
+    width: 100%;
+    margin: 0;
+    color: #a33b32;
+    font-size: 0.9rem;
+    order: 2;
+    flex: 1 0 100%;
+}
+
+.new-category-form button {
+    padding: 0.45rem 0.75rem;
+    border: none;
+    border-radius: 6px;
+    background: #f6e497;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.new-category-form button:hover {
+    background: #ead77d;
+}
+
+.new-category-form button:last-child {
+    background: transparent;
+    color: #6f765f;
+}
+
+.new-category-form button:last-child:hover {
+    background: #f3f0e8;
+}
+
+.new-category-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
+}
+
+.new-category-actions button {
+    white-space: nowrap;
+}
+
+.new-category-actions button:last-child {
+    background: transparent;
+    color: #6f765f;
 }
 
 .instruction-step-row {

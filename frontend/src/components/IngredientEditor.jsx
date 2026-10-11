@@ -10,6 +10,7 @@ function IngredientEditor({
     onRemove
 }) {
     const [creatingIngredient, setCreatingIngredient] = useState(false)
+    const [newIngredientName, setNewIngredientName] = useState('')
     const [creatingCategory, setCreatingCategory] = useState(false)
     const [newCategoryName, setNewCategoryName] = useState('')
     const [categoryError, setCategoryError] = useState('')
@@ -38,6 +39,7 @@ function IngredientEditor({
             />
 
             <select
+                className={!ingredient.unit ? 'placeholder-selected' : ''}
                 value={ingredient.unit ?? ''}
                 onChange={(event) =>
                     updateField(
@@ -46,7 +48,7 @@ function IngredientEditor({
                     )
                 }
             >
-                <option value="">Unit</option>
+                <option value="" disabled>Unit</option>
                 <option value="G">g</option>
                 <option value="KG">kg</option>
                 <option value="ML">ml</option>
@@ -108,11 +110,15 @@ function IngredientEditor({
             </button>
 
             <select
+                className={`ingredient-match-select ${
+                    !ingredient.ingredientId ? 'placeholder-selected' : ''
+                }`}
                 value={ingredient.ingredientId ?? ''}
                 onChange={(event) => {
                     const value = event.target.value
 
                     if (value === 'new') {
+                        setNewIngredientName(ingredient.ingredientName ?? '')
                         setCreatingIngredient(true)
                         updateField('ingredientId', null)
                         return
@@ -127,7 +133,7 @@ function IngredientEditor({
                 }}
             >
 
-                <option value="">Match ingredient</option>
+                <option value="" disabled>Match ingredient</option>
 
                 {availableIngredients.map((availableIngredient) => (
                     <option
@@ -145,17 +151,18 @@ function IngredientEditor({
                 <div className="new-ingredient-form">
                     <input
                         type="text"
-                        value={ingredient.ingredientName ?? ''}
-                        onChange={(event) =>
-                            updateField(
-                                'ingredientName',
-                                event.target.value
-                            )
-                        }
+                        className="new-ingredient-name"
+                        value={newIngredientName}
+                        onChange={(event) => setNewIngredientName(event.target.value)}
                         placeholder="Ingredient name"
                     />
 
                     <select
+                        className={
+                            !(ingredient.defaultUnit ?? ingredient.unit)
+                                ? 'placeholder-selected'
+                                : ''
+                        }
                         value={ingredient.defaultUnit ?? ingredient.unit ?? ''}
                         onChange={(event) =>
                             updateField(
@@ -164,7 +171,7 @@ function IngredientEditor({
                             )
                         }
                     >
-                        <option value="">Default Unit</option>
+                        <option value="" disabled>Default Unit</option>
                         <option value="G">g</option>
                         <option value="KG">kg</option>
                         <option value="ML">ml</option>
@@ -179,6 +186,9 @@ function IngredientEditor({
                     </select>
 
                     <select
+                        className={`ingredient-category-match-select ${
+                            !ingredient.ingredientCategoryId ? 'placeholder-selected' : ''
+                        }`}
                         value={ingredient.ingredientCategoryId ?? ''}
                         onChange={(event) => {
                             const value = event.target.value
@@ -197,7 +207,7 @@ function IngredientEditor({
                             )
                         }}
                     >
-                        <option value="">Ingredient category</option>
+                        <option value="" disabled>Ingredient category</option>
 
                         {availableIngredientCategories.map((category) => (
                             <option
@@ -227,69 +237,72 @@ function IngredientEditor({
                                 <p className="form-error">{categoryError}</p>
                             )}
 
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    const name = newCategoryName.trim()
+                            <div className="new-category-actions">
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        const name = newCategoryName.trim()
 
-                                    if (!name) {
-                                        setCategoryError('Please enter a category name.')
-                                        return
-                                    }
-
-                                    const existingCategory = availableIngredientCategories.find(
-                                        (category) =>
-                                            category.name.trim().toLowerCase() === name.toLowerCase()
-                                    )
-
-                                    if (existingCategory) {
-                                        setCategoryError('A category with this name already exists.')
-                                        return
-                                    }
-
-                                    try {
-                                        const response = await fetch('/api/ingredient-categories', {
-                                            method: 'POST',
-                                            headers: {
-                                                'Content-Type': 'application/json',
-                                            },
-                                            body: JSON.stringify({ name }),
-                                        })
-
-                                        if (!response.ok) {
-                                            const errorText = await response.text()
-                                            throw new Error(
-                                                errorText || `Failed to create category (${response.status})`
-                                            )
+                                        if (!name) {
+                                            setCategoryError('Please enter a category name.')
+                                            return
                                         }
 
-                                        const createdCategory = await response.json()
+                                        const existingCategory = availableIngredientCategories.find(
+                                            (category) =>
+                                                category.name.trim().toLowerCase() === name.toLowerCase()
+                                        )
 
-                                        onIngredientCategoryCreated(createdCategory)
-                                        updateField('ingredientCategoryId', createdCategory.id)
-                                        setNewCategoryName('')
-                                        setCreatingCategory(false)
-                                        setCategoryError('')
-                                    } catch (error) {
-                                        console.error('Failed to create category:', error)
-                                        setCategoryError(error.message || 'Failed to create category.')
-                                    }
-                                }}
-                            >
-                                Create Category
-                            </button>
+                                        if (existingCategory) {
+                                            setCategoryError('A category with this name already exists.')
+                                            return
+                                        }
 
-                            <button
-                                type="button"
-                                onClick={() => setCreatingCategory(false)}
-                            >
-                                Cancel
-                            </button>
+                                        try {
+                                            const response = await fetch('/api/ingredient-categories', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                },
+                                                body: JSON.stringify({ name }),
+                                            })
+
+                                            if (!response.ok) {
+                                                const errorText = await response.text()
+                                                throw new Error(
+                                                    errorText || `Failed to create category (${response.status})`
+                                                )
+                                            }
+
+                                            const createdCategory = await response.json()
+
+                                            onIngredientCategoryCreated(createdCategory)
+                                            updateField('ingredientCategoryId', createdCategory.id)
+                                            setNewCategoryName('')
+                                            setCreatingCategory(false)
+                                            setCategoryError('')
+                                        } catch (error) {
+                                            console.error('Failed to create category:', error)
+                                            setCategoryError(error.message || 'Failed to create category.')
+                                        }
+                                    }}
+                                >
+                                    Create Category
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setCreatingCategory(false)}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
                         </div>
                     )}
 
                     <button
                         type="button"
+                        className="create-ingredient-button"
                         onClick={async () => {
                             try {
                                 const response = await fetch('/api/ingredients', {
@@ -298,7 +311,7 @@ function IngredientEditor({
                                         'Content-Type': 'application/json',
                                     },
                                     body: JSON.stringify({
-                                        name: ingredient.ingredientName,
+                                        name: newIngredientName.trim(),
                                         defaultUnit: ingredient.defaultUnit ?? ingredient.unit,
                                         ingredientCategoryId: ingredient.ingredientCategoryId
                                     }),
@@ -323,6 +336,14 @@ function IngredientEditor({
                         }}
                     >
                         Create Ingredient
+                    </button>
+
+                    <button
+                        type="button"
+                        className="cancel-ingredient-button"
+                        onClick={() => setCreatingIngredient(false)}
+                    >
+                        Cancel
                     </button>
                 </div>
             )}
