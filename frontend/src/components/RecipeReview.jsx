@@ -473,6 +473,12 @@ function RecipeReview ({ recipe, onBack, onSave }) {
             createdIngredient,
         ])
     }
+    const handleIngredientCategoryCreated = (createdCategory) => {
+        setAvailableIngredientCategories((currentCategories) => [
+            ...currentCategories,
+            createdCategory,
+        ])
+    }
     const removeInstructionSection = (sectionPath) => {
         setEditedRecipe((current) => ({
             ...current,
@@ -682,6 +688,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                                 availableIngredients={availableIngredients}
                                 availableIngredientCategories={availableIngredientCategories}
                                 onIngredientCreated={handleIngredientCreated}
+                                onIngredientCategoryCreated={handleIngredientCategoryCreated}
                                 onChange={(updatedIngredient) =>
                                     updateIngredient(
                                         index,
@@ -701,6 +708,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             availableIngredients={availableIngredients}
                             availableIngredientCategories={availableIngredientCategories}
                             onIngredientCreated={handleIngredientCreated}
+                            onIngredientCategoryCreated={handleIngredientCategoryCreated}
                             onUpdateIngredient={updateSectionIngredient}
                             onRemoveIngredient={removeSectionIngredient}
                             onRemoveSection={removeSection}

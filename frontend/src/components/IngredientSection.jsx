@@ -6,6 +6,7 @@ function IngredientSection({
     availableIngredients = [],
     availableIngredientCategories = [],
     onIngredientCreated,
+    onIngredientCategoryCreated,
     onUpdateIngredient,
     onRemoveIngredient,
     onRemoveSection,
@@ -62,6 +63,7 @@ function IngredientSection({
                     availableIngredients={availableIngredients}
                     availableIngredientCategories={availableIngredientCategories}
                     onIngredientCreated={onIngredientCreated}
+                    onIngredientCategoryCreated={onIngredientCategoryCreated}
                     onChange={(updatedIngredient) =>
                         onUpdateIngredient(
                             sectionPath,
@@ -86,6 +88,7 @@ function IngredientSection({
                     availableIngredients={availableIngredients}
                     availableIngredientCategories={availableIngredientCategories}
                     onIngredientCreated={onIngredientCreated}
+                    onIngredientCategoryCreated={onIngredientCategoryCreated}
                     onUpdateIngredient={onUpdateIngredient}
                     onRemoveIngredient={onRemoveIngredient}
                     onRemoveSection={onRemoveSection}

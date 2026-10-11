@@ -5,10 +5,14 @@ function IngredientEditor({
     availableIngredients = [],
     availableIngredientCategories = [],
     onIngredientCreated,
+    onIngredientCategoryCreated,
     onChange,
     onRemove
 }) {
     const [creatingIngredient, setCreatingIngredient] = useState(false)
+    const [creatingCategory, setCreatingCategory] = useState(false)
+    const [newCategoryName, setNewCategoryName] = useState('')
+    const [categoryError, setCategoryError] = useState('')
 
     const updateField = (field, value) => {
         onChange({
@@ -67,6 +71,41 @@ function IngredientEditor({
                 }
                 placeholder="Ingredient"
             />
+
+            <input
+                className="ingredient-preparation"
+                type="text"
+                value={ingredient.preparation ?? ''}
+                onChange={(event) =>
+                    updateField(
+                        'preparation',
+                        event.target.value || null
+                    )
+                }
+                placeholder="Preparation"
+            />
+
+            <label className="ingredient-optional">
+                <input
+                    type="checkbox"
+                    checked={ingredient.optional ?? false}
+                    onChange={(event) =>
+                        updateField(
+                            'optional',
+                            event.target.checked
+                        )
+                    }
+                />
+                Optional
+            </label>
+
+            <button
+                type="button"
+                className="remove-ingredient-button"
+                onClick={onRemove}
+            >
+                Remove
+            </button>
 
             <select
                 value={ingredient.ingredientId ?? ''}
@@ -141,14 +180,22 @@ function IngredientEditor({
 
                     <select
                         value={ingredient.ingredientCategoryId ?? ''}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                            const value = event.target.value
+
+                            if (value === 'new') {
+                                setCreatingCategory(true)
+                                setCategoryError('')
+                                return
+                            }
+
+                            setCreatingCategory(false)
+
                             updateField(
                                 'ingredientCategoryId',
-                                event.target.value
-                                    ? Number(event.target.value)
-                                    : null
+                                value ? Number(value) : null
                             )
-                        }
+                        }}
                     >
                         <option value="">Ingredient category</option>
 
@@ -160,7 +207,86 @@ function IngredientEditor({
                                 {category.name}
                             </option>
                         ))}
+
+                        <option value="new">+ Create new category</option>
                     </select>
+
+                    {creatingCategory && (
+                        <div className="new-category-form">
+                            <input
+                                type="text"
+                                value={newCategoryName}
+                                onChange={(event) => {
+                                    setNewCategoryName(event.target.value)
+                                    setCategoryError('')
+                                }}
+                                placeholder="New category name"
+                            />
+
+                            {categoryError && (
+                                <p className="form-error">{categoryError}</p>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    const name = newCategoryName.trim()
+
+                                    if (!name) {
+                                        setCategoryError('Please enter a category name.')
+                                        return
+                                    }
+
+                                    const existingCategory = availableIngredientCategories.find(
+                                        (category) =>
+                                            category.name.trim().toLowerCase() === name.toLowerCase()
+                                    )
+
+                                    if (existingCategory) {
+                                        setCategoryError('A category with this name already exists.')
+                                        return
+                                    }
+
+                                    try {
+                                        const response = await fetch('/api/ingredient-categories', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                            },
+                                            body: JSON.stringify({ name }),
+                                        })
+
+                                        if (!response.ok) {
+                                            const errorText = await response.text()
+                                            throw new Error(
+                                                errorText || `Failed to create category (${response.status})`
+                                            )
+                                        }
+
+                                        const createdCategory = await response.json()
+
+                                        onIngredientCategoryCreated(createdCategory)
+                                        updateField('ingredientCategoryId', createdCategory.id)
+                                        setNewCategoryName('')
+                                        setCreatingCategory(false)
+                                        setCategoryError('')
+                                    } catch (error) {
+                                        console.error('Failed to create category:', error)
+                                        setCategoryError(error.message || 'Failed to create category.')
+                                    }
+                                }}
+                            >
+                                Create Category
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setCreatingCategory(false)}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    )}
 
                     <button
                         type="button"
@@ -200,41 +326,6 @@ function IngredientEditor({
                     </button>
                 </div>
             )}
-
-            <input
-                className="ingredient-preparation"
-                type="text"
-                value={ingredient.preparation ?? ''}
-                onChange={(event) =>
-                    updateField(
-                        'preparation',
-                        event.target.value || null
-                    )
-                }
-                placeholder="Preparation"
-            />
-
-            <label className="ingredient-optional">
-                <input
-                    type="checkbox"
-                    checked={ingredient.optional ?? false}
-                    onChange={(event) =>
-                        updateField(
-                            'optional',
-                            event.target.checked
-                        )
-                    }
-                />
-                Optional
-            </label>
-
-            <button
-                type="button"
-                className="remove-ingredient-button"
-                onClick={onRemove}
-            >
-                Remove
-            </button>
         </div>
     )
 }
