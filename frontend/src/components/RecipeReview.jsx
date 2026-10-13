@@ -14,9 +14,13 @@ import TimeEditor from './TimeEditor'
 function RecipeReview ({ recipe, onBack, onSave }) {
     const [editedRecipe, setEditedRecipe] = useState(recipe)
     const [availableCategories, setAvailableCategories] = useState([])
+    const [creatingRecipeCategory, setCreatingRecipeCategory] = useState(false)
+    const [newRecipeCategoryName, setNewRecipeCategoryName] = useState('')
+    const [recipeCategoryError, setRecipeCategoryError] = useState('')
     const [availableIngredients, setAvailableIngredients] = useState([])
     const [availableIngredientCategories, setAvailableIngredientCategories] = useState([])
     const [validationErrors, setValidationErrors] = useState({})
+    const [hasAttemptedSave, setHasAttemptedSave] = useState(false)
     const [draggedStepIndex, setDraggedStepIndex] = useState(null)
     const [dragOverStepIndex, setDragOverStepIndex] = useState(null)
     const [draggedSectionIndex, setDraggedSectionIndex] = useState(null)
@@ -26,6 +30,30 @@ function RecipeReview ({ recipe, onBack, onSave }) {
     const ingredientsRef = useRef(null)
     const methodRef = useRef(null)
 
+    const matchSectionIngredients = (sections, availableIngredients) =>
+        sections.map((section) => ({
+            ...section,
+
+            ingredients: (section.ingredients ?? []).map((ingredient) => {
+                const matchingIngredient = availableIngredients.find(
+                    (availableIngredient) =>
+                        availableIngredient.name.trim().toLowerCase() ===
+                        ingredient.ingredientName?.trim().toLowerCase()
+                )
+
+                return matchingIngredient
+                    ? {
+                        ...ingredient,
+                        ingredientId: matchingIngredient.id
+                    }
+                    : ingredient
+            }),
+
+            sections: matchSectionIngredients(
+                section.sections ?? [],
+                availableIngredients
+            )
+        }))
     useEffect(() => {
         const loadData = async () => {
             try {
@@ -75,7 +103,12 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                                 ingredientId: matchingIngredient.id
                             }
                             : ingredient
-                    })
+                    }),
+
+                    ingredientSections: matchSectionIngredients(
+                        currentRecipe.ingredientSections ?? [],
+                        ingredients
+                    )
                 }))
             } catch (error) {
                 console.error('Failed to load recipe review data:', error)
@@ -553,23 +586,22 @@ function RecipeReview ({ recipe, onBack, onSave }) {
         sections: section.sections.map(buildInstructionSectionRequest),
     })
     const hasEmptyIngredients = (recipe) => {
-        const hasEmptyIngredient = (ingredients = []) =>
+        const hasInvalidIngredient = (ingredients = []) =>
             ingredients.some(
                 (ingredient) =>
-                    !ingredient.ingredientName?.trim() &&
                     !ingredient.ingredientId
             )
 
-        const hasEmptyIngredientInSections = (sections = []) =>
+        const hasInvalidIngredientInSections = (sections = []) =>
             sections.some(
                 (section) =>
-                    hasEmptyIngredient(section.ingredients) ||
-                    hasEmptyIngredientInSections(section.sections)
+                    hasInvalidIngredient(section.ingredients) ||
+                    hasInvalidIngredientInSections(section.sections)
             )
 
         return (
-            hasEmptyIngredient(recipe.ingredients) ||
-            hasEmptyIngredientInSections(recipe.ingredientSections)
+            hasInvalidIngredient(recipe.ingredients) ||
+            hasInvalidIngredientInSections(recipe.ingredientSections)
         )
     }
     const hasMissingInstructions = (recipe) => {
@@ -633,7 +665,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
         }
 
         if (hasEmptyIngredients(editedRecipe)) {
-            errors.ingredients = 'Please enter a name or remove empty ingredient.'
+            errors.ingredients = 'Please select or create an ingredient.'
         }
 
         if (hasMissingInstructions(editedRecipe)) {
@@ -830,6 +862,78 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                 <section className="recipe-section">
                     <h2>Categories</h2>
 
+                    <button
+                        type="button"
+                        className="add-item-button"
+                        onClick={() => setCreatingRecipeCategory((current) => !current)}
+                    >
+                        {creatingRecipeCategory ? 'Cancel' : 'Add category'}
+                    </button>
+
+                    {creatingRecipeCategory && (
+                        <div className="new-category-form">
+                            <input
+                                type="text"
+                                value={newRecipeCategoryName}
+                                onChange={(event) =>
+                                    setNewRecipeCategoryName(event.target.value)
+                                }
+                                placeholder="New recipe category name"
+                            />
+
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    const name = newRecipeCategoryName.trim()
+
+                                    if (!name) {
+                                        setRecipeCategoryError('Please enter a category name.')
+                                        return
+                                    }
+
+                                    setRecipeCategoryError('')
+
+                                    try {
+                                        const response = await fetch(
+                                            `/api/recipe-categories?name=${encodeURIComponent(name)}`,
+                                            {
+                                                method: 'POST'
+                                            }
+                                        )
+
+                                        if (!response.ok) {
+                                            const message = await response.text()
+                                            throw new Error(message || 'Failed to create category.')
+                                        }
+
+                                        const createdCategory = await response.json()
+
+                                        setAvailableCategories((current) =>
+                                            [...current, createdCategory].sort((a, b) =>
+                                                a.name.localeCompare(b.name)
+                                            )
+                                        )
+
+                                        setEditedRecipe((current) => ({
+                                            ...current,
+                                            categories: [
+                                                ...(current.categories ?? []),
+                                                { recipeCategoryId: createdCategory.id }
+                                            ]
+                                        }))
+
+                                        setNewRecipeCategoryName('')
+                                        setCreatingRecipeCategory(false)
+                                    } catch (error) {
+                                        setRecipeCategoryError(error.message)
+                                    }
+                                }}
+                            >
+                                Create category
+                            </button>
+                        </div>
+                    )}
+
                     <div className="category-list">
                         {availableCategories.map((category) => {
                             const isSelected = (editedRecipe.categories ?? []).some(
@@ -884,6 +988,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             <IngredientEditor
                                 key={index}
                                 ingredient={ingredient}
+                                showValidationErrors={hasAttemptedSave}
                                 availableIngredients={availableIngredients}
                                 availableIngredientCategories={availableIngredientCategories}
                                 onIngredientCreated={handleIngredientCreated}
@@ -904,6 +1009,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             key={index}
                             section={section}
                             sectionPath={[index]}
+                            showValidationErrors={hasAttemptedSave}
                             availableIngredients={availableIngredients}
                             availableIngredientCategories={availableIngredientCategories}
                             onIngredientCreated={handleIngredientCreated}
@@ -1107,6 +1213,8 @@ function RecipeReview ({ recipe, onBack, onSave }) {
 
                     <button
                         onClick={() => {
+                            setHasAttemptedSave(true)
+
                             if (validateRecipe()) {
                                 onSave(buildSaveRequest())
                             }

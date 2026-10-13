@@ -3,6 +3,7 @@ import IngredientEditor from './IngredientEditor'
 function IngredientSection({
     section,
     sectionPath,
+    showValidationErrors = false,
     availableIngredients = [],
     availableIngredientCategories = [],
     onIngredientCreated,
@@ -60,6 +61,7 @@ function IngredientSection({
                 <IngredientEditor
                     key={index}
                     ingredient={ingredient}
+                    showValidationErrors={showValidationErrors}
                     availableIngredients={availableIngredients}
                     availableIngredientCategories={availableIngredientCategories}
                     onIngredientCreated={onIngredientCreated}
@@ -85,6 +87,7 @@ function IngredientSection({
                     key={index}
                     section={nestedSection}
                     sectionPath={[...sectionPath, index]}
+                    showValidationErrors={showValidationErrors}
                     availableIngredients={availableIngredients}
                     availableIngredientCategories={availableIngredientCategories}
                     onIngredientCreated={onIngredientCreated}

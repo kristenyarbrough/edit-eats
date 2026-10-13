@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 function IngredientEditor({
     ingredient,
+    showValidationErrors = false,
     availableIngredients = [],
     availableIngredientCategories = [],
     onIngredientCreated,
@@ -15,6 +16,7 @@ function IngredientEditor({
     const [creatingCategory, setCreatingCategory] = useState(false)
     const [newCategoryName, setNewCategoryName] = useState('')
     const [categoryError, setCategoryError] = useState('')
+    const isUnmatched = showValidationErrors && !ingredient.ingredientId && !creatingIngredient
 
     const updateField = (field, value) => {
         onChange({
@@ -147,6 +149,12 @@ function IngredientEditor({
 
                 <option value="new">+ Create new ingredient</option>
             </select>
+
+            {isUnmatched && (
+                <p className="form-error ingredient-error">
+                    Select an existing ingredient or create one.
+                </p>
+            )}
 
             {creatingIngredient && (
                 <div className="new-ingredient-form">
