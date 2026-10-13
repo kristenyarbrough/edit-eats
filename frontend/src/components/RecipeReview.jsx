@@ -1,4 +1,4 @@
-import{ useEffect, useState } from 'react'
+import{ useEffect, useRef, useState } from 'react'
 import {
     updateNestedSection,
     removeNestedSection,
@@ -16,10 +16,15 @@ function RecipeReview ({ recipe, onBack, onSave }) {
     const [availableCategories, setAvailableCategories] = useState([])
     const [availableIngredients, setAvailableIngredients] = useState([])
     const [availableIngredientCategories, setAvailableIngredientCategories] = useState([])
+    const [validationErrors, setValidationErrors] = useState({})
     const [draggedStepIndex, setDraggedStepIndex] = useState(null)
     const [dragOverStepIndex, setDragOverStepIndex] = useState(null)
     const [draggedSectionIndex, setDraggedSectionIndex] = useState(null)
     const [dragOverSectionIndex, setDragOverSectionIndex] = useState(null)
+    const servingsRef = useRef(null)
+    const difficultyRef = useRef(null)
+    const ingredientsRef = useRef(null)
+    const methodRef = useRef(null)
 
     useEffect(() => {
         const loadData = async () => {
@@ -109,23 +114,35 @@ function RecipeReview ({ recipe, onBack, onSave }) {
         })
     }
     const updateIngredient = (index, updatedIngredient) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            ingredients: current.ingredients.map(
-                (ingredient, ingredientIndex) =>
-                    ingredientIndex === index
-                    ? updatedIngredient
-                    : ingredient
-            ),
-        }))
+        setEditedRecipe((current) => {
+            const updatedRecipe = {
+                ...current,
+                ingredients: current.ingredients.map(
+                    (ingredient, ingredientIndex) =>
+                        ingredientIndex === index
+                        ? updatedIngredient
+                        : ingredient
+                ),
+            }
+
+            updateIngredientValidation(updatedRecipe)
+
+            return updatedRecipe
+        })
     }
     const removeIngredient = (index) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            ingredients: current.ingredients.filter(
-                (_, ingredientIndex) => ingredientIndex !== index
-            ),
-        }))
+        setEditedRecipe((current) => {
+            const updatedRecipe = {
+                ...current,
+                ingredients: current.ingredients.filter(
+                    (_, ingredientIndex) => ingredientIndex !== index
+                ),
+            }
+
+            updateIngredientValidation(updatedRecipe)
+
+            return updatedRecipe
+        })
     }
     const addIngredient = () => {
         setEditedRecipe((current) => ({
@@ -235,40 +252,52 @@ function RecipeReview ({ recipe, onBack, onSave }) {
         ingredientIndex,
         updatedIngredient
     ) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            ingredientSections: updateNestedSection(
-                current.ingredientSections,
-                sectionPath,
-                (section) => ({
-                    ...section,
-                    ingredients: section.ingredients.map(
-                        (ingredient, index) =>
-                            index === ingredientIndex
-                                ? updatedIngredient
-                                : ingredient
-                    )
-                })
-            )
-        }))
+        setEditedRecipe((current) => {
+            const updatedRecipe = {
+                ...current,
+                ingredientSections: updateNestedSection(
+                    current.ingredientSections,
+                    sectionPath,
+                    (section) => ({
+                        ...section,
+                        ingredients: section.ingredients.map(
+                            (ingredient, index) =>
+                                index === ingredientIndex
+                                    ? updatedIngredient
+                                    : ingredient
+                        )
+                    })
+                )
+            }
+
+            updateIngredientValidation(updatedRecipe)
+
+            return updatedRecipe
+        })
     }
     const removeSectionIngredient = (
         sectionPath,
         ingredientIndex
     ) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            ingredientSections: updateNestedSection(
-                current.ingredientSections,
-                sectionPath,
-                (section) => ({
-                    ...section,
-                    ingredients: section.ingredients.filter(
-                        (_, index) => index !== ingredientIndex
-                    )
-                })
-            )
-        }))
+        setEditedRecipe((current) => {
+            const updatedRecipe = {
+                ...current,
+                ingredientSections: updateNestedSection(
+                    current.ingredientSections,
+                    sectionPath,
+                    (section) => ({
+                        ...section,
+                        ingredients: section.ingredients.filter(
+                            (_, index) => index !== ingredientIndex
+                        )
+                    })
+                )
+            }
+
+            updateIngredientValidation(updatedRecipe)
+
+            return updatedRecipe
+        })
     }
     const addSectionIngredient = (sectionPath) => {
         setEditedRecipe((current) => ({
@@ -331,22 +360,35 @@ function RecipeReview ({ recipe, onBack, onSave }) {
         stepIndex,
         updatedStep
     ) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            instructionSections: updateNestedSection(
-                current.instructionSections,
-                sectionPath,
-                (section) => ({
-                    ...section,
-                    steps: section.steps.map(
-                        (step, index) =>
-                            index === stepIndex
-                                ? updatedStep
-                                : step
-                    )
+        setEditedRecipe((current) => {
+            const updatedRecipe = {
+                ...current,
+                instructionSections: updateNestedSection(
+                    current.instructionSections,
+                    sectionPath,
+                    (section) => ({
+                        ...section,
+                        steps: section.steps.map(
+                            (step, index) =>
+                                index === stepIndex
+                                    ? updatedStep
+                                    : step
+                        )
+                    })
+                )
+            }
+
+            if (!hasMissingInstructions(updatedRecipe)) {
+                setValidationErrors((currentErrors) => {
+                    const {
+                        instructions,
+                        ...remainingErrors
+                    } = currentErrors
                 })
-            )
-        }))
+            }
+
+            return updatedRecipe
+        })
     }
     const removeSectionStep = (
         sectionPath,
@@ -510,6 +552,126 @@ function RecipeReview ({ recipe, onBack, onSave }) {
 
         sections: section.sections.map(buildInstructionSectionRequest),
     })
+    const hasEmptyIngredients = (recipe) => {
+        const hasEmptyIngredient = (ingredients = []) =>
+            ingredients.some(
+                (ingredient) =>
+                    !ingredient.ingredientName?.trim() &&
+                    !ingredient.ingredientId
+            )
+
+        const hasEmptyIngredientInSections = (sections = []) =>
+            sections.some(
+                (section) =>
+                    hasEmptyIngredient(section.ingredients) ||
+                    hasEmptyIngredientInSections(section.sections)
+            )
+
+        return (
+            hasEmptyIngredient(recipe.ingredients) ||
+            hasEmptyIngredientInSections(recipe.ingredientSections)
+        )
+    }
+    const hasMissingInstructions = (recipe) => {
+        const hasEmptyStep = (steps = []) =>
+            steps.some((step) => !step.instruction?.trim())
+
+        const hasEmptyInstructionInSections = (sections = []) =>
+            sections.some(
+                (section) =>
+                    hasEmptyStep(section.steps) ||
+                    hasEmptyInstructionInSections(section.sections)
+            )
+
+        const hasNoInstructions =
+            (recipe.steps ?? []).every(
+                (step) => !step.instruction?.trim()
+            ) &&
+            !(recipe.instructionSections ?? []).some(
+                (section) =>
+                    (section.steps ?? []).some(
+                        (step) => step.instruction?.trim()
+                    ) ||
+                    hasInstructionsInNestedSections(section.sections)
+            )
+
+        return (
+            hasNoInstructions ||
+            hasEmptyStep(recipe.steps) ||
+            hasEmptyInstructionInSections(recipe.instructionSections)
+        )
+    }
+    const hasInstructionsInNestedSections = (sections = []) =>
+        sections.some(
+            (section) =>
+                (section.steps ?? []).some(
+                    (step) => step.instruction?.trim()
+                ) ||
+                hasInstructionsInNestedSections(section.sections)
+        )
+    const updateIngredientValidation = (updatedRecipe) => {
+        if (!hasEmptyIngredients(updatedRecipe)) {
+            setValidationErrors((currentErrors) => {
+                const { ingredients, ...remainingErrors } = currentErrors
+                return remainingErrors
+            })
+        }
+    }
+    const validateRecipe = () => {
+        const errors = {}
+
+        if (!editedRecipe.difficulty) {
+            errors.difficulty = 'Please select a difficulty'
+        }
+
+        if (
+            editedRecipe.servings === '' ||
+            editedRecipe.servings == null ||
+            Number(editedRecipe.servings) < 1
+        ) {
+            errors.servings = 'Please enter at least 1 serving.'
+        }
+
+        if (hasEmptyIngredients(editedRecipe)) {
+            errors.ingredients = 'Please enter a name or remove empty ingredient.'
+        }
+
+        if (hasMissingInstructions(editedRecipe)) {
+            errors.instructions = 'Please complete or remove empty steps.'}
+
+        setValidationErrors(errors)
+
+        if (Object.keys(errors).length > 0) {
+            if (errors.servings) {
+                servingsRef.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                })
+                servingsRef.current?.focus()
+            } else if (errors.difficulty) {
+                difficultyRef.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                })
+                difficultyRef.current?.focus()
+            } else if (errors.ingredients) {
+                ingredientsRef.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                })
+            } else if (errors.instructions) {
+                methodRef.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                })
+            }
+
+            return false
+        }
+
+        return true
+    }
+
     const buildSaveRequest =() => {
         return {
             name: editedRecipe.name,
@@ -562,44 +724,74 @@ function RecipeReview ({ recipe, onBack, onSave }) {
 
                     <div className="recipe-meta">
 {/* //                         {editedRecipe.servings != null && ( */}
+                        <div className="recipe-meta-field-wrapper">
                             <label className="recipe-meta-field">
                                 Serves:
                                 <input
+                                    ref={servingsRef}
                                     type="number"
                                     min="1"
-                                    value={editedRecipe.servings}
-                                    onChange={(event) =>
-                                        updateRecipeField(
-                                            'servings',
-                                            event.target.value === ''
-                                                ? ''
-                                                : Number(event.target.value)
-                                        )
-                                    }
+                                    value={editedRecipe.servings ?? ''}
+                                    onChange={(event) => {
+                                        const value = event.target.value === ''
+                                            ? ''
+                                            : Number(event.target.value)
+
+                                        updateRecipeField('servings', value)
+
+                                        if (value !== '' && Number(value) >= 1) {
+                                            setValidationErrors((currentErrors) => {
+                                                const { servings, ...remainingErrors } = currentErrors
+                                                return remainingErrors
+                                            })
+                                        }
+                                    }}
                                 />
                                 people
                             </label>
-{/*                         )} */}
 
-                        <label className="recipe-meta-field">
-                            Difficulty:
-                            <select
-                                className={!editedRecipe.difficulty ? 'placeholder-selected' : ''}
-                                value={editedRecipe.difficulty ?? ''}
-                                onChange={(event) =>
-                                    updateRecipeField(
-                                        'difficulty',
-                                        event.target.value || null
-                                    )
-                                }
-                            >
-                                <option value="" disabled>Select difficulty</option>
-                                <option value="EASY">Easy</option>
-                                <option value="MEDIUM">Medium</option>
-                                <option value="HARD">Hard</option>
-                                <option value="EXPERT">Expert</option>
-                            </select>
-                        </label>
+                            {validationErrors.servings && (
+                                <p className="form-error">
+                                    {validationErrors.servings}
+                                </p>
+                            )}
+{/*                         )} */}
+                        </div>
+
+                        <div className="recipe-meta-field-wrapper">
+                            <label className="recipe-meta-field">
+                                Difficulty:
+                                <select
+                                    ref={difficultyRef}
+                                    className={!editedRecipe.difficulty ? 'placeholder-selected' : ''}
+                                    value={editedRecipe.difficulty ?? ''}
+                                    onChange={(event) => {
+                                        const value = event.target.value || null
+
+                                        updateRecipeField('difficulty', value)
+
+                                        if (value) {
+                                            setValidationErrors((currentErrors) => {
+                                                const { difficulty, ...remainingErrors } = currentErrors
+                                                return remainingErrors
+                                            })
+                                        }
+                                    }}
+                                >
+                                    <option value="" disabled>Select difficulty</option>
+                                    <option value="EASY">Easy</option>
+                                    <option value="MEDIUM">Medium</option>
+                                    <option value="HARD">Hard</option>
+                                    <option value="EXPERT">Expert</option>
+                                </select>
+                            </label>
+
+                            {validationErrors.difficulty && (
+                                <p className="form-error">
+                                    {validationErrors.difficulty}
+                                </p>
+                            )}
+                        </div>
 
                         <TimeEditor
                             label="Prep:"
@@ -660,8 +852,14 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                     </div>
                 </section>
 
-                <section className="recipe-section">
+                <section className="recipe-section" ref={ingredientsRef}>
                     <h2>Ingredients</h2>
+
+                    {validationErrors.ingredients && (
+                        <p className="form-error">
+                            {validationErrors.ingredients}
+                        </p>
+                    )}
 
                     <div className="recipe-section-actions">
                         <button
@@ -723,6 +921,12 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                 <section className="recipe-section">
                     <h2>Method</h2>
 
+                    {validationErrors.instructions && (
+                        <p className="form-error">
+                            {validationErrors.instructions}
+                        </p>
+                    )}
+
                     <div className="instruction-actions">
                         <button
                             type="button"
@@ -747,17 +951,32 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                                 key={step.id}
                                 step={step}
                                 stepNumber={index + 1}
-                                onChange={(updatedStep) =>
-                                    setEditedRecipe((current) => ({
-                                        ...current,
-                                        steps: current.steps.map(
-                                            (currentStep, stepIndex) =>
-                                                stepIndex === index
-                                                ? updatedStep
-                                                : currentStep
-                                        )
-                                    }))
-                                }
+                                onChange={(updatedStep) => {
+                                    setEditedRecipe((current) => {
+                                        const updatedRecipe = {
+                                            ...current,
+                                            steps: current.steps.map(
+                                                (currentStep, stepIndex) =>
+                                                    stepIndex === index
+                                                        ? updatedStep
+                                                        : currentStep
+                                            )
+                                        }
+
+                                        if (!hasMissingInstructions(updatedRecipe)) {
+                                            setValidationErrors((currentErrors) => {
+                                                const {
+                                                    instructions,
+                                                    ...remainingErrors
+                                                } = currentErrors
+
+                                                return remainingErrors
+                                            })
+                                        }
+
+                                        return updatedRecipe
+                                    })
+                                }}
 
                                 onRemove={() =>
                                     setEditedRecipe((current) => ({
@@ -886,7 +1105,13 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                         Back
                     </button>
 
-                    <button onClick={() => onSave(buildSaveRequest())}>
+                    <button
+                        onClick={() => {
+                            if (validateRecipe()) {
+                                onSave(buildSaveRequest())
+                            }
+                        }}
+                    >
                         Save Recipe
                     </button>
                 </div>

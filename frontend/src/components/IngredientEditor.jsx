@@ -11,6 +11,7 @@ function IngredientEditor({
 }) {
     const [creatingIngredient, setCreatingIngredient] = useState(false)
     const [newIngredientName, setNewIngredientName] = useState('')
+    const [ingredientError, setIngredientError] = useState('')
     const [creatingCategory, setCreatingCategory] = useState(false)
     const [newCategoryName, setNewCategoryName] = useState('')
     const [categoryError, setCategoryError] = useState('')
@@ -153,9 +154,16 @@ function IngredientEditor({
                         type="text"
                         className="new-ingredient-name"
                         value={newIngredientName}
-                        onChange={(event) => setNewIngredientName(event.target.value)}
+                        onChange={(event) => {
+                            setNewIngredientName(event.target.value)
+                            setIngredientError('')
+                        }}
                         placeholder="Ingredient name"
                     />
+
+                    {ingredientError && (
+                        <p className="form-error ingredient-error">{ingredientError}</p>
+                    )}
 
                     <select
                         className={
@@ -164,12 +172,13 @@ function IngredientEditor({
                                 : ''
                         }
                         value={ingredient.defaultUnit ?? ingredient.unit ?? ''}
-                        onChange={(event) =>
+                        onChange={(event) => {
                             updateField(
                                 'defaultUnit',
                                 event.target.value || null
                             )
-                        }
+                            setIngredientError('')
+                        }}
                     >
                         <option value="" disabled>Default Unit</option>
                         <option value="G">g</option>
@@ -205,6 +214,7 @@ function IngredientEditor({
                                 'ingredientCategoryId',
                                 value ? Number(value) : null
                             )
+                            setIngredientError('')
                         }}
                     >
                         <option value="" disabled>Ingredient category</option>
@@ -268,10 +278,34 @@ function IngredientEditor({
                                             })
 
                                             if (!response.ok) {
+                                                if (response.status >= 500) {
+                                                    throw new Error(
+                                                        `Something went wrong while creating the category. Please try
+                                                         again.`
+                                                    )
+                                                }
+
                                                 const errorText = await response.text()
-                                                throw new Error(
-                                                    errorText || `Failed to create category (${response.status})`
-                                                )
+
+                                                try {
+                                                    const errorData = JSON.parse(errorText)
+
+                                                    throw new Error(
+                                                        errorData.message ||
+                                                        errorData.detail ||
+                                                        errorData.title ||
+                                                        `Could not create category (${response.status}). Please check
+                                                         the details.`
+                                                    )
+                                                } catch (error) {
+                                                    if (error instanceof SyntaxError) {
+                                                        throw new Error(
+                                                            errorText || `Failed to create category (${response.status})`
+                                                        )
+                                                    }
+
+                                                    throw error
+                                                }
                                             }
 
                                             const createdCategory = await response.json()
@@ -304,6 +338,25 @@ function IngredientEditor({
                         type="button"
                         className="create-ingredient-button"
                         onClick={async () => {
+                            const name = newIngredientName.trim()
+
+                            if (!name) {
+                                setIngredientError('Please enter an ingredient name.')
+                                return
+                            }
+
+                            const defaultUnit = ingredient.defaultUnit ?? ingredient.unit
+
+                            if (!defaultUnit) {
+                                setIngredientError('Please select a default unit.')
+                                return
+                            }
+
+                            if (!ingredient.ingredientCategoryId) {
+                                setIngredientError('Please select or create an ingredient category.')
+                                return
+                            }
+
                             try {
                                 const response = await fetch('/api/ingredients', {
                                     method: 'POST',
@@ -311,17 +364,40 @@ function IngredientEditor({
                                         'Content-Type': 'application/json',
                                     },
                                     body: JSON.stringify({
-                                        name: newIngredientName.trim(),
-                                        defaultUnit: ingredient.defaultUnit ?? ingredient.unit,
+                                        name,
+                                        defaultUnit,
                                         ingredientCategoryId: ingredient.ingredientCategoryId
                                     }),
                                 })
 
                                 if (!response.ok) {
+                                    if (response.status >= 500) {
+                                        throw new Error(
+                                            'Something went wrong while creating the ingredient. Please try again.'
+                                        )
+                                    }
+
                                     const errorText = await response.text()
-                                    throw new Error(
-                                        errorText || `Failed to create ingredient (${response.status})`
-                                    )
+
+                                    try {
+                                        const errorData = JSON.parse(errorText)
+
+                                        throw new Error(
+                                            errorData.message ||
+                                            errorData.detail ||
+                                            errorData.title ||
+                                            `Could not create ingredient (${response.status}). Please check the
+                                            details.`
+                                        )
+                                    } catch (error) {
+                                        if (error instanceof SyntaxError) {
+                                            throw new Error(
+                                                errorText || `Could not create ingredient (${response.status}).`
+                                            )
+                                        }
+
+                                        throw error
+                                    }
                                 }
 
                                 const createdIngredient = await response.json()
@@ -332,6 +408,7 @@ function IngredientEditor({
 
                             } catch (error) {
                                 console.error('Failed to create ingredient:', error)
+                                setIngredientError(error.message || 'Failed to create ingredient.')
                             }
                         }}
                     >
