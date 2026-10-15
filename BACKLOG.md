@@ -243,9 +243,12 @@ Relationships:
     - [ ] Import from a photo
     - [x] Edit a recipe
       - [x] Reorder steps
+      - [ ] Reorder ingredients
       - [x] When adding a section add an ingredient/step (no empty sections)
-      - [ ] Error messages
-      - [ ] Add a new recipe category
+      - [x] Error messages
+      - [x] Add a new recipe category
+        - [ ] Require recipe category
+      - [ ] Update UI for recipe categories
       - [ ] Success messages
       - [ ] Add a photo
       - [ ] Add source URL
@@ -256,6 +259,10 @@ Relationships:
       - [ ] Cook mode - keep screen on
     - [ ] Filter recipes
     - [ ] Search for recipes
+    - [ ] Delete categories
+    - [ ] Edit categories?
+    - [ ] Delete a recipe
+    - [ ] Use icons
   - [ ] MealPlan
   - [ ] ShoppingList
   - [ ] Dining Eats

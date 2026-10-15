@@ -26,11 +26,13 @@
 .home {
     display: flex;
     justify-content: center;
+    align-items: flex-start;
     gap: 20px;
     padding: 40px 20px;
+    flex-wrap: wrap;
 }
 
-.home button {
+.home button:not(.home-action-card) {
     padding: 15px 30px;
     border: none;
     border-radius: 8px;
@@ -40,8 +42,54 @@
     font-weight: bold;
 }
 
-.home button:hover {
+.home button:not(.home-action-card):hover {
     background: #ead77d;
+}
+
+.home-actions {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 20px;
+    width: 100%;
+}
+
+.home-action-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 160px;
+    min-height: 130px;
+    padding: 18px;
+    box-sizing: border-box;
+    border: 1px solid #f0df98;
+    border-radius: 14px;
+    background-color: #f8e6a0;
+    color: #51472c;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.home-action-card:hover {
+    background-color: #f5e091;
+    box-shadow: 0 4px 12px rgba(81, 71, 44, 0.08);
+    transform: translateY(-2px);
+}
+
+.home-action-card:focus-visible {
+    outline: 2px solid #56664b;
+    outline-offset: 3px;
+}
+
+.home-action-icon {
+    font-size: 28px;
+    line-height: 1;
+    font-weight: 400;
 }
 
 .recipe-review {
@@ -742,4 +790,44 @@
     margin: 0.5rem 0;
     border-radius: 999px;
     background: #b5a46a;
+}
+
+.save-notification {
+    display: flex;
+    flex: 0 0 100%;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+    padding: 14px 16px;
+    background-color: #edf2e8;
+    box-sizing: border-box;
+    border: 1px solid #cbd8bd;
+    border-radius: 10px;
+    color: #3f5638;
+}
+
+.save-notification-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: #d5e2ca;
+    font-weight: bold;
+}
+
+.save-notification p {
+    flex: 1;
+    margin: 0;
+}
+
+.save-notification-close {
+    padding: 2px 6px;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font-size: 22px;
+    cursor: pointer;
 }

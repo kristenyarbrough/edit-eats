@@ -6,6 +6,7 @@ function App() {
     const [showImport, setShowImport] = useState(false)
     const [recipeText, setRecipeText] = useState('')
     const [recipe, setRecipe] = useState(null)
+    const [saveMessage, setSaveMessage] = useState('')
     const handleImport = async () => {
         try {
             const response = await fetch(
@@ -31,6 +32,8 @@ function App() {
         }
     }
     const handleSave = async (recipeToSave) => {
+        setSaveMessage('')
+
         try {
             console.log('Recipe save request:', JSON.stringify(recipeToSave, null, 2))
 
@@ -52,9 +55,14 @@ function App() {
             const data = await response.json()
 
             console.log('Recipe saved:', data)
+            setSaveMessage(`Recipe "${data.name}" saved successfully.`)
+            setRecipe(null)
+            setRecipeText('')
+            setShowImport(false)
 
         } catch (error) {
             console.error('Recipe save failed:', error)
+            setSaveMessage(`Failed to save recipe: ${error.message}`)
         }
     }
 
@@ -74,13 +82,22 @@ function App() {
             <main className="home">
                 {!showImport ? (
                     <>
-                        <button onClick={() => setShowImport(true)}>
-                            Import Recipe
-                        </button>
+                        <div className="home-actions">
+                            <button
+                                className="home-action-card"
+                                onClick={() => setShowImport(true)}
+                            >
+    {/*                             <icon name="plus" /> */}
+                                <span className="home-action-icon" aria-hidden="true">+</span>
+                                <span>Import Recipe</span>
+                            </button>
 
-                        <button>
-                            My Recipes
-                        </button>
+                            <button className="home-action-card">
+    {/*                             <icon name="book-open" /> */}
+                                <span className="home-action-icon" aria-hidden="true">▤</span>
+                                <span>My Recipes</span>
+                            </button>
+                        </div>
                     </>
                 ) : (
                     <div>
@@ -110,6 +127,21 @@ function App() {
                         onBack={() => setRecipe(null)}
                         onSave={handleSave}
                     />
+                )}
+                {saveMessage && (
+                    <div className="save-notification" role="status">
+                        <span className="save-notification-icon" aria-hidden="true">
+                            ✓
+                        </span>
+                        <p>{saveMessage}</p>
+                        <button
+                            className="save-notification-close"
+                            onClick={() => setSaveMessage('')}
+                            aria-label="Dismiss notification"
+                        >
+                            ×
+                        </button>
+                    </div>
                 )}
             </main>
         </div>
