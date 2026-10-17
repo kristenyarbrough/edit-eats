@@ -860,6 +860,45 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                 </div>
 
                 <section className="recipe-section">
+                    <h2>Recipe Image & Source</h2>
+
+                    <div className="recipe-meta-field-wrapper">
+                        <label className="recipe-meta-field">
+                            Image URL:
+                            <input
+                                type="url"
+                                value={editedRecipe.imageUrl ?? ''}
+                                onChange={(event) =>
+                                    updateRecipeField('imageUrl', event.target.value)
+                                }
+                                placeholder="https://example.com/recipe-image.jpg"
+                            />
+                        </label>
+                        {editedRecipe.imageUrl && (
+                            <img
+                                className="recipe-review-image-preview"
+                                src={editedRecipe.imageUrl}
+                                alt={`Preview of ${editedRecipe.name}`}
+                            />
+                        )}
+                    </div>
+
+                    <div className="recipe-meta-field-wrapper">
+                        <label className="recipe-meta-field">
+                            Source URL:
+                            <input
+                                type="url"
+                                value={editedRecipe.sourceUrl ?? ''}
+                                onChange={(event) =>
+                                    updateRecipeField('sourceUrl', event.target.value)
+                                }
+                                placeholder="https://example.com/original-recipe"
+                            />
+                        </label>
+                    </div>
+                </section>
+
+                <section className="recipe-section">
                     <h2>Categories</h2>
 
                     <button

@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import './App.css'
 import RecipeReview from './components/RecipeReview'
+import RecipeView from './components/RecipeView'
 
 function App() {
     const [showImport, setShowImport] = useState(false)
     const [recipeText, setRecipeText] = useState('')
     const [recipe, setRecipe] = useState(null)
     const [saveMessage, setSaveMessage] = useState('')
+    const [savedRecipe, setSavedRecipe] = useState(null)
     const handleImport = async () => {
         try {
             const response = await fetch(
@@ -53,12 +55,24 @@ function App() {
             }
 
             const data = await response.json()
-
             console.log('Recipe saved:', data)
+
+            const savedResponse = await fetch(`/api/recipes/${data.id}`)
+
+            if (!savedResponse.ok) {
+                throw new Error(`Recipe saved, but failed to load it (${savedResponse.status})`)
+            }
+
+            const savedData = await savedResponse.json()
+            console.log('Saved recipe loaded:', savedData)
+
+            setSavedRecipe(savedData)
+            console.log('savedRecipe set to:', savedData)
             setSaveMessage(`Recipe "${data.name}" saved successfully.`)
             setRecipe(null)
             setRecipeText('')
             setShowImport(false)
+            console.log('handleSave completed')
 
         } catch (error) {
             console.error('Recipe save failed:', error)
@@ -66,39 +80,75 @@ function App() {
         }
     }
 
+    console.log('APP RENDER CHECK - savedRecipe:', savedRecipe)
     return (
 
         <div className="app">
-            <header className="header">
-                <img
-                    src="/edit-eats-logo.svg"
-                    alt="Edit Eats"
-                    className="logo"
-                />
-{/*                 <h1>Edit Eats</h1> */}
-                <p>Your recipes, organised your way.</p>
-            </header>
+            {savedRecipe ? (
+                <header className="app-recipe-header">
+                    <img
+                        src="/edit-eats-logo.svg"
+                        alt="Edit Eats"
+                        className="logo"
+                    />
+    {/*                 <h1>Edit Eats</h1> */}
+                    <p>Your recipes, organised your way.</p>
+                </header>
+            ) : (
+                <header className="header">
+                    <img
+                        src="/edit-eats-logo.svg"
+                        alt="Edit Eats"
+                        className="logo"
+                    />
+                    <p>Your recipes, organised your way.</p>
+                </header>
+            )}
 
             <main className="home">
-                {!showImport ? (
-                    <>
-                        <div className="home-actions">
-                            <button
-                                className="home-action-card"
-                                onClick={() => setShowImport(true)}
-                            >
-    {/*                             <icon name="plus" /> */}
-                                <span className="home-action-icon" aria-hidden="true">+</span>
-                                <span>Import Recipe</span>
-                            </button>
+                {saveMessage && (
+                    <div className="save-notification" role="status">
+                        <span className="save-notification-icon" aria-hidden="true">
+                            ✓
+                        </span>
+                        <p>{saveMessage}</p>
+                        <button
+                            className="save-notification-close"
+                            onClick={() => setSaveMessage('')}
+                            aria-label="Dismiss notification"
+                        >
+                            ×
+                        </button>
+                    </div>
+                )}
+                {savedRecipe ? (
+                    <RecipeView
+                        recipe={savedRecipe}
+                        onBack={() => setSavedRecipe(null)}
+                    />
+                ) : recipe ? (
+                    <RecipeReview
+                        recipe={recipe}
+                        onBack={() => setRecipe(null)}
+                        onSave={handleSave}
+                    />
+                ) : !showImport ? (
+                    <div className="home-actions">
+                        <button
+                            className="home-action-card"
+                            onClick={() => setShowImport(true)}
+                        >
+    {/*                         <icon name="plus" /> */}
+                            <span className="home-action-icon" aria-hidden="true">+</span>
+                            <span>Import Recipe</span>
+                        </button>
 
-                            <button className="home-action-card">
-    {/*                             <icon name="book-open" /> */}
-                                <span className="home-action-icon" aria-hidden="true">▤</span>
-                                <span>My Recipes</span>
-                            </button>
-                        </div>
-                    </>
+                        <button className="home-action-card">
+    {/*                         <icon name="book-open" /> */}
+                            <span className="home-action-icon" aria-hidden="true">▤</span>
+                            <span>My Recipes</span>
+                        </button>
+                    </div>
                 ) : (
                     <div>
                         <h2>Import Recipe</h2>
@@ -119,28 +169,6 @@ function App() {
                                 Import
                             </button>
                         </div>
-                    </div>
-                )}
-                {recipe && (
-                    <RecipeReview
-                        recipe={recipe}
-                        onBack={() => setRecipe(null)}
-                        onSave={handleSave}
-                    />
-                )}
-                {saveMessage && (
-                    <div className="save-notification" role="status">
-                        <span className="save-notification-icon" aria-hidden="true">
-                            ✓
-                        </span>
-                        <p>{saveMessage}</p>
-                        <button
-                            className="save-notification-close"
-                            onClick={() => setSaveMessage('')}
-                            aria-label="Dismiss notification"
-                        >
-                            ×
-                        </button>
                     </div>
                 )}
             </main>
