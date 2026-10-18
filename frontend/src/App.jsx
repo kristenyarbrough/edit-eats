@@ -2,6 +2,7 @@ import { useState } from 'react'
 import './App.css'
 import RecipeReview from './components/RecipeReview'
 import RecipeView from './components/RecipeView'
+import RecipeCardImage from './components/RecipeCardImage'
 
 function App() {
     const [showImport, setShowImport] = useState(false)
@@ -225,44 +226,10 @@ function App() {
                                                 }
                                             }}
                                         >
-                                            {item.imageUrl ? (
-                                                <img
-                                                    src={item.imageUrl}
-                                                    alt={item.name}
-                                                    className="recipe-card-image"
-                                                    onError={(event) => {
-                                                        const placeholder = document.createElement('div')
-                                                        placeholder.className = 'recipe-card-image-placeholder'
-
-                                                        const logo = document.createElement('img')
-                                                        logo.src = '/edit-eats-logo-without-name.svg'
-                                                        logo.alt = ''
-                                                        logo.className = 'recipe-card-placeholder-logo'
-
-                                                        const name = document.createElement('span')
-                                                        name.className = 'recipe-card-placeholder-name'
-                                                        name.textContent = 'EDIT EATS'
-
-                                                        placeholder.append(logo, name)
-                                                        event.currentTarget.replaceWith(placeholder)
-                                                    }}
-                                                />
-                                            ) : (
-                                                <div
-                                                    className="recipe-card-image-placeholder"
-                                                    aria-hidden="true"
-                                                >
-                                                    <img
-                                                        src="/edit-eats-logo-without-name.svg"
-                                                        alt=""
-                                                        className="recipe-card-placeholder-logo"
-                                                    />
-                                                    <span className="recipe-card-placeholder-name">
-                                                        EDIT EATS
-                                                    </span>
-                                                </div>
-                                            )}
-
+                                            <RecipeCardImage
+                                                imageUrl={item.imageUrl}
+                                                recipeName={item.name}
+                                            />
                                             <div className="recipe-card-content">
                                                 <h3>{item.name}</h3>
 
