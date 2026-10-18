@@ -9,6 +9,10 @@ function App() {
     const [recipe, setRecipe] = useState(null)
     const [saveMessage, setSaveMessage] = useState('')
     const [savedRecipe, setSavedRecipe] = useState(null)
+    const [showMyRecipes, setShowMyRecipes] = useState(false)
+    const [myRecipes, setMyRecipes] = useState([])
+    const [myRecipesError, setMyRecipesError] = useState('')
+    const [returnToMyRecipes, setReturnToMyRecipes] = useState(false)
     const handleImport = async () => {
         try {
             const response = await fetch(
@@ -66,6 +70,7 @@ function App() {
             const savedData = await savedResponse.json()
             console.log('Saved recipe loaded:', savedData)
 
+            setReturnToMyRecipes(true)
             setSavedRecipe(savedData)
             console.log('savedRecipe set to:', savedData)
             setSaveMessage(`Recipe "${data.name}" saved successfully.`)
@@ -79,8 +84,52 @@ function App() {
             setSaveMessage(`Failed to save recipe: ${error.message}`)
         }
     }
+    const handleShowMyRecipes = async () => {
+        try {
+            const response = await fetch('/api/recipes')
 
-    console.log('APP RENDER CHECK - savedRecipe:', savedRecipe)
+            if (!response.ok) {
+                throw new Error(`Failed to load recipes (${response.status})`)
+            }
+
+            const data = await response.json()
+            console.log('Recipes loaded:', data)
+
+            setMyRecipes(data)
+            setShowMyRecipes(true)
+        } catch (error) {
+            console.error('Error loading recipes:', error)
+            setMyRecipesError(error.message)
+            setShowMyRecipes(true)
+        }
+    }
+    const handleDeleteRecipe = async (recipeId, recipeName) => {
+        const confirmed = window.confirm(
+            `Are you sure you want to delete "${recipeName}"?`
+        )
+
+        if (!confirmed) {
+            return
+        }
+
+        try {
+            const response = await fetch(`/api/recipes/${recipeId}`, {
+                method: 'DELETE'
+            })
+
+            if (!response.ok) {
+                throw new Error('Failed to delete recipe')
+            }
+
+            setMyRecipes((currentRecipes) =>
+                currentRecipes.filter((item) => item.id !== recipeId)
+            )
+        } catch (error) {
+            console.error('Error deleting recipe:', error)
+            setMyRecipesError(`Couldn't delete "${recipeName}". Please try again.`)
+        }
+    }
+
     return (
 
         <div className="app">
@@ -105,27 +154,155 @@ function App() {
                 </header>
             )}
 
+            {saveMessage && (
+                <div className="save-notification" role="status">
+                    <span className="save-notification-icon" aria-hidden="true">
+                        ✓
+                    </span>
+                    <p>{saveMessage}</p>
+                    <button
+                        className="save-notification-close"
+                        onClick={() => setSaveMessage('')}
+                        aria-label="Dismiss notification"
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
             <main className="home">
-                {saveMessage && (
-                    <div className="save-notification" role="status">
-                        <span className="save-notification-icon" aria-hidden="true">
-                            ✓
-                        </span>
-                        <p>{saveMessage}</p>
-                        <button
-                            className="save-notification-close"
-                            onClick={() => setSaveMessage('')}
-                            aria-label="Dismiss notification"
-                        >
-                            ×
-                        </button>
-                    </div>
-                )}
+
                 {savedRecipe ? (
                     <RecipeView
                         recipe={savedRecipe}
-                        onBack={() => setSavedRecipe(null)}
+                        onBack={() => {
+                            setSavedRecipe(null)
+                            setShowMyRecipes(returnToMyRecipes)
+                            setReturnToMyRecipes(false)}}
                     />
+                ) : showMyRecipes ? (
+                    <div className="my-recipes-section">
+                        <h2>My Recipes</h2>
+
+                        {myRecipesError && (
+                            <p role="alert">{myRecipesError}</p>
+                        )}
+
+                        <button
+                            className="back-button"
+                            onClick={() => setShowMyRecipes(false)}
+                        >
+                            ← Back
+                        </button>
+
+                        {myRecipes.length === 0 ? (
+                            <p>You don't have any recipes yet.</p>
+                        ) : (
+                            <div className="recipe-list">
+                                {myRecipes.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        className="recipe-list-card"
+                                    >
+                                        <button
+                                            type="button"
+                                            className="recipe-card-open"
+                                            onClick={async () => {
+                                                try {
+                                                    const response = await fetch(
+                                                        `/api/recipes/${item.id}`
+                                                    )
+
+                                                    if (!response.ok) {
+                                                        throw new Error('Failed to load recipe')
+                                                    }
+
+                                                    const data = await response.json()
+                                                    setReturnToMyRecipes(true)
+                                                    setSavedRecipe(data)
+                                                    setShowMyRecipes(false)
+                                                } catch (error) {
+                                                    console.error('Error loading recipe:', error)
+                                                }
+                                            }}
+                                        >
+                                            {item.imageUrl ? (
+                                                <img
+                                                    src={item.imageUrl}
+                                                    alt={item.name}
+                                                    className="recipe-card-image"
+                                                    onError={(event) => {
+                                                        const placeholder = document.createElement('div')
+                                                        placeholder.className = 'recipe-card-image-placeholder'
+
+                                                        const logo = document.createElement('img')
+                                                        logo.src = '/edit-eats-logo-without-name.svg'
+                                                        logo.alt = ''
+                                                        logo.className = 'recipe-card-placeholder-logo'
+
+                                                        const name = document.createElement('span')
+                                                        name.className = 'recipe-card-placeholder-name'
+                                                        name.textContent = 'EDIT EATS'
+
+                                                        placeholder.append(logo, name)
+                                                        event.currentTarget.replaceWith(placeholder)
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div
+                                                    className="recipe-card-image-placeholder"
+                                                    aria-hidden="true"
+                                                >
+                                                    <img
+                                                        src="/edit-eats-logo-without-name.svg"
+                                                        alt=""
+                                                        className="recipe-card-placeholder-logo"
+                                                    />
+                                                    <span className="recipe-card-placeholder-name">
+                                                        EDIT EATS
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            <div className="recipe-card-content">
+                                                <h3>{item.name}</h3>
+
+                                                <div className="recipe-card-details">
+                                                    {item.formattedTotalTime && (
+                                                        <span>⏱ {item.formattedTotalTime}</span>
+                                                    )}
+
+                                                    {item.servings != null && (
+                                                        <span>Serves {item.servings}</span>
+                                                    )}
+
+                                                    {item.difficulty && (
+                                                        <span>{item.difficulty}</span>
+                                                    )}
+                                                </div>
+
+                                                {item.categories?.length > 0 && (
+                                                    <div className="recipe-card-categories">
+                                                        {item.categories.map((category) => (
+                                                            <span key={category.id} className="recipe-category">
+                                                                {category.name}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="delete-recipe-button"
+                                            onClick={(event) => handleDeleteRecipe(item.id, item.name)}
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 ) : recipe ? (
                     <RecipeReview
                         recipe={recipe}
@@ -143,7 +320,10 @@ function App() {
                             <span>Import Recipe</span>
                         </button>
 
-                        <button className="home-action-card">
+                        <button
+                            className="home-action-card"
+                            onClick={handleShowMyRecipes}
+                        >
     {/*                         <icon name="book-open" /> */}
                             <span className="home-action-icon" aria-hidden="true">▤</span>
                             <span>My Recipes</span>

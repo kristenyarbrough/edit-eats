@@ -1283,7 +1283,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
 
                 <div className="recipe-review-actions">
                     <button onClick={onBack}>
-                        Back
+                        ← Back
                     </button>
 
                     <button

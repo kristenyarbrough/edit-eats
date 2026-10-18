@@ -117,6 +117,9 @@ function RecipeView({ recipe, onBack }) {
                     className="recipe-view-image"
                     src={recipe.imageUrl}
                     alt={recipe.name}
+                    onError={(event) => {
+                        event.currentTarget.style.display = 'none'
+                    }}
                 />
             )}
 

@@ -240,22 +240,22 @@ Relationships:
     - [x] Import a text recipe
     - [ ] Import a recipe from URL
     - [ ] Add a recipe from scratch
-    - [ ] Import from a photo
+    - [ ] Import from an image of a recipe (e.g. cookbook)
     - [x] Edit a recipe
       - [x] Reorder steps
       - [ ] Reorder ingredients
       - [x] When adding a section add an ingredient/step (no empty sections)
       - [x] Error messages
       - [x] Add a new recipe category
-        - [ ] Require recipe category
-      - [ ] Update UI for recipe categories
-      - [ ] Success messages
-      - [ ] Add a photo
-      - [ ] Add source URL
-    - [ ] Save a recipe
+        - [ ] Require recipe category?
+      - [x] Update UI for recipe categories
+      - [x] Success messages
+      - [x] Add a photo
+      - [x] Add source URL
+    - [x] Save a recipe
     - [ ] Display recipes
-      - [ ] Ingredient checkboxes
-      - [ ] Strike out ingredients and method steps when completed
+      - [x] Ingredient checkboxes
+      - [x] Strike out ingredients and method steps when completed
       - [ ] Cook mode - keep screen on
     - [ ] Filter recipes
     - [ ] Search for recipes

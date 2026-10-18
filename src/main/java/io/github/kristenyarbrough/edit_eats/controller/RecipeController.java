@@ -1,17 +1,19 @@
 package io.github.kristenyarbrough.edit_eats.controller;
 
 import io.github.kristenyarbrough.edit_eats.domain.Recipe;
-import io.github.kristenyarbrough.edit_eats.dto.imported.ImportedRecipe;
 import io.github.kristenyarbrough.edit_eats.dto.request.CreateRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.request.UpdateRecipeRequest;
 import io.github.kristenyarbrough.edit_eats.dto.response.RecipeDraftResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.RecipeResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.RecipeSummaryResponse;
 import io.github.kristenyarbrough.edit_eats.service.RecipeImportService;
 import io.github.kristenyarbrough.edit_eats.service.RecipeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/recipes")
@@ -58,6 +60,12 @@ public class RecipeController {
 
         return recipeImportService.importRecipeDraftFromText(text);
 
+    }
+
+    @GetMapping
+    public List<RecipeSummaryResponse> findRecipes(
+            @RequestParam(defaultValue = "") String name) {
+        return recipeService.findRecipeSummaries(name);
     }
 
 //    @GetMapping
