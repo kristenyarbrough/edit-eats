@@ -1245,6 +1245,42 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                     ))}
                 </section>
 
+                <section className="recipe-section">
+                    <h2>Storage & Freezing</h2>
+
+                    <div className="recipe-meta-field-wrapper">
+                        <label>
+                            Storage Instructions:
+                            <div className="textarea-wrapper">
+                                <textarea
+                                    value={editedRecipe.storageInstructions ?? ''}
+                                    onChange={(event) =>
+                                        updateRecipeField('storageInstructions', event.target.value)
+                                    }
+                                    placeholder="Are there any storage instructions?"
+                                    rows={3}
+                                />
+                            </div>
+                        </label>
+                    </div>
+
+                    <div className="recipe-meta-field-wrapper">
+                        <label>
+                            Freezer Instructions:
+                            <div className="textarea-wrapper">
+                                <textarea
+                                    value={editedRecipe.freezerInstructions ?? ''}
+                                    onChange={(event) =>
+                                        updateRecipeField('freezerInstructions', event.target.value)
+                                    }
+                                    placeholder="Are there any instructions for freezing and thawing?"
+                                    rows={3}
+                                />
+                            </div>
+                        </label>
+                    </div>
+                </section>
+
                 <div className="recipe-review-actions">
                     <button onClick={onBack}>
                         Back

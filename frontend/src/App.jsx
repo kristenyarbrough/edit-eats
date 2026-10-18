@@ -150,15 +150,17 @@ function App() {
                         </button>
                     </div>
                 ) : (
-                    <div>
+                    <div className="import-recipe-section">
                         <h2>Import Recipe</h2>
 
-                        <textarea
-                            placeholder="Paste your recipe here..."
-                            rows="15"
-                            value={recipeText}
-                            onChange={(event) => setRecipeText(event.target.value)}
-                        />
+                        <div className="textarea-wrapper">
+                            <textarea
+                                placeholder="Paste your recipe here..."
+                                rows="15"
+                                value={recipeText}
+                                onChange={(event) => setRecipeText(event.target.value)}
+                            />
+                        </div>
 
                         <div className="import-recipe-actions">
                             <button onClick={() => setShowImport(false)}>
