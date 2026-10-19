@@ -1,4 +1,5 @@
-import{ useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { MoveLeft, Save } from 'lucide-react'
 import {
     updateNestedSection,
     removeNestedSection,
@@ -1283,7 +1284,8 @@ function RecipeReview ({ recipe, onBack, onSave }) {
 
                 <div className="recipe-review-actions">
                     <button onClick={onBack}>
-                        ← Back
+                        <MoveLeft size={20} strokeWidth={1.8} />
+                        Back
                     </button>
 
                     <button
@@ -1295,6 +1297,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             }
                         }}
                     >
+                        <Save size={20} strokeWidth={1.8} />
                         Save Recipe
                     </button>
                 </div>

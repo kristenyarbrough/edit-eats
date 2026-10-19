@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { Plus, BookOpen, X, Import, MoveLeft, Trash, CheckCircle, CircleAlert, Pencil } from 'lucide-react'
 import './App.css'
 import RecipeReview from './components/RecipeReview'
 import RecipeView from './components/RecipeView'
@@ -14,6 +15,15 @@ function App() {
     const [myRecipes, setMyRecipes] = useState([])
     const [myRecipesError, setMyRecipesError] = useState('')
     const [returnToMyRecipes, setReturnToMyRecipes] = useState(false)
+    const [deleteMessage, setDeleteMessage] = useState('')
+    const [deleteError, setDeleteError] = useState('')
+    const [recipeToDelete, setRecipeToDelete] = useState(null)
+    useEffect(() => {
+        console.log(
+            'recipeToDelete:',
+            JSON.stringify(recipeToDelete)
+        )
+    }, [recipeToDelete])
     const handleImport = async () => {
         try {
             const response = await fetch(
@@ -74,7 +84,7 @@ function App() {
             setReturnToMyRecipes(true)
             setSavedRecipe(savedData)
             console.log('savedRecipe set to:', savedData)
-            setSaveMessage(`Recipe "${data.name}" saved successfully.`)
+            setSaveMessage(data.name)
             setRecipe(null)
             setRecipeText('')
             setShowImport(false)
@@ -104,19 +114,30 @@ function App() {
             setShowMyRecipes(true)
         }
     }
-    const handleDeleteRecipe = async (recipeId, recipeName) => {
-        const confirmed = window.confirm(
-            `Are you sure you want to delete "${recipeName}"?`
-        )
+    const handleDeleteRecipe = (recipeId, recipeName) => {
+        console.log('Opening delete dialog for:', recipeId, recipeName)
 
-        if (!confirmed) {
+        setDeleteError('')
+        setDeleteMessage('')
+        setRecipeToDelete({ id: recipeId, name: recipeName})
+    }
+    const confirmDeleteRecipe = async () => {
+//         const confirmed = window.confirm(
+//             `Are you sure you want to delete "${recipeName}"?`
+//         )
+
+        if (!recipeToDelete) {
             return
         }
 
+        const { id, name } = recipeToDelete
+
         try {
-            const response = await fetch(`/api/recipes/${recipeId}`, {
+            const response = await fetch(`/api/recipes/${id}`, {
                 method: 'DELETE'
             })
+//
+//             throw new Error('Test deletion failure')
 
             if (!response.ok) {
                 const errorText = await response.text()
@@ -127,15 +148,20 @@ function App() {
             }
 
             setMyRecipes((currentRecipes) =>
-                currentRecipes.filter((item) => item.id !== recipeId)
+                currentRecipes.filter((item) => item.id !== id)
             )
+
+            setDeleteMessage(name)
+            setDeleteError('')
+            setMyRecipesError('')
         } catch (error) {
             console.error('Error deleting recipe:', error)
-            setMyRecipesError(
-                `Couldn't delete "${recipeName}": ${error.message}`)
+            setDeleteError(name)
+            setMyRecipesError(error.message)
+        } finally {
+            setRecipeToDelete(null)
         }
     }
-
     return (
 
         <div className="app">
@@ -163,9 +189,9 @@ function App() {
             {saveMessage && (
                 <div className="save-notification" role="status">
                     <span className="save-notification-icon" aria-hidden="true">
-                        ✓
+                        <CheckCircle size={20} />
                     </span>
-                    <p>{saveMessage}</p>
+                    <p>Recipe <strong>{saveMessage}</strong> saved successfully.</p>
                     <button
                         className="save-notification-close"
                         onClick={() => setSaveMessage('')}
@@ -189,6 +215,43 @@ function App() {
                     <div className="my-recipes-section">
                         <h2>My Recipes</h2>
 
+                        {deleteMessage && (
+                            <div className="delete-notification" role="status">
+                                <span aria-hidden="true">
+                                    <CheckCircle size={20} />
+                                </span>
+                                <p><strong>{deleteMessage}</strong> was deleted successfully.</p>
+                                <button
+                                    type="button"
+                                    onClick={() => setDeleteMessage('')}
+                                    aria-label="Dismiss notification"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                        )}
+
+                        {deleteError && (
+                            <div className="delete-error-notification" role="alert">
+                                <span aria-hidden="true">
+                                    <CircleAlert size={20} />
+                                </span>
+                                <p>
+                                    <strong>Couldn't delete
+                                    {' '}{deleteError.replace(". Please try again.", "")}</strong>:
+                                    {' '}{myRecipesError}.
+                                    {' '}Please try again.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => setDeleteError('')}
+                                    aria-label="Dismiss error notification"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                        )}
+
                         {myRecipesError && (
                             <p role="alert">{myRecipesError}</p>
                         )}
@@ -197,7 +260,8 @@ function App() {
                             className="back-button"
                             onClick={() => setShowMyRecipes(false)}
                         >
-                            ← Back
+                            <MoveLeft size={20} strokeWidth={1.8} />
+                            Back
                         </button>
 
                         {myRecipes.length === 0 ? (
@@ -266,13 +330,68 @@ function App() {
                                         <button
                                             type="button"
                                             className="delete-recipe-button"
-                                            onClick={(event) => handleDeleteRecipe(item.id, item.name)}
+                                            onClick={(event) => {
+                                                console.log('Delete clicked: ', item.id, item.name)
+                                                handleDeleteRecipe(item.id, item.name)
+                                            }}
                                         >
+                                            <Trash size={20} strokeWidth={1.8} />
                                             Delete
                                         </button>
                                     </div>
                                 ))}
                             </div>
+                        )}
+
+                        {recipeToDelete && (
+                            <>
+                                <p style={{ color: 'red' }}>
+                                    DEBUG: Delete dialog should be open for {recipeToDelete.name}
+                                </p>
+
+                                <div className="delete-dialog-backdrop">
+                                    <div
+                                        className="delete-dialog"
+                                        role="dialog"
+                                        aria-modal="true"
+                                        aria-labelledby="delete-dialog-title"
+                                        aria-describedby="delete-dialog-description"
+                                    >
+                                        <div className="delete-dialog-heading">
+                                            <Trash className="delete-dialog-icon" size={24} />
+                                            <h2 id="delete-dialog-title">Delete recipe?</h2>
+                                        </div>
+
+
+
+                                        <p id="delete-dialog-description">
+                                            Are you sure you want to delete{' '}
+                                            <strong>{recipeToDelete.name}</strong>?
+                                            This action can't be undone.
+                                        </p>
+
+                                        <div className="delete-dialog-actions">
+                                            <button
+                                                type="button"
+                                                className="delete-dialog-cancel"
+                                                onClick={() => setRecipeToDelete(null)}
+                                            >
+                                                <X size={18} strokeWidth={1.8} />
+                                                Cancel
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                className="delete-dialog-confirm"
+                                                onClick={confirmDeleteRecipe}
+                                            >
+                                                <Trash size={18} strokeWidth={1.8} />
+                                                Delete recipe
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </div>
                 ) : recipe ? (
@@ -287,8 +406,9 @@ function App() {
                             className="home-action-card"
                             onClick={() => setShowImport(true)}
                         >
-    {/*                         <icon name="plus" /> */}
-                            <span className="home-action-icon" aria-hidden="true">+</span>
+                            <span className="home-action-icon" aria-hidden="true">
+                                <Import size={24} strokeWidth={1.8} />
+                            </span>
                             <span>Import Recipe</span>
                         </button>
 
@@ -296,8 +416,9 @@ function App() {
                             className="home-action-card"
                             onClick={handleShowMyRecipes}
                         >
-    {/*                         <icon name="book-open" /> */}
-                            <span className="home-action-icon" aria-hidden="true">▤</span>
+                            <span className="home-action-icon" aria-hidden="true">
+                                <BookOpen size={24} strokeWidth={1.8} />
+                            </span>
                             <span>My Recipes</span>
                         </button>
                     </div>
@@ -316,10 +437,12 @@ function App() {
 
                         <div className="import-recipe-actions">
                             <button onClick={() => setShowImport(false)}>
+                                <X size={20} strokeWidth={1.8} />
                                 Cancel
                             </button>
 
                             <button onClick={handleImport}>
+                                <Import size={20} strokeWidth={1.8} />
                                 Import
                             </button>
                         </div>

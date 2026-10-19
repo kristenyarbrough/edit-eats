@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { MoveLeft, Delete } from 'lucide-react'
 import './RecipeView.css'
 import { formatTime } from '../utils/formatTime'
 
@@ -107,7 +108,8 @@ function RecipeView({ recipe, onBack }) {
     return(
         <div className="recipe-view">
             <button className="recipe-back-button" onClick={onBack}>
-                ← Back to recipes
+                <MoveLeft size={20} strokeWidth={1.8} />
+                Back to recipes
             </button>
 
             <h2>{recipe.name}</h2>
