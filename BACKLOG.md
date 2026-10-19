@@ -250,10 +250,11 @@ Relationships:
         - [ ] Require recipe category?
       - [x] Update UI for recipe categories
       - [x] Success messages
-      - [x] Add a photo
+      - [x] Add a photo URL
+        - [ ] Upload/store photo?
       - [x] Add source URL
     - [x] Save a recipe
-    - [ ] Display recipes
+    - [x] Display recipes
       - [x] Ingredient checkboxes
       - [x] Strike out ingredients and method steps when completed
       - [ ] Cook mode - keep screen on

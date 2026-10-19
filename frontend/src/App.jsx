@@ -119,7 +119,11 @@ function App() {
             })
 
             if (!response.ok) {
-                throw new Error('Failed to delete recipe')
+                const errorText = await response.text()
+
+                throw new Error(
+                    errorText || `Failed to delete recipe (${response.status})`
+                )
             }
 
             setMyRecipes((currentRecipes) =>
@@ -127,7 +131,8 @@ function App() {
             )
         } catch (error) {
             console.error('Error deleting recipe:', error)
-            setMyRecipesError(`Couldn't delete "${recipeName}". Please try again.`)
+            setMyRecipesError(
+                `Couldn't delete "${recipeName}": ${error.message}`)
         }
     }
 

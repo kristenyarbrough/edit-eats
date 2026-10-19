@@ -441,6 +441,9 @@ public class RecipeService {
         recipeStepRepository.deleteByRecipeId(id);
         recipeCategoryAssignmentRepository.deleteByRecipeId(id);
 
+        recipeIngredientSectionRepository.deleteByRecipeId(id);
+        recipeInstructionSectionRepository.deleteByRecipeId(id);
+
         recipeRepository.delete(recipe);
 
     }

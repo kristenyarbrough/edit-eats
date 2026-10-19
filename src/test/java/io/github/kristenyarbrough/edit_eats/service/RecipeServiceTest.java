@@ -2420,6 +2420,10 @@ class RecipeServiceTest {
         verify(recipeIngredientRepository).deleteByRecipeId(1L);
         verify(recipeStepRepository).deleteByRecipeId(1L);
         verify(recipeCategoryAssignmentRepository).deleteByRecipeId(1L);
+
+        verify(recipeIngredientSectionRepository).deleteByRecipeId(1L);
+        verify(recipeInstructionSectionRepository).deleteByRecipeId(1L);
+
         verify(recipeRepository).delete(recipe);
 
     }
