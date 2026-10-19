@@ -319,7 +319,10 @@ public class RecipeService {
         recipeIngredientSectionRepository.deleteByRecipeId(id);
 
         recipeStepRepository.deleteByRecipeId(id);
+        recipeStepRepository.flush();
+
         recipeInstructionSectionRepository.deleteByRecipeId(id);
+        recipeInstructionSectionRepository.flush();
 
         // Save top-level ingredients
         for (int i = 0; i < request.getIngredients().size(); i++) {
@@ -406,6 +409,7 @@ public class RecipeService {
         }
 
         recipeCategoryAssignmentRepository.deleteByRecipeId(id);
+        recipeCategoryAssignmentRepository.flush();
 
         for (int i = 0; i < request.getCategories().size(); i++) {
 

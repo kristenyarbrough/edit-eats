@@ -707,6 +707,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
 
     const buildSaveRequest =() => {
         return {
+            id: editedRecipe.id,
             name: editedRecipe.name,
             prepMinutes: editedRecipe.prepMinutes,
             cookMinutes: editedRecipe.cookMinutes,
@@ -736,7 +737,9 @@ function RecipeReview ({ recipe, onBack, onSave }) {
             instructionSections: (editedRecipe.instructionSections ?? []).map(
                 buildInstructionSectionRequest
             ),
-            categories: editedRecipe.categories
+            categories: (editedRecipe.categories ?? []).map((category) => ({
+                recipeCategoryId: category.id
+            }))
         }
     }
 
@@ -1293,6 +1296,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             setHasAttemptedSave(true)
 
                             if (validateRecipe()) {
+                                console.log('Recipe update payload:', JSON.stringify(buildSaveRequest(), null, 2))
                                 onSave(buildSaveRequest())
                             }
                         }}

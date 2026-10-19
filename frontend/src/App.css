@@ -1173,22 +1173,59 @@
     font-size: 0.8rem;
 }
 
-.delete-recipe-button {
+.recipe-card-actions {
     display: flex;
-    align-self: flex-end;
-    margin: 0 16px 16px;
-    gap: 8px;
-    padding: 8px 12px;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 1rem 1rem;
+}
+
+.delete-recipe-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.55rem 0.85rem;
     border: 1px solid #b76a58;
     border-radius: 8px;
     background: transparent;
     color: #8c3e32;
     font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
     cursor: pointer;
 }
 
 .delete-recipe-button:hover {
     background: #f7e8e4;
+}
+
+.edit-recipe-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.55rem 0.85rem;
+    border: 1px solid #9aaa83;
+    border-radius: 8px;
+    background: transparent;
+    color: #46583c;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.edit-recipe-button:hover {
+    background: #edf2e7;
+    color: #758866;
+}
+
+.edit-recipe-button:focus-visible {
+    outline: 3px solid #9aaa83;
+    outline-offset: 3px;
 }
 
 .back-button {
@@ -1236,7 +1273,6 @@
     color: inherit;
     cursor: pointer;
 }
-
 
 .delete-error-notification {
     display: flex;

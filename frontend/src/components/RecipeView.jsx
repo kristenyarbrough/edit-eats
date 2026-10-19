@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MoveLeft, Delete } from 'lucide-react'
+import { MoveLeft, Delete, Pencil } from 'lucide-react'
 import './RecipeView.css'
 import { formatTime } from '../utils/formatTime'
 
@@ -90,7 +90,7 @@ function InstructionSection({ section, completedSteps, onStepClick }) {
     )
 }
 
-function RecipeView({ recipe, onBack }) {
+function RecipeView({ recipe, onBack, onEdit }) {
     const [checkedIngredients, setCheckedIngredients] = useState({})
     const [completedSteps, setCompletedSteps] = useState({})
     const handleIngredientCheck = (key) => {
@@ -107,9 +107,21 @@ function RecipeView({ recipe, onBack }) {
     }
     return(
         <div className="recipe-view">
-            <button className="recipe-back-button" onClick={onBack}>
+            <button
+                type="button"
+                className="recipe-back-button"
+                onClick={onBack}
+            >
                 <MoveLeft size={20} strokeWidth={1.8} />
                 Back to recipes
+            </button>
+            <button
+                type="button"
+                className="recipe-edit-button"
+                onClick={onEdit}
+            >
+                <Pencil size={20} strokeWidth={1.8} />
+                Edit recipe
             </button>
 
             <h2>{recipe.name}</h2>

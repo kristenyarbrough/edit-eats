@@ -11,6 +11,7 @@ function App() {
     const [recipe, setRecipe] = useState(null)
     const [saveMessage, setSaveMessage] = useState('')
     const [savedRecipe, setSavedRecipe] = useState(null)
+    const [isEditingRecipe, setIsEditingRecipe] = useState(false)
     const [showMyRecipes, setShowMyRecipes] = useState(false)
     const [myRecipes, setMyRecipes] = useState([])
     const [myRecipesError, setMyRecipesError] = useState('')
@@ -54,13 +55,18 @@ function App() {
         try {
             console.log('Recipe save request:', JSON.stringify(recipeToSave, null, 2))
 
-            const response = await fetch('/api/recipes', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(recipeToSave),
-            })
+            const response = await fetch(
+                isEditingRecipe
+                    ? `/api/recipes/${recipeToSave.id}`
+                    : '/api/recipes',
+                {
+                    method: isEditingRecipe? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(recipeToSave),
+                }
+            )
 
             if (!response.ok) {
                 const errorText = await response.text()
@@ -81,14 +87,12 @@ function App() {
             const savedData = await savedResponse.json()
             console.log('Saved recipe loaded:', savedData)
 
-            setReturnToMyRecipes(true)
             setSavedRecipe(savedData)
-            console.log('savedRecipe set to:', savedData)
-            setSaveMessage(data.name)
+            setSaveMessage(savedData.name)
             setRecipe(null)
             setRecipeText('')
             setShowImport(false)
-            console.log('handleSave completed')
+            setIsEditingRecipe(false)
 
         } catch (error) {
             console.error('Recipe save failed:', error)
@@ -209,7 +213,13 @@ function App() {
                         onBack={() => {
                             setSavedRecipe(null)
                             setShowMyRecipes(returnToMyRecipes)
-                            setReturnToMyRecipes(false)}}
+                            setReturnToMyRecipes(false)
+                        }}
+                        onEdit={() => {
+                            setRecipe(savedRecipe)
+                            setSavedRecipe(null)
+                            setIsEditingRecipe(true)
+                        }}
                     />
                 ) : showMyRecipes ? (
                     <div className="my-recipes-section">
@@ -327,17 +337,29 @@ function App() {
                                                 )}
                                             </div>
                                         </button>
-                                        <button
-                                            type="button"
-                                            className="delete-recipe-button"
-                                            onClick={(event) => {
-                                                console.log('Delete clicked: ', item.id, item.name)
-                                                handleDeleteRecipe(item.id, item.name)
-                                            }}
-                                        >
-                                            <Trash size={20} strokeWidth={1.8} />
-                                            Delete
-                                        </button>
+                                        <div className="recipe-card-actions">
+                                            <button
+                                                type="button"
+                                                className="edit-recipe-button"
+                                                onClick={() => {
+                                                    console.log('Edit clicked:', item.id, item.name)
+                                                }}
+                                            >
+                                                <Pencil size={20} strokeWidth={1.8} />
+                                                Edit
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="delete-recipe-button"
+                                                onClick={(event) => {
+                                                    console.log('Delete clicked: ', item.id, item.name)
+                                                    handleDeleteRecipe(item.id, item.name)
+                                                }}
+                                            >
+                                                <Trash size={20} strokeWidth={1.8} />
+                                                Delete
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -397,7 +419,15 @@ function App() {
                 ) : recipe ? (
                     <RecipeReview
                         recipe={recipe}
-                        onBack={() => setRecipe(null)}
+                        onBack={() => {
+                            if (isEditingRecipe) {
+                                setSavedRecipe(recipe)
+                                setIsEditingRecipe(false)
+                                setRecipe(null)
+                            } else {
+                                setRecipe(null)
+                            }
+                        }}
                         onSave={handleSave}
                     />
                 ) : !showImport ? (
