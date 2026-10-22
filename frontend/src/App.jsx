@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Plus, BookOpen, X, Import, MoveLeft, Trash, CheckCircle, CircleAlert, Pencil } from 'lucide-react'
 import './App.css'
 import RecipeReview from './components/RecipeReview'
@@ -10,6 +10,7 @@ function App() {
     const [recipeText, setRecipeText] = useState('')
     const [recipe, setRecipe] = useState(null)
     const [saveMessage, setSaveMessage] = useState('')
+    const [saveError, setSaveError] = useState('')
     const [savedRecipe, setSavedRecipe] = useState(null)
     const [isEditingRecipe, setIsEditingRecipe] = useState(false)
     const [showMyRecipes, setShowMyRecipes] = useState(false)
@@ -19,12 +20,38 @@ function App() {
     const [deleteMessage, setDeleteMessage] = useState('')
     const [deleteError, setDeleteError] = useState('')
     const [recipeToDelete, setRecipeToDelete] = useState(null)
+    const notificationRef = useRef(null)
+    const deleteNotificationRef = useRef(null)
     useEffect(() => {
         console.log(
             'recipeToDelete:',
             JSON.stringify(recipeToDelete)
         )
     }, [recipeToDelete])
+    useEffect(() => {
+        if (saveMessage || saveError) {
+            notificationRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            })
+        }
+    }, [saveMessage, saveError])
+    useEffect(() => {
+        if (deleteMessage) {
+            deleteNotificationRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            })
+        }
+    }, [deleteMessage])
+    useEffect(() => {
+        if (savedRecipe) {
+            window.scrollTo({
+                top: 0,
+                behavior: 'instant'
+            })
+        }
+    }, [savedRecipe])
     const handleImport = async () => {
         try {
             const response = await fetch(
@@ -51,9 +78,12 @@ function App() {
     }
     const handleSave = async (recipeToSave) => {
         setSaveMessage('')
+        setSaveError('')
 
         try {
             console.log('Recipe save request:', JSON.stringify(recipeToSave, null, 2))
+
+//             throw new Error('Test save failure')
 
             const response = await fetch(
                 isEditingRecipe
@@ -87,16 +117,27 @@ function App() {
             const savedData = await savedResponse.json()
             console.log('Saved recipe loaded:', savedData)
 
-            setSavedRecipe(savedData)
             setSaveMessage(savedData.name)
             setRecipe(null)
             setRecipeText('')
             setShowImport(false)
             setIsEditingRecipe(false)
 
+            if (returnToMyRecipes) {
+                setMyRecipes((currentRecipes) =>
+                    currentRecipes.map((item) =>
+                        item.id === savedData.id ? savedData : item
+                    )
+                )
+                setShowMyRecipes(true)
+                setReturnToMyRecipes(false)
+            } else {
+                setSavedRecipe(savedData)
+            }
+
         } catch (error) {
             console.error('Recipe save failed:', error)
-            setSaveMessage(`Failed to save recipe: ${error.message}`)
+            setSaveError(`Failed to save recipe: ${error.message}`)
         }
     }
     const handleShowMyRecipes = async () => {
@@ -116,6 +157,23 @@ function App() {
             console.error('Error loading recipes:', error)
             setMyRecipesError(error.message)
             setShowMyRecipes(true)
+        }
+    }
+    const handleEditRecipe = async (recipeId) => {
+        try {
+            const response = await fetch(`/api/recipes/${recipeId}`)
+
+            if (!response.ok) {
+                throw new Error('Failed to load recipe')
+            }
+
+            const data = await response.json()
+            setRecipe(data)
+            setIsEditingRecipe(true)
+            setReturnToMyRecipes(true)
+            setShowMyRecipes(false)
+        } catch (error) {
+            console.error('Error loading recipe for editing:', error)
         }
     }
     const handleDeleteRecipe = (recipeId, recipeName) => {
@@ -158,6 +216,12 @@ function App() {
             setDeleteMessage(name)
             setDeleteError('')
             setMyRecipesError('')
+
+            if(savedRecipe?.id === id) {
+                setSavedRecipe(null)
+                setShowMyRecipes(returnToMyRecipes)
+                setReturnToMyRecipes(false)
+            }
         } catch (error) {
             console.error('Error deleting recipe:', error)
             setDeleteError(name)
@@ -191,17 +255,40 @@ function App() {
             )}
 
             {saveMessage && (
-                <div className="save-notification" role="status">
+                <div
+                    ref={notificationRef}
+                    className="save-notification"
+                    role="status"
+                >
                     <span className="save-notification-icon" aria-hidden="true">
                         <CheckCircle size={20} />
                     </span>
-                    <p>Recipe <strong>{saveMessage}</strong> saved successfully.</p>
+                    <p>
+                        Recipe <strong>{saveMessage}</strong> saved successfully.
+                    </p>
                     <button
                         className="save-notification-close"
                         onClick={() => setSaveMessage('')}
                         aria-label="Dismiss notification"
                     >
-                        ×
+                        <X size={18} />
+                    </button>
+                </div>
+            )}
+
+            {saveError && (
+                <div
+                    ref={notificationRef}
+                    className="save-notification save-notification-error"
+                    role="alert"
+                >
+                    <p>{saveError}</p>
+                    <button
+                        className="save-notification-close"
+                        onClick={() => setSaveError('')}
+                        aria-label="Dismiss error"
+                    >
+                        <X size={18} />
                     </button>
                 </div>
             )}
@@ -220,13 +307,20 @@ function App() {
                             setSavedRecipe(null)
                             setIsEditingRecipe(true)
                         }}
+                        onDelete={() =>
+                            handleDeleteRecipe(savedRecipe.id, savedRecipe.name)
+                        }
                     />
                 ) : showMyRecipes ? (
                     <div className="my-recipes-section">
                         <h2>My Recipes</h2>
 
                         {deleteMessage && (
-                            <div className="delete-notification" role="status">
+                            <div
+                                ref={deleteNotificationRef}
+                                className="delete-notification"
+                                role="status"
+                            >
                                 <span aria-hidden="true">
                                     <CheckCircle size={20} />
                                 </span>
@@ -343,6 +437,7 @@ function App() {
                                                 className="edit-recipe-button"
                                                 onClick={() => {
                                                     console.log('Edit clicked:', item.id, item.name)
+                                                    handleEditRecipe(item.id)
                                                 }}
                                             >
                                                 <Pencil size={20} strokeWidth={1.8} />
@@ -365,65 +460,17 @@ function App() {
                             </div>
                         )}
 
-                        {recipeToDelete && (
-                            <>
-                                <p style={{ color: 'red' }}>
-                                    DEBUG: Delete dialog should be open for {recipeToDelete.name}
-                                </p>
 
-                                <div className="delete-dialog-backdrop">
-                                    <div
-                                        className="delete-dialog"
-                                        role="dialog"
-                                        aria-modal="true"
-                                        aria-labelledby="delete-dialog-title"
-                                        aria-describedby="delete-dialog-description"
-                                    >
-                                        <div className="delete-dialog-heading">
-                                            <Trash className="delete-dialog-icon" size={24} />
-                                            <h2 id="delete-dialog-title">Delete recipe?</h2>
-                                        </div>
-
-
-
-                                        <p id="delete-dialog-description">
-                                            Are you sure you want to delete{' '}
-                                            <strong>{recipeToDelete.name}</strong>?
-                                            This action can't be undone.
-                                        </p>
-
-                                        <div className="delete-dialog-actions">
-                                            <button
-                                                type="button"
-                                                className="delete-dialog-cancel"
-                                                onClick={() => setRecipeToDelete(null)}
-                                            >
-                                                <X size={18} strokeWidth={1.8} />
-                                                Cancel
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                className="delete-dialog-confirm"
-                                                onClick={confirmDeleteRecipe}
-                                            >
-                                                <Trash size={18} strokeWidth={1.8} />
-                                                Delete recipe
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </>
-                        )}
                     </div>
                 ) : recipe ? (
                     <RecipeReview
                         recipe={recipe}
                         onBack={() => {
                             if (isEditingRecipe) {
-                                setSavedRecipe(recipe)
                                 setIsEditingRecipe(false)
                                 setRecipe(null)
+                                setShowMyRecipes(returnToMyRecipes)
+                                setReturnToMyRecipes(false)
                             } else {
                                 setRecipe(null)
                             }
@@ -479,8 +526,55 @@ function App() {
                     </div>
                 )}
             </main>
-        </div>
+            {recipeToDelete && (
+                <>
+                    <p style={{ color: 'red' }}>
+                        DEBUG: Delete dialog should be open for {recipeToDelete.name}
+                    </p>
 
+                    <div className="delete-dialog-backdrop">
+                        <div
+                            className="delete-dialog"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="delete-dialog-title"
+                            aria-describedby="delete-dialog-description"
+                        >
+                            <div className="delete-dialog-heading">
+                                <Trash className="delete-dialog-icon" size={24} />
+                                <h2 id="delete-dialog-title">Delete recipe?</h2>
+                            </div>
+
+                            <p id="delete-dialog-description">
+                                Are you sure you want to delete{' '}
+                                <strong>{recipeToDelete.name}</strong>?
+                                This action can't be undone.
+                            </p>
+
+                            <div className="delete-dialog-actions">
+                                <button
+                                    type="button"
+                                    className="delete-dialog-cancel"
+                                    onClick={() => setRecipeToDelete(null)}
+                                >
+                                    <X size={18} strokeWidth={1.8} />
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="button"
+                                    className="delete-dialog-confirm"
+                                    onClick={confirmDeleteRecipe}
+                                >
+                                    <Trash size={18} strokeWidth={1.8} />
+                                    Delete recipe
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+        </div>
     )
 }
 

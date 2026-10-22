@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { MoveLeft, Delete, Pencil } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { MoveLeft, Delete, Pencil, Trash } from 'lucide-react'
 import './RecipeView.css'
 import { formatTime } from '../utils/formatTime'
 
@@ -90,9 +90,10 @@ function InstructionSection({ section, completedSteps, onStepClick }) {
     )
 }
 
-function RecipeView({ recipe, onBack, onEdit }) {
+function RecipeView({ recipe, onBack, onEdit, onDelete }) {
     const [checkedIngredients, setCheckedIngredients] = useState({})
     const [completedSteps, setCompletedSteps] = useState({})
+    const recipeToRef = useRef(null)
     const handleIngredientCheck = (key) => {
         setCheckedIngredients((previous) => ({
             ...previous,
@@ -105,24 +106,43 @@ function RecipeView({ recipe, onBack, onEdit }) {
             [key]: !previous[key],
         }))
     }
+    useEffect(() => {
+        recipeToRef.current?.scrollIntoView({
+            behavior: 'instant',
+            block: 'start'
+        })
+    }, [recipe.id])
     return(
-        <div className="recipe-view">
-            <button
-                type="button"
-                className="recipe-back-button"
-                onClick={onBack}
-            >
-                <MoveLeft size={20} strokeWidth={1.8} />
-                Back to recipes
-            </button>
-            <button
-                type="button"
-                className="recipe-edit-button"
-                onClick={onEdit}
-            >
-                <Pencil size={20} strokeWidth={1.8} />
-                Edit recipe
-            </button>
+        <div
+            ref={recipeToRef}
+            className="recipe-view"
+        >
+            <div className="recipe-view-buttons">
+                <button
+                    type="button"
+                    className="recipe-back-button"
+                    onClick={onBack}
+                >
+                    <MoveLeft size={20} strokeWidth={1.8} />
+                    Back to recipes
+                </button>
+                <button
+                    type="button"
+                    className="recipe-edit-button"
+                    onClick={onEdit}
+                >
+                    <Pencil size={18} strokeWidth={1.8} />
+                    Edit recipe
+                </button>
+                <button
+                    type="button"
+                    className="recipe-delete-button"
+                    onClick={onDelete}
+                >
+                    <Delete size={18} strokeWidth={1.8} />
+                    Delete recipe
+                </button>
+            </div>
 
             <h2>{recipe.name}</h2>
 

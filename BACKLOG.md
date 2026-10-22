@@ -260,10 +260,12 @@ Relationships:
       - [ ] Cook mode - keep screen on
     - [ ] Filter recipes
     - [ ] Search for recipes
-    - [ ] Delete categories
-    - [ ] Edit categories?
-    - [ ] Delete a recipe
-    - [ ] Use icons
+    - [ ] Delete recipe categories
+    - [ ] Edit recipe categories?
+    - [x] Delete a recipe
+    - [x] Use icons
+    - [ ] Delete ingredients
+    - [ ] Edit ingredients
   - [ ] MealPlan
   - [ ] ShoppingList
   - [ ] Dining Eats
