@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { MoveUp, MoveDown, GripVertical } from 'lucide-react'
 import InstructionStepEditor from './InstructionStepEditor'
 
 function InstructionSection({
@@ -26,7 +27,11 @@ function InstructionSection({
     return (
         <>
             {isDragOver && (
-                <div className="section-drop-indicator" />
+                <div
+                    className="section-drop-indicator"
+                    aria-hidden="true"
+                    style={{ pointerEvents: 'none' }}
+                />
             )}
 
             <div
@@ -35,6 +40,7 @@ function InstructionSection({
                 }`}
                 onDragOver={(event) => {
                     event.preventDefault()
+                    event.stopPropagation()
 
                     if (
                         event.dataTransfer.types.includes(
@@ -46,13 +52,20 @@ function InstructionSection({
                 }}
                 onDrop={(event) => {
                     event.preventDefault()
+                    event.stopPropagation()
 
                     if (
                         event.dataTransfer.types.includes(
                             'application/x-edit-eats-section'
                         )
                     ) {
-                        onDrop()
+                        const draggedIndex = Number(
+                            event.dataTransfer.getData(
+                                'application/x-edit-eats-section'
+                            )
+                        )
+
+                        onDrop(draggedIndex)
                     }
                 }}
             >
@@ -71,7 +84,7 @@ function InstructionSection({
                         }}
                         onDragEnd={onDragEnd}
                     >
-                        ⋮⋮
+                        <GripVertical size={16} />
                     </span>
 
                     <input
@@ -99,7 +112,7 @@ function InstructionSection({
                             disabled={sectionIndex === 0}
                             aria-label={`Move ${section.name} section up`}
                         >
-                            ↑
+                            <MoveUp size={14} />
                         </button>
 
                         <button
@@ -115,7 +128,7 @@ function InstructionSection({
                             disabled={sectionIndex === sectionCount - 1}
                             aria-label={`Move ${section.name} section down`}
                         >
-                            ↓
+                            <MoveDown size={14} />
                         </button>
 
                         <button
@@ -202,7 +215,7 @@ function InstructionSection({
 
                                 event.dataTransfer.dropEffect = 'move'
                             }}
-                            onDrop ={(event) => {
+                            onDrop={(event) => {
                                 if (
                                     !event.dataTransfer.types.includes(
                                         'application/x-edit-eats-step'

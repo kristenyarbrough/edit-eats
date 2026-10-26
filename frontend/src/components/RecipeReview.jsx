@@ -22,10 +22,16 @@ function RecipeReview ({ recipe, onBack, onSave }) {
     const [availableIngredientCategories, setAvailableIngredientCategories] = useState([])
     const [validationErrors, setValidationErrors] = useState({})
     const [hasAttemptedSave, setHasAttemptedSave] = useState(false)
+    const [draggedIngredientIndex, setDraggedIngredientIndex] = useState(null)
+    const [dragOverIngredientIndex, setDragOverIngredientIndex] = useState(null)
+    const [draggedSectionIngredient, setDraggedSectionIngredient] = useState(null)
+    const [dragOverSectionIngredient, setDragOverSectionIngredient] = useState(null)
     const [draggedStepIndex, setDraggedStepIndex] = useState(null)
     const [dragOverStepIndex, setDragOverStepIndex] = useState(null)
     const [draggedSectionIndex, setDraggedSectionIndex] = useState(null)
     const [dragOverSectionIndex, setDragOverSectionIndex] = useState(null)
+    const [draggedIngredientSection, setDraggedIngredientSection] = useState(null)
+    const [dragOverIngredientSection, setDragOverIngredientSection] = useState(null)
     const servingsRef = useRef(null)
     const difficultyRef = useRef(null)
     const ingredientsRef = useRef(null)
@@ -193,6 +199,16 @@ function RecipeReview ({ recipe, onBack, onSave }) {
             ]
         }))
     }
+    const moveIngredient = (fromIndex, toIndex) => {
+        setEditedRecipe((current) => ({
+            ...current,
+            ingredients: moveItem(
+                current.ingredients,
+                fromIndex,
+                toIndex
+            )
+        }))
+    }
     const addStep = () => {
         setEditedRecipe((current) => ({
             ...current,
@@ -332,6 +348,173 @@ function RecipeReview ({ recipe, onBack, onSave }) {
 
             return updatedRecipe
         })
+    }
+    const moveSectionIngredient = (
+        sectionPath,
+        fromIndex,
+        toIndex
+    ) => {
+        setEditedRecipe((current) => ({
+            ...current,
+            ingredientSections: updateNestedSection(
+                current.ingredientSections,
+                sectionPath,
+                (section) => ({
+                    ...section,
+                    ingredients: moveItem(
+                        section.ingredients,
+                        fromIndex,
+                        toIndex
+                    )
+                })
+            )
+        }))
+    }
+    const moveIngredientSection = (
+        sectionPath,
+        fromIndex,
+        toIndex
+    ) => {
+        setEditedRecipe((current) => {
+            if (sectionPath.length === 0) {
+                return {
+                    ...current,
+                    ingredientSections: moveItem(
+                        current.ingredientSections,
+                        fromIndex,
+                        toIndex
+                    )
+                }
+            }
+
+            return {
+                ...current,
+                ingredientSections: updateNestedSection(
+                    current.ingredientSections,
+                    sectionPath,
+                    (section) => ({
+                        ...section,
+                        sections: moveItem(
+                            section.sections,
+                            fromIndex,
+                            toIndex
+                        )
+                    })
+                )
+            }
+        })
+    }
+    const handleIngredientSectionDragStart = (sectionPath, index) => {
+        setDraggedIngredientSection({
+            parentPath: sectionPath,
+            index
+        })
+        setDragOverIngredientSection(null)
+    }
+    const handleIngredientSectionDragOver = (sectionPath, index) => {
+        setDragOverIngredientSection({
+            parentPath: sectionPath,
+            index
+        })
+    }
+    const handleIngredientSectionDrop = (sectionPath, index) => {
+        if (!draggedIngredientSection) {
+            return
+        }
+
+        const draggedParentPath = draggedIngredientSection.parentPath
+        const targetParentPath = sectionPath
+
+        const sameParent =
+            draggedParentPath.length === targetParentPath.length &&
+            draggedParentPath.every(
+                (part, i) => part === targetParentPath[i]
+            )
+
+        if (sameParent) {
+            moveIngredientSection(
+                targetParentPath,
+                draggedIngredientSection.index,
+                index
+            )
+        }
+
+        setDraggedIngredientSection(null)
+        setDragOverIngredientSection(null)
+    }
+    const handleIngredientSectionDragEnd = () => {
+        setDraggedIngredientSection(null)
+        setDragOverIngredientSection(null)
+    }
+    const handleSectionIngredientDragStart = (
+        event,
+        sectionPath,
+        index
+    ) => {
+        const path = sectionPath.join('.')
+
+        setDraggedSectionIngredient({
+            sectionPath: path,
+            index
+        })
+
+        event.dataTransfer.effectAllowed = 'move'
+        event.dataTransfer.setData(
+            'application/x-edit-eats-section-ingredient',
+            JSON.stringify({ sectionPath: path, index })
+        )
+    }
+    const handleSectionIngredientDragOver = (
+        event,
+        sectionPath,
+        index
+    ) => {
+        if (
+            !event.dataTransfer.types.includes(
+                'application/x-edit-eats-section-ingredient'
+            )
+        ) {
+            return
+        }
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'move'
+
+        setDragOverSectionIngredient({
+            sectionPath: sectionPath.join('.'),
+            index
+        })
+    }
+    const handleSectionIngredientDrop = (
+        event,
+        sectionPath,
+        index
+    ) => {
+        event.preventDefault()
+
+        const dragged = JSON.parse(
+            event.dataTransfer.getData(
+                'application/x-edit-eats-section-ingredient'
+            )
+        )
+
+        const targetPath = sectionPath.join('.')
+
+        // Only reorder within the same section
+        if (dragged.sectionPath === targetPath) {
+            moveSectionIngredient(
+                sectionPath,
+                dragged.index,
+                index
+            )
+        }
+
+        setDraggedSectionIngredient(null)
+        setDragOverSectionIngredient(null)
+    }
+
+    const handleSectionIngredientDragEnd = () => {
+        setDraggedSectionIngredient(null)
+        setDragOverSectionIngredient(null)
     }
     const addSectionIngredient = (sectionPath) => {
         setEditedRecipe((current) => ({
@@ -1043,6 +1226,59 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                                     )
                                 }
                                 onRemove={() => removeIngredient(index)}
+                                onMoveUp={() => moveIngredient(index, index - 1)}
+                                onMoveDown={() => moveIngredient(index, index + 1)}
+                                canMoveUp={index > 0}
+                                canMoveDown={index < editedRecipe.ingredients.length - 1}
+                                onDragStart={(event) => {
+                                    setDraggedIngredientIndex(index)
+
+                                    event.dataTransfer.effectAllowed = 'move'
+                                    event.dataTransfer.setData(
+                                        'application/x-edit-eats-ingredient',
+                                        index.toString()
+                                    )
+                                }}
+
+                                onDragOver={(event) => {
+                                    if (
+                                        !event.dataTransfer.types.includes(
+                                            'application/x-edit-eats-ingredient'
+                                        )
+                                    ) {
+                                        return
+                                    }
+
+                                    event.preventDefault()
+                                    setDragOverIngredientIndex(index)
+                                    event.dataTransfer.dropEffect = 'move'
+                                }}
+
+                                onDrop={(event) => {
+                                    event.preventDefault()
+
+                                    const draggedIndex = Number(
+                                        event.dataTransfer.getData(
+                                            'application/x-edit-eats-ingredient'
+                                        )
+                                    )
+
+                                    moveIngredient(draggedIndex, index)
+
+                                    setDraggedIngredientIndex(null)
+                                    setDragOverIngredientIndex(null)
+                                }}
+
+                                onDragEnd={() => {
+                                    setDraggedIngredientIndex(null)
+                                    setDragOverIngredientIndex(null)
+                                }}
+
+                                isDragging={draggedIngredientIndex === index}
+                                isDragOver={
+                                    dragOverIngredientIndex === index &&
+                                    draggedIngredientIndex !== index
+                                }
                             />
                         ))}
                     </div>
@@ -1059,10 +1295,26 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                             onIngredientCategoryCreated={handleIngredientCategoryCreated}
                             onUpdateIngredient={updateSectionIngredient}
                             onRemoveIngredient={removeSectionIngredient}
+                            onMoveIngredient={moveSectionIngredient}
+                            onDragStartIngredient={handleSectionIngredientDragStart}
+                            onDragOverIngredient={handleSectionIngredientDragOver}
+                            onDropIngredient={handleSectionIngredientDrop}
+                            onDragEndIngredient={handleSectionIngredientDragEnd}
+                            draggedIngredient={draggedSectionIngredient}
+                            dragOverIngredient={dragOverSectionIngredient}
+                            onDragStartSection={handleIngredientSectionDragStart}
+                            onDragOverSection={handleIngredientSectionDragOver}
+                            onDropSection={handleIngredientSectionDrop}
+                            onDragEndSection={handleIngredientSectionDragEnd}
+                            draggedIngredientSection={draggedIngredientSection}
+                            dragOverIngredientSection={dragOverIngredientSection}
                             onRemoveSection={removeSection}
                             onUpdateSectionName={updateSectionName}
                             onAddIngredient={addSectionIngredient}
                             onAddSection={addIngredientSection}
+                            sectionIndex={index}
+                            sectionCount={editedRecipe.ingredientSections.length}
+                            onMoveSection={moveIngredientSection}
                         />
                     ))}
                 </section>
@@ -1224,11 +1476,14 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                                 setDragOverSectionIndex(index)
                             }}
 
-                            onDrop={() => {
-                                moveInstructionSection(
-                                    draggedSectionIndex,
-                                    index
-                                )
+                            onDrop={(draggedIndex) => {
+                                if (draggedIndex !== null) {
+                                    moveInstructionSection(
+                                        [],
+                                        draggedSectionIndex,
+                                        index
+                                    )
+                                }
 
                                 setDraggedSectionIndex(null)
                                 setDragOverSectionIndex(null)

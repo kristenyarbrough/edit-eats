@@ -1,3 +1,4 @@
+import { MoveUp, MoveDown, GripVertical } from 'lucide-react'
 function InstructionStepEditor({
     step,
     stepNumber,
@@ -32,7 +33,7 @@ function InstructionStepEditor({
                 onDragEnd={onDragEnd}
             >
 {/*                 ☰ */}
-                ⋮⋮
+                <GripVertical size={16} />
             </span>
 
             <span className="step-number">
@@ -58,7 +59,7 @@ function InstructionStepEditor({
                     disabled={!canMoveUp}
                     aria-label={`Move step ${stepNumber} up`}
                 >
-                    ↑
+                    <MoveUp size={14} />
                 </button>
 
                 <button
@@ -68,7 +69,7 @@ function InstructionStepEditor({
                     disabled={!canMoveDown}
                     aria-label={`Move step ${stepNumber} down`}
                 >
-                    ↓
+                    <MoveDown size={14} />
                 </button>
 
                 <button

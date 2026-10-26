@@ -603,7 +603,27 @@
 }
 
 .instruction-step-row.drag-over {
-    border-top: 2px solid currentColor;
+    border-top: 2px solid #b5a46a;
+}
+
+.ingredient-row.dragging {
+    opacity: 0.5;
+}
+
+.ingredient-row.drag-over {
+    position: relative;
+}
+
+.ingredient-row.drag-over::before {
+    content: "";
+    position: absolute;
+    top: -5px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #b5a46a;
+    border-radius: 0;
+    pointer-events: none;
 }
 
 .instruction-section.dragging {
@@ -676,6 +696,27 @@
     border-left-color: #c8b98a;
 }
 
+.ingredient-section.dragging {
+    opacity: 0.55;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.ingredient-section.drag-over {
+    position: relative;
+}
+
+.ingredient-section.drag-over::before {
+    content: "";
+    position: absolute;
+    top: -15px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #b5a46a;
+    border-radius: 999px;
+    pointer-events: none;
+}
+
 .instruction-list {
     display: flex;
     flex-direction: column;
@@ -701,7 +742,9 @@
 }
 
 .step-actions .move-step-button,
-.instruction-section-actions .move-section-button {
+.instruction-section-actions .move-section-button,
+.ingredient-actions .move-ingredient-button,
+.ingredient-section-actions .move-section-button {
     width: 0.7rem;
     height: 1.75rem;
     padding: 0;
@@ -714,13 +757,17 @@
 }
 
 .step-actions .move-step-button:hover:not(:disabled),
-.instruction-section-actions .move-section-button:hover:not(:disabled) {
+.instruction-section-actions .move-section-button:hover:not(:disabled),
+.ingredient-actions .move-ingredient-button:hover:not(:disabled),
+.ingredient-section-actions .move-section-button:hover:not(:disabled) {
     background: #f3f0e8;
     color: #415037;
 }
 
 .step-actions .move-step-button:disabled,
-.instruction-section-actions .move-section-button:disabled {
+.instruction-section-actions .move-section-button:disabled,
+.ingredient-actions .move-ingredient-button:disabled,
+.ingredient-section-actions .move-section-button:disabled {
     opacity: 0.3;
     cursor: default;
 }
@@ -776,7 +823,8 @@
     font-size: 0.8rem;
 }
 
-.instruction-section .instruction-section {
+.instruction-section .instruction-section,
+.ingredient-section .ingredient-section {
     margin-top: 1rem;
     background: white;
     border-color: #e8e3d5;

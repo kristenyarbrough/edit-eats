@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { MoveUp, MoveDown, GripVertical } from 'lucide-react'
 
 function IngredientEditor({
     ingredient,
@@ -8,7 +9,17 @@ function IngredientEditor({
     onIngredientCreated,
     onIngredientCategoryCreated,
     onChange,
-    onRemove
+    onRemove,
+    onMoveUp,
+    onMoveDown,
+    canMoveUp=false,
+    canMoveDown=false,
+    onDragStart,
+    onDragOver,
+    onDrop,
+    onDragEnd,
+    isDragging = false,
+    isDragOver = false
 }) {
     const [creatingIngredient, setCreatingIngredient] = useState(false)
     const [newIngredientName, setNewIngredientName] = useState('')
@@ -26,7 +37,20 @@ function IngredientEditor({
     }
 
     return (
-        <div className="ingredient-row">
+        <div
+            className={`ingredient-row ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+        >
+            <span
+                className="drag-handle"
+                draggable="true"
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+            >
+                <GripVertical size={16} />
+            </span>
+
             <input
                 type="number"
                 value={ingredient.quantity ?? ''}
@@ -104,13 +128,35 @@ function IngredientEditor({
                 Optional
             </label>
 
-            <button
-                type="button"
-                className="remove-ingredient-button"
-                onClick={onRemove}
-            >
-                Remove
-            </button>
+            <div className="ingredient-actions">
+                <button
+                    type="button"
+                    className="move-ingredient-button"
+                    onClick={onMoveUp}
+                    disabled={!canMoveUp}
+                    aria-label="Move ingredient up"
+                >
+                    <MoveUp size={14} />
+                </button>
+
+                <button
+                    type="button"
+                    className="move-ingredient-button"
+                    onClick={onMoveDown}
+                    disabled={!canMoveDown}
+                    aria-label="Move ingredient down"
+                >
+                    <MoveDown size={14} />
+                </button>
+
+                <button
+                    type="button"
+                    className="remove-ingredient-button"
+                    onClick={onRemove}
+                >
+                    Remove
+                </button>
+            </div>
 
             <select
                 className={`ingredient-match-select ${

@@ -243,7 +243,7 @@ Relationships:
     - [ ] Import from an image of a recipe (e.g. cookbook)
     - [x] Edit a recipe
       - [x] Reorder steps
-      - [ ] Reorder ingredients
+      - [x] Reorder ingredients
       - [x] When adding a section add an ingredient/step (no empty sections)
       - [x] Error messages
       - [x] Add a new recipe category
