@@ -17,6 +17,7 @@ public class RecipeIngredientResponse {
     private Unit unit;
 
     private String preparation;
+    private String note;
     private Boolean optional;
 
 }

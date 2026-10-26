@@ -755,6 +755,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
             quantity: ingredient.quantity,
             unit: ingredient.unit,
             preparation: ingredient.preparation,
+            note: ingredient.note,
             optional: ingredient.optional
         })),
 
@@ -907,6 +908,7 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                 quantity: ingredient.quantity,
                 unit: ingredient.unit,
                 preparation: ingredient.preparation,
+                note: ingredient.note,
                 optional: ingredient.optional
             })),
 

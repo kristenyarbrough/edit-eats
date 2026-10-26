@@ -238,7 +238,7 @@ Relationships:
 - [ ] 📱 Frontend/mobile app
   - [ ] Recipes
     - [x] Import a text recipe
-    - [ ] Import a recipe from URL
+    - [x] Import a recipe from URL
     - [ ] Add a recipe from scratch
     - [ ] Import from an image of a recipe (e.g. cookbook)
     - [x] Edit a recipe

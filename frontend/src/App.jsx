@@ -7,6 +7,8 @@ import RecipeCardImage from './components/RecipeCardImage'
 
 function App() {
     const [showImport, setShowImport] = useState(false)
+    const [importMode, setImportMode] = useState('text')
+    const [recipeUrl, setRecipeUrl] = useState('')
     const [recipeText, setRecipeText] = useState('')
     const [recipe, setRecipe] = useState(null)
     const [saveMessage, setSaveMessage] = useState('')
@@ -54,12 +56,13 @@ function App() {
     }, [savedRecipe])
     const handleImport = async () => {
         try {
-            const response = await fetch(
-                `/api/recipes/import/text?text=${encodeURIComponent(recipeText)}`,
-                {
-                    method: 'POST',
-                }
-            )
+            const url = importMode === 'url'
+                ? `/api/recipes/import/url?url=${encodeURIComponent(recipeUrl)}`
+                : `/api/recipes/import/text?text=${encodeURIComponent(recipeText)}`
+
+            const response = await fetch(url, {
+                method: 'POST',
+            })
 
             if (!response.ok) {
                 const errorText = await response.text()
@@ -73,7 +76,7 @@ function App() {
         setRecipe(data)
 
         } catch (error) {
-            console.error(`Recipe import failed: `, error)
+            console.error('Recipe import failed: ', error)
         }
     }
     const handleSave = async (recipeToSave) => {
@@ -503,14 +506,43 @@ function App() {
                     <div className="import-recipe-section">
                         <h2>Import Recipe</h2>
 
-                        <div className="textarea-wrapper">
-                            <textarea
-                                placeholder="Paste your recipe here..."
-                                rows="15"
-                                value={recipeText}
-                                onChange={(event) => setRecipeText(event.target.value)}
-                            />
+                        <div className="import-mode-selector">
+                            <button
+                                type="button"
+                                className={importMode === 'text' ? 'active' : ''}
+                                onClick={() => setImportMode('text')}
+                            >
+                                Import recipe text
+                            </button>
+
+                            <button
+                                type="button"
+                                className={importMode === 'url' ? 'active' : ''}
+                                onClick={() => setImportMode('url')}
+                            >
+                                Import from url
+                            </button>
                         </div>
+
+                        {importMode === 'text' ? (
+                            <div className="textarea-wrapper">
+                                <textarea
+                                    placeholder="Paste your recipe here..."
+                                    rows="15"
+                                    value={recipeText}
+                                    onChange={(event) => setRecipeText(event.target.value)}
+                                />
+                            </div>
+                        ) : (
+                            <div className="textarea-wrapper">
+                                <input
+                                    type="url"
+                                    placeholder="https://example.com/recipe"
+                                    value={recipeUrl}
+                                    onChange={(event) => setRecipeUrl(event.target.value)}
+                                />
+                            </div>
+                        )}
 
                         <div className="import-recipe-actions">
                             <button onClick={() => setShowImport(false)}>

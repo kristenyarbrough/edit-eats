@@ -139,6 +139,29 @@ public class RecipeStructuredDataParserTest {
     }
 
     @Test
+    void shouldParseImageObject() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Chicken Curry",
+                    "image": {
+                        "@type": "ImageObject",
+                        "url": "https://example.com/chicken-curry.jpg"
+                    }
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        assertEquals(
+                "https://example.com/chicken-curry.jpg",
+                result.getImageUrl()
+        );
+
+    }
+
+    @Test
     void shouldFindRecipeInsideGraph() {
 
         String json = """
@@ -1212,6 +1235,54 @@ public class RecipeStructuredDataParserTest {
         assertEquals("Brown the meat", brownMeat.getName());
         assertEquals(1, brownMeat.getSteps().size());
         assertEquals("Brown the mince.", brownMeat.getSteps().get(0).getInstruction());
+
+    }
+
+    @Test
+    void shouldSeparateIngredientPreparation() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Test Recipe",
+                    "recipeIngredient": [
+                        "85 g butter cut into cubes"
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("butter", ingredient.getName());
+        assertEquals(new BigDecimal("85"), ingredient.getQuantity());
+        assertEquals(Unit.G, ingredient.getUnit());
+        assertEquals("cut into cubes", ingredient.getPreparation());
+
+    }
+
+    @Test
+    void shouldSeparateExtraIngredientUsageNote() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Test Recipe",
+                    "recipeIngredient": [
+                        "350 g self-raising flour plus more for dusting"
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("self-raising flour", ingredient.getName());
+        assertEquals(new BigDecimal("350"), ingredient.getQuantity());
+        assertEquals(Unit.G, ingredient.getUnit());
+        assertEquals("plus more for dusting", ingredient.getNote());
 
     }
 

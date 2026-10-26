@@ -1035,6 +1035,7 @@ public class RecipeImportService {
                 .quantity(ingredient.getQuantity())
                 .unit(ingredient.getUnit())
                 .preparation(ingredient.getPreparation())
+                .note(ingredient.getNote())
                 .optional(ingredient.getOptional())
                 .build();
 

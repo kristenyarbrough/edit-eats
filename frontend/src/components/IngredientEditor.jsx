@@ -114,6 +114,19 @@ function IngredientEditor({
                 placeholder="Preparation"
             />
 
+            <input
+                className="ingredient-note"
+                type="text"
+                value={ingredient.note ?? ''}
+                onChange={(event) =>
+                    updateField(
+                        'note',
+                        event.target.value || null
+                    )
+                }
+                placeholder="Note"
+            />
+
             <label className="ingredient-optional">
                 <input
                     type="checkbox"

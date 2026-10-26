@@ -27,6 +27,11 @@ public class RecipeStructuredDataParser {
 
             JsonNode recipe = findRecipeNode(root);
 
+            System.out.println("prepTime: " + recipe.path("prepTime"));
+            System.out.println("cookTime: " + recipe.path("cookTime"));
+            System.out.println("totalTime: " + recipe.path("totalTime"));
+            System.out.println("Recipe structured data: " + recipe.toPrettyString());
+
             if (recipe == null) {
 
                 throw new IllegalArgumentException(
@@ -43,6 +48,15 @@ public class RecipeStructuredDataParser {
 
             Integer totalMinutes =
                     parseDuration(recipe.path("totalTime").asText(null));
+
+            if (prepMinutes == null
+                    && totalMinutes != null
+                    && cookMinutes != null
+                    && totalMinutes >= cookMinutes) {
+
+                prepMinutes = totalMinutes - cookMinutes;
+
+            }
 
             if (totalMinutes == null
                     && prepMinutes != null
@@ -131,6 +145,10 @@ public class RecipeStructuredDataParser {
 
     private String parseImage(JsonNode node) {
 
+        if (node == null || node.isNull()) {
+            return null;
+        }
+
         if (node.isTextual()) {
 
             return node.asText();
@@ -139,11 +157,17 @@ public class RecipeStructuredDataParser {
 
         if (node.isArray() && !node.isEmpty()) {
 
-            JsonNode first = node.get(0);
+            return parseImage(node.get(0));
 
-            if (first.isTextual()) {
+        }
 
-                return first.asText();
+        if (node.isObject()) {
+
+            JsonNode urlNode = node.get("url");
+
+            if (urlNode != null && urlNode.isTextual()) {
+
+                return urlNode.asText();
 
             }
 
@@ -315,11 +339,12 @@ public class RecipeStructuredDataParser {
             Unit unit = parseUnit(matcher.group(2));
             String name = matcher.group(3).trim();
 
-            return ImportedIngredient.builder()
-                    .name(name)
+            ImportedIngredient ingredient = ImportedIngredient.builder()
                     .quantity(quantity)
                     .unit(unit)
                     .build();
+
+            return separatePreparationAndNote(ingredient, name);
 
         }
 
@@ -333,10 +358,11 @@ public class RecipeStructuredDataParser {
             BigDecimal quantity = new BigDecimal(matcher.group(1));
             String name = matcher.group(2).trim();
 
-            return ImportedIngredient.builder()
-                    .name(name)
+            ImportedIngredient ingredient = ImportedIngredient.builder()
                     .quantity(quantity)
                     .build();
+
+            return separatePreparationAndNote(ingredient, name);
 
         }
 
@@ -652,6 +678,50 @@ public class RecipeStructuredDataParser {
             return null;
 
         }
+
+    }
+
+    private ImportedIngredient separatePreparationAndNote(
+            ImportedIngredient ingredient,
+            String name
+    ) {
+
+        String cleanedName = name.trim();
+
+        // Extract an extra usage note, such as "plus more for dusting".
+        Matcher noteMatcher = Pattern.compile(
+                "^(.*?)\\s+(plus more .+)$",
+                Pattern.CASE_INSENSITIVE
+        ).matcher(cleanedName);
+
+        if (noteMatcher.matches()) {
+
+            cleanedName = noteMatcher.group(1).trim();
+            ingredient.setNote(noteMatcher.group(2).trim());
+
+        }
+
+        // Extract a preparation phrase from the remaining ingredient name.
+        Matcher preparationMatcher = Pattern.compile(
+                "^(.*?)\\s+(cut into cubes|finely chopped|roughly chopped"
+                            + "|chopped|diced|minced|grated|sliced|crushed"
+                            + "|beaten|softened|melted|peeled|deseeded"
+                            + "|finely sliced|thinly sliced)\\s*$",
+                Pattern.CASE_INSENSITIVE
+        ).matcher(cleanedName);
+
+        if (preparationMatcher.matches()) {
+
+            ingredient.setName(preparationMatcher.group(1).trim());
+            ingredient.setPreparation(preparationMatcher.group(2).trim());
+
+        } else {
+
+            ingredient.setName(cleanedName);
+
+        }
+
+        return ingredient;
 
     }
 

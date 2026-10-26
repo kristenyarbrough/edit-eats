@@ -34,6 +34,8 @@ public class RecipeIngredient {
 
     private String preparation;
 
+    private String note;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean optional = false;

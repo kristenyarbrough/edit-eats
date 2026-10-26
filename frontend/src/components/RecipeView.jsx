@@ -28,6 +28,7 @@ function IngredientSection({ section, checkedIngredients, onIngredientCheck }) {
                                         {ingredient.unit && `${ingredient.unit.toLowerCase()} `}
                                         {ingredient.ingredientName}
                                         {ingredient.preparation && `, ${ingredient.preparation}`}
+                                        {ingredient.note && ` (${ingredient.note})`}
                                         {ingredient.optional && ' (optional)'}
                                     </span>
                                 </label>
@@ -243,6 +244,7 @@ function RecipeView({ recipe, onBack, onEdit, onDelete }) {
                                             {ingredient.unit && `${ingredient.unit.toLowerCase()} `}
                                             {ingredient.ingredientName}
                                             {ingredient.preparation && `, ${ingredient.preparation}`}
+                                            {ingredient.note && ` (${ingredient.note})`}
                                             {ingredient.optional && ' (optional)'}
                                         </span>
                                     </label>

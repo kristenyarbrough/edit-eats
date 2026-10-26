@@ -1,5 +1,6 @@
 package io.github.kristenyarbrough.edit_eats.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import io.github.kristenyarbrough.edit_eats.constants.ValidationConstants;
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
 import jakarta.validation.constraints.DecimalMin;
@@ -21,6 +22,13 @@ public class CreateRecipeIngredientRequest {
 
     private String preparation;
 
+    private String note;
+
     private Boolean optional = false;
+
+    @JsonSetter("optional")
+    public void setOptional(Boolean optional) {
+        this.optional = optional != null ? optional : false;
+    }
 
 }

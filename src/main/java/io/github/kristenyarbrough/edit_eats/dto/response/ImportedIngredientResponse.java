@@ -15,6 +15,7 @@ public class ImportedIngredientResponse {
     private BigDecimal quantity;
     private Unit unit;
     private String preparation;
+    private String note;
     private Boolean optional;
 
 }

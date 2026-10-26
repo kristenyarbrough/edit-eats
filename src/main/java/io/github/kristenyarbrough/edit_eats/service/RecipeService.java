@@ -87,6 +87,7 @@ public class RecipeService {
                             .quantity(ingredientRequest.getQuantity())
                             .unit(ingredientRequest.getUnit())
                             .preparation(ingredientRequest.getPreparation())
+                            .note(ingredientRequest.getNote())
                             .optional(ingredientRequest.getOptional())
                             .build()
             );
@@ -205,6 +206,7 @@ public class RecipeService {
                                 .quantity(recipeIngredient.getQuantity())
                                 .unit(recipeIngredient.getUnit())
                                 .preparation(recipeIngredient.getPreparation())
+                                .note(recipeIngredient.getNote())
                                 .optional(recipeIngredient.getOptional())
                                 .build())
                         .toList();
@@ -335,6 +337,7 @@ public class RecipeService {
                     .quantity(ingredientRequest.getQuantity())
                     .unit(ingredientRequest.getUnit())
                     .preparation(ingredientRequest.getPreparation())
+                    .note(ingredientRequest.getNote())
                     .optional(ingredientRequest.getOptional())
                     .build();
 
@@ -562,6 +565,7 @@ public class RecipeService {
                         .quantity(ingredientRequest.getQuantity())
                         .unit(ingredientRequest.getUnit())
                         .preparation(ingredientRequest.getPreparation())
+                        .note(ingredientRequest.getNote())
                         .optional(ingredientRequest.getOptional())
                         .section(section)
                         .build();
