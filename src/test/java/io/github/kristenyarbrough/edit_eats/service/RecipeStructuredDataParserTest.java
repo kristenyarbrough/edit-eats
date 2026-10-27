@@ -1286,4 +1286,21 @@ public class RecipeStructuredDataParserTest {
 
     }
 
+    @Test
+    void shouldParseServingsArray() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Chicken Curry",
+                    "recipeYield": [" 5 "]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        assertEquals(5, result.getServings());
+
+    }
+
 }

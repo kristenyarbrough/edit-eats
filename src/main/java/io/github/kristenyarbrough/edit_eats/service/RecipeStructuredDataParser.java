@@ -71,8 +71,7 @@ public class RecipeStructuredDataParser {
                     .prepMinutes(prepMinutes)
                     .cookMinutes(cookMinutes)
                     .totalMinutes(totalMinutes)
-                    .servings(parseServings(recipe.path("recipeYield")
-                            .asText(null)))
+                    .servings(parseServings(recipe.path("recipeYield")))
                     .imageUrl(parseImage(recipe.path("image")))
                     .sourceUrl(recipe.path("url").asText(null))
                     .ingredients(parseIngredients(recipe.path("recipeIngredient")))
@@ -123,23 +122,35 @@ public class RecipeStructuredDataParser {
 
     }
 
-    private Integer parseServings(String value) {
+    private Integer parseServings(JsonNode node) {
 
-        if (value == null || value.isBlank()) {
-
-            return null;
-
-        }
-
-        Matcher matcher = Pattern.compile("\\d+").matcher(value);
-
-        if (!matcher.find()) {
+        if (node == null || node.isNull()) {
 
             return null;
 
         }
 
-        return Integer.parseInt(matcher.group());
+        if (node.isTextual()) {
+
+            Matcher matcher = Pattern.compile("\\d+").matcher(node.asText());
+
+            if (!matcher.find()) {
+
+                return null;
+
+            }
+
+            return Integer.parseInt(matcher.group());
+
+        }
+
+        if (node.isArray() && !node.isEmpty()) {
+
+            return parseServings(node.get(0));
+
+        }
+
+        return null;
 
     }
 
