@@ -1303,4 +1303,28 @@ public class RecipeStructuredDataParserTest {
 
     }
 
+    @Test
+    void shouldParseFractionalQuantity() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Chicken Curry",
+                    "recipeIngredient": [
+                        "1/2 tsp cayenne powder ((adjust spice to taste))"
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("cayenne powder", ingredient.getName());
+        assertEquals(new BigDecimal("0.5"), ingredient.getQuantity());
+        assertEquals(Unit.TSP, ingredient.getUnit());
+        assertEquals("adjust spice to taste", ingredient.getPreparation());
+
+    }
+
 }
