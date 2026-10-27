@@ -1321,9 +1321,86 @@ public class RecipeStructuredDataParserTest {
         ImportedIngredient ingredient = result.getIngredients().get(0);
 
         assertEquals("cayenne powder", ingredient.getName());
-        assertEquals(new BigDecimal("0.5"), ingredient.getQuantity());
+        assertEquals(0, new BigDecimal("0.5").compareTo(ingredient.getQuantity()));
         assertEquals(Unit.TSP, ingredient.getUnit());
         assertEquals("adjust spice to taste", ingredient.getPreparation());
+
+    }
+
+    @Test
+    void shouldSeparateLemonJuicePreparationAndNote() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Test Recipe",
+                    "recipeIngredient": [
+                        "squeeze lemon juice (see tips below)"
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("lemon juice", ingredient.getName());
+        assertEquals(null, ingredient.getQuantity());
+        assertEquals(null, ingredient.getUnit());
+        assertEquals("squeeze", ingredient.getPreparation());
+        assertEquals("see tips below", ingredient.getNote());
+
+    }
+
+    @Test
+    void shouldSeparateEggPreparationAndGlazingInstruction() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Test Recipe",
+                    "recipeIngredient": [
+                        "beaten egg to glaze"
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("egg", ingredient.getName());
+        assertNull(ingredient.getQuantity());
+        assertNull(ingredient.getUnit());
+        assertEquals("beaten", ingredient.getPreparation());
+        assertEquals("to glaze", ingredient.getNote());
+
+    }
+
+    @Test
+    void shouldSeparateServingInstruction() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Test Recipe",
+                    "recipeIngredient": [
+                        "jam and clotted cream to serve"
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        assertEquals(2, result.getIngredients().size());
+
+        ImportedIngredient jam = result.getIngredients().get(0);
+        assertEquals("jam", jam.getName());
+        assertEquals("to serve", jam.getNote());
+
+        ImportedIngredient cream = result.getIngredients().get(1);
+        assertEquals("clotted cream", cream.getName());
+        assertEquals("to serve", cream.getNote());
 
     }
 

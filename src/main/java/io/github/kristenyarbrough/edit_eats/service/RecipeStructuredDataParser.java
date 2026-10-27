@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -202,7 +203,7 @@ public class RecipeStructuredDataParser {
 
             if (ingredient.isTextual()) {
 
-                ingredients.add(parseIngredientText(ingredient.asText()));
+                ingredients.addAll(parseIngredientText(ingredient.asText()));
 
             } else if (ingredient.isObject()
                     && !isIngredientSection(ingredient)) {
@@ -258,7 +259,7 @@ public class RecipeStructuredDataParser {
 
                 } else if (item.isTextual()) {
 
-                    ingredients.add(parseIngredientText(item.asText()));
+                    ingredients.addAll(parseIngredientText(item.asText()));
 
                 } else if (item.isObject()) {
 
@@ -324,19 +325,21 @@ public class RecipeStructuredDataParser {
 
     }
 
-    private ImportedIngredient parseIngredientText(String value) {
+    private List<ImportedIngredient> parseIngredientText(String value) {
 
         if (value == null || value.isBlank()) {
 
-            return ImportedIngredient.builder()
-                    .name(value)
-                    .build();
+            return List.of(
+                    ImportedIngredient.builder()
+                            .name(value)
+                            .build()
+            );
 
         }
 
         // Quantity + unit + ingredient name
         Matcher matcher = Pattern.compile(
-                "^\\s*(\\d+(?:\\.\\d+)?)\\s*"
+                "^\\s*(\\d+(?:\\.\\d+)?|\\d+/\\d+)\\s*"
                             + "(g|kg|ml|l|tsp|teaspoon|teaspoons|tbsp|tablespoon|tablespoons"
                             + "|cup|cups|oz|ounce|ounces|lb|lbs|pound|pounds"
                             + "|each|clove|cloves)"
@@ -346,7 +349,7 @@ public class RecipeStructuredDataParser {
 
         if (matcher.matches()) {
 
-            BigDecimal quantity = new BigDecimal(matcher.group(1));
+            BigDecimal quantity = parseQuantity(matcher.group(1));
             Unit unit = parseUnit(matcher.group(2));
             String name = matcher.group(3).trim();
 
@@ -355,7 +358,19 @@ public class RecipeStructuredDataParser {
                     .unit(unit)
                     .build();
 
-            return separatePreparationAndNote(ingredient, name);
+            // Extract a parenthesised preparation or note.
+            Matcher noteMatcher = Pattern.compile(
+                    "^(.*?)\\s+\\(+(.*?)\\)+\\s*$"
+            ).matcher(name);
+
+            if (noteMatcher.matches()) {
+
+                name = noteMatcher.group(1).trim();
+                ingredient.setPreparation(noteMatcher.group(2).trim());
+
+            }
+
+            return List.of(separatePreparationAndNote(ingredient, name));
 
         }
 
@@ -373,13 +388,49 @@ public class RecipeStructuredDataParser {
                     .quantity(quantity)
                     .build();
 
-            return separatePreparationAndNote(ingredient, name);
+            return List.of(separatePreparationAndNote(ingredient, name));
 
         }
 
-        return ImportedIngredient.builder()
-                .name(value.trim())
+        ImportedIngredient ingredient = ImportedIngredient.builder()
                 .build();
+
+        String name = value.trim();
+
+        // Extract a note enclosed in parentheses.
+        Matcher noteMatcher = Pattern.compile(
+                "^(.*?)\\s*\\(([^()]*)\\)\\s*$"
+        ).matcher(name);
+
+        if (noteMatcher.matches()) {
+
+            name = noteMatcher.group(1).trim();
+            ingredient.setNote(noteMatcher.group(2).trim());
+
+        }
+
+        // Split combined ingredients when they share "to serve".
+        Matcher servingMatcher = Pattern.compile(
+                "^(.+?)\\s+and\\s+(.+?)\\s+to serve$",
+                Pattern.CASE_INSENSITIVE
+        ).matcher(name);
+
+        if (servingMatcher.matches()) {
+
+            return List.of(
+                ImportedIngredient.builder()
+                        .name(servingMatcher.group(1).trim())
+                        .note("to serve")
+                        .build(),
+                ImportedIngredient.builder()
+                        .name(servingMatcher.group(2).trim())
+                        .note("to serve")
+                        .build()
+            );
+
+        }
+
+        return List.of(separatePreparationAndNote(ingredient, name));
 
     }
 
@@ -468,21 +519,19 @@ public class RecipeStructuredDataParser {
 
     private BigDecimal parseQuantity(String value) {
 
-        if (value == null || value.isBlank()) {
+        if (value.contains("/")) {
 
-            return null;
+            String[] parts = value.split("/");
 
-        }
-
-        try {
-
-            return new BigDecimal(value);
-
-        } catch (NumberFormatException e) {
-
-            return null;
+            return new BigDecimal(parts[0]).divide(
+                    new BigDecimal(parts[1]),
+                    10,
+                    RoundingMode.HALF_UP
+            );
 
         }
+
+        return new BigDecimal(value);
 
     }
 
@@ -699,6 +748,20 @@ public class RecipeStructuredDataParser {
 
         String cleanedName = name.trim();
 
+        Matcher leadingPreparationMatcher = Pattern.compile(
+                "^(beaten)\\s+(.+?)\\s+(to glaze)$",
+                Pattern.CASE_INSENSITIVE
+        ).matcher(cleanedName);
+
+        if (leadingPreparationMatcher.matches()) {
+
+            ingredient.setName(leadingPreparationMatcher.group(2).trim());
+            ingredient.setPreparation(leadingPreparationMatcher.group(1).trim());
+            ingredient.setNote(leadingPreparationMatcher.group(3).trim());
+            return ingredient;
+
+        }
+
         // Extract an extra usage note, such as "plus more for dusting".
         Matcher noteMatcher = Pattern.compile(
                 "^(.*?)\\s+(plus more .+)$",
@@ -714,10 +777,10 @@ public class RecipeStructuredDataParser {
 
         // Extract a preparation phrase from the remaining ingredient name.
         Matcher preparationMatcher = Pattern.compile(
-                "^(.*?)\\s+(cut into cubes|finely chopped|roughly chopped"
-                            + "|chopped|diced|minced|grated|sliced|crushed"
-                            + "|beaten|softened|melted|peeled|deseeded"
-                            + "|finely sliced|thinly sliced)\\s*$",
+                "^(.*?)\\s+(squeeze|cut into cubes|finely chopped|roughly chopped"
+                        + "|chopped|diced|minced|grated|sliced|crushed"
+                        + "|beaten|softened|melted|peeled|deseeded"
+                        + "|finely sliced|thinly sliced)\\s*$",
                 Pattern.CASE_INSENSITIVE
         ).matcher(cleanedName);
 
@@ -725,6 +788,11 @@ public class RecipeStructuredDataParser {
 
             ingredient.setName(preparationMatcher.group(1).trim());
             ingredient.setPreparation(preparationMatcher.group(2).trim());
+
+        } else if (cleanedName.toLowerCase().startsWith("squeeze ")) {
+
+            ingredient.setName(cleanedName.substring("squeeze ".length()).trim());
+            ingredient.setPreparation("squeeze");
 
         } else {
 
@@ -735,5 +803,6 @@ public class RecipeStructuredDataParser {
         return ingredient;
 
     }
+
 
 }
