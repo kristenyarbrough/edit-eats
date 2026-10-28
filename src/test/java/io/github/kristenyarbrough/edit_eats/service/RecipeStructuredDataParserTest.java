@@ -5,9 +5,7 @@ import io.github.kristenyarbrough.edit_eats.dto.imported.*;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class RecipeStructuredDataParserTest {
@@ -1401,6 +1399,121 @@ public class RecipeStructuredDataParserTest {
         ImportedIngredient cream = result.getIngredients().get(1);
         assertEquals("clotted cream", cream.getName());
         assertEquals("to serve", cream.getNote());
+
+    }
+
+    @Test
+    void shouldParseMixedFractionalQuantity() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Pancakes",
+                    "recipeIngredient": [
+                        "1 1/2 cups flour"
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("flour", ingredient.getName());
+        assertEquals(0, new BigDecimal("1.5").compareTo(ingredient.getQuantity()));
+        assertEquals(Unit.CUP, ingredient.getUnit());
+
+    }
+
+    @Test
+    void shouldParseUnicodeFractionalQuantity() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Pancakes",
+                    "recipeIngredient": [
+                        "½ cup flour"
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("flour", ingredient.getName());
+        assertEquals(0, new BigDecimal("0.5").compareTo(ingredient.getQuantity()));
+        assertEquals(Unit.CUP, ingredient.getUnit());
+
+    }
+
+    @Test
+    void shouldParseUnicodeMixedFractionalQuantity() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Pancakes",
+                    "recipeIngredient": [
+                        "1 ½ cup flour"
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("flour", ingredient.getName());
+        assertEquals(0, new BigDecimal("1.5").compareTo(ingredient.getQuantity()));
+        assertEquals(Unit.CUP, ingredient.getUnit());
+
+    }
+
+    @Test
+    void shouldParseUnicodeMixedFractionalQuantityWithoutSpace() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Pancakes",
+                    "recipeIngredient": [
+                        "1½ cup flour"
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("flour", ingredient.getName());
+        assertEquals(0, new BigDecimal("1.5").compareTo(ingredient.getQuantity()));
+        assertEquals(Unit.CUP, ingredient.getUnit());
+
+    }
+
+    @Test
+    void shouldParseAnotherUnicodeFractionalQuantity() {
+
+        String json = """
+                {
+                    "@type": "Recipe",
+                    "name": "Pancakes",
+                    "recipeIngredient": [
+                        "¾ cup milk"
+                    ]
+                }
+                """;
+
+        ImportedRecipe result = parser.parse(json);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("milk", ingredient.getName());
+        assertEquals(0, new BigDecimal("0.75").compareTo(ingredient.getQuantity()));
+        assertEquals(Unit.CUP, ingredient.getUnit());
 
     }
 

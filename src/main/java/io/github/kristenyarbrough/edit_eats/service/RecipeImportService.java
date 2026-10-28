@@ -25,7 +25,11 @@ public class RecipeImportService {
 
     private final RecipeStructuredDataParser structuredDataParser;
     private final RecipePageFetcher pageFetcher;
-//    private final IngredientRepository ingredientRepository;
+    private static final Pattern ATTACHED_QUANTITY_UNIT_PATTERN = Pattern.compile(
+            "^((?:\\d+(?:\\.\\d+)?\\s*[¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]?|[¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]+))" +
+                    "(kg|g|ml|l|tsp|ts|tbsp|tbs|tbl|cup|c|oz|lb)s?$",
+            Pattern.CASE_INSENSITIVE
+    );
 
     public ImportedRecipe importRecipeFromUrl(String url) {
 
@@ -322,6 +326,26 @@ public class RecipeImportService {
     private ImportedIngredient parseIngredient(String line) {
 
         String[] parts = line.split("\\s+", 4);
+
+        Matcher attachedUnitMatcher = ATTACHED_QUANTITY_UNIT_PATTERN.matcher(parts[0]);
+
+        if (parts.length >= 2 && attachedUnitMatcher.matches()) {
+
+            BigDecimal quantity = parseQuantity(attachedUnitMatcher.group(1));
+            Unit unit = parseUnit(attachedUnitMatcher.group(2));
+            String ingredientText = line.substring(parts[0].length()).trim();
+
+            ParsedIngredientText parsed = parseIngredientText(ingredientText);
+
+            return ImportedIngredient.builder()
+                    .quantity(quantity)
+                    .unit(unit)
+                    .name(parsed.name())
+                    .preparation(parsed.preparation())
+                    .optional(parsed.optional())
+                    .build();
+
+        }
 
         BigDecimal quantity = null;
         Unit unit = null;
@@ -665,9 +689,7 @@ public class RecipeImportService {
         // 400ml chicken stock
         // 150g Greek yoghurt
         if (parts.length >= 2
-                && parts[0].matches(
-                "\\d+(?:\\.\\d+)?(?:g|kg|ml|l|tsp|tbsp|cup|oz|lb)s?"
-        )) {
+                && ATTACHED_QUANTITY_UNIT_PATTERN.matcher(parts[0]).matches()) {
 
             return true;
 
@@ -749,9 +771,7 @@ public class RecipeImportService {
         // 50g ground almonds
         // 400ml chicken stock
         if (parts.length >= 2
-        && parts[0].matches(
-                "\\d+(?:\\.\\d+)?(?:g|kg|ml|l|tsp|tbsp|cup|oz|lb)s?"
-        )) {
+                && ATTACHED_QUANTITY_UNIT_PATTERN.matcher(parts[0]).matches()) {
 
             return true;
 

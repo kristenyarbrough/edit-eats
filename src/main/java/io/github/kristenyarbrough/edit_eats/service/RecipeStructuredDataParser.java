@@ -28,9 +28,6 @@ public class RecipeStructuredDataParser {
 
             JsonNode recipe = findRecipeNode(root);
 
-            System.out.println("prepTime: " + recipe.path("prepTime"));
-            System.out.println("cookTime: " + recipe.path("cookTime"));
-            System.out.println("totalTime: " + recipe.path("totalTime"));
             System.out.println("Recipe structured data: " + recipe.toPrettyString());
 
             if (recipe == null) {
@@ -339,7 +336,7 @@ public class RecipeStructuredDataParser {
 
         // Quantity + unit + ingredient name
         Matcher matcher = Pattern.compile(
-                "^\\s*(\\d+(?:\\.\\d+)?|\\d+/\\d+)\\s*"
+                "^\\s*((?:\\d+\\s*)?[½⅓⅔¼¾⅛⅜⅝⅞]|\\d+\\s+\\d+/\\d+|\\d+(?:\\.\\d+)?|\\d+/\\d+)\\s*"
                             + "(g|kg|ml|l|tsp|teaspoon|teaspoons|tbsp|tablespoon|tablespoons"
                             + "|cup|cups|oz|ounce|ounces|lb|lbs|pound|pounds"
                             + "|each|clove|cloves)"
@@ -519,6 +516,48 @@ public class RecipeStructuredDataParser {
 
     private BigDecimal parseQuantity(String value) {
 
+        value = value.trim();
+
+        // Handle Unicode fractions, include mixed numbers.
+        Matcher unicodeMatcher = Pattern.compile(
+                "^(\\d+)\\s*([½⅓⅔¼¾⅛⅜⅝⅞])$|^([½⅓⅔¼¾⅛⅜⅝⅞])$"
+        ).matcher(value);
+
+        if (unicodeMatcher.matches()) {
+
+            String wholePart = unicodeMatcher.group(1);
+            String fractionPart = wholePart != null
+                    ? unicodeMatcher.group(2)
+                    : unicodeMatcher.group(3);
+
+            BigDecimal fraction = parseUnicodeFraction(fractionPart);
+
+            return wholePart != null
+                    ? new BigDecimal(wholePart).add(fraction)
+                    : fraction;
+
+        }
+
+        // Handle mixed fractions, such as "1 1/2".
+        if (value.matches("\\d+\\s+\\d+/\\d+")) {
+
+            String[] parts = value.split("\\s+");
+            String[] fractionParts = parts[1].split("/");
+
+            BigDecimal wholeNumber = new BigDecimal(parts[0]);
+
+            BigDecimal fraction = new BigDecimal(fractionParts[0])
+                    .divide(
+                            new BigDecimal(fractionParts[1]),
+                            10,
+                            RoundingMode.HALF_UP
+                    );
+
+            return wholeNumber.add(fraction);
+
+        }
+
+        // Handle simple fractions, such as "1/2".
         if (value.contains("/")) {
 
             String[] parts = value.split("/");
@@ -531,7 +570,29 @@ public class RecipeStructuredDataParser {
 
         }
 
+        // Handle whole numbers and decimals.
         return new BigDecimal(value);
+
+    }
+
+    private BigDecimal parseUnicodeFraction(String value) {
+
+        return switch (value) {
+
+            case "½" -> new BigDecimal("0.5");
+            case "⅓" -> new BigDecimal("1").divide(
+                    new BigDecimal("3"), 10, RoundingMode.HALF_UP);
+            case "⅔" -> new BigDecimal("2").divide(
+                    new BigDecimal("3"), 10, RoundingMode.HALF_UP);
+            case "¼" -> new BigDecimal("0.25");
+            case "¾" -> new BigDecimal("0.75");
+            case "⅛" -> new BigDecimal("0.125");
+            case "⅜" -> new BigDecimal("0.375");
+            case "⅝" -> new BigDecimal("0.625");
+            case "⅞" -> new BigDecimal("0.875");
+            default -> null;
+
+        };
 
     }
 

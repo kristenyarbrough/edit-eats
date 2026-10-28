@@ -1,11 +1,8 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
-import io.github.kristenyarbrough.edit_eats.domain.User;
 import io.github.kristenyarbrough.edit_eats.dto.imported.*;
 import io.github.kristenyarbrough.edit_eats.dto.response.RecipeDraftResponse;
-import io.github.kristenyarbrough.edit_eats.repository.IngredientRepository;
-import io.github.kristenyarbrough.edit_eats.repository.UserRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.Test;
@@ -16,7 +13,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -30,12 +26,6 @@ class RecipeImportServiceTest {
 
     @Mock
     private RecipePageFetcher pageFetcher;
-
-    @Mock
-    private IngredientRepository ingredientRepository;
-
-    @Mock
-    private UserRepository userRepository;
 
     @InjectMocks
     private RecipeImportService recipeImportService;
@@ -668,6 +658,90 @@ class RecipeImportServiceTest {
         assertEquals(Unit.TBSP, result.getIngredients().get(2).getUnit());
         assertEquals(Unit.TSP, result.getIngredients().get(3).getUnit());
         assertEquals(Unit.CLOVE, result.getIngredients().get(4).getUnit());
+
+    }
+
+    @Test
+    void shouldParseIngredientsWithAttachedQuantityAndUnit() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Cake
+                
+                Ingredients:
+                50g ground almonds
+                400ml milk
+                1.5kg potatoes
+                50g ground almonds, finely chopped
+                100g icing sugar (optional)
+                2tbs olive oil
+                3ts salt
+                1c flour
+                ½tsp cinnamon
+                1½tsp baking soda
+                1 ½ tbsp butter
+                
+                Method:
+                Mix ingredients.
+                """);
+
+        assertEquals(11, result.getIngredients().size());
+
+        ImportedIngredient almonds = result.getIngredients().get(0);
+        assertEquals(0, new BigDecimal("50").compareTo(almonds.getQuantity()));
+        assertEquals(Unit.G, almonds.getUnit());
+        assertEquals("ground almonds", almonds.getName());
+
+        ImportedIngredient milk = result.getIngredients().get(1);
+        assertEquals(0, new BigDecimal("400").compareTo(milk.getQuantity()));
+        assertEquals(Unit.ML, milk.getUnit());
+        assertEquals("milk", milk.getName());
+
+        ImportedIngredient potatoes = result.getIngredients().get(2);
+        assertEquals(0, new BigDecimal("1.5").compareTo(potatoes.getQuantity()));
+        assertEquals(Unit.KG, potatoes.getUnit());
+        assertEquals("potatoes", potatoes.getName());
+
+        ImportedIngredient choppedAlmonds = result.getIngredients().get(3);
+        assertEquals(0, new BigDecimal("50").compareTo(choppedAlmonds.getQuantity()));
+        assertEquals(Unit.G, choppedAlmonds.getUnit());
+        assertEquals("ground almonds", choppedAlmonds.getName());
+        assertEquals("finely chopped", choppedAlmonds.getPreparation());
+
+        ImportedIngredient sugar = result.getIngredients().get(4);
+        assertEquals(0, new BigDecimal("100").compareTo(sugar.getQuantity()));
+        assertEquals(Unit.G, sugar.getUnit());
+        assertEquals("icing sugar", sugar.getName());
+        assertTrue(sugar.getOptional());
+
+        ImportedIngredient oil = result.getIngredients().get(5);
+        assertEquals(0, new BigDecimal("2").compareTo(oil.getQuantity()));
+        assertEquals(Unit.TBSP, oil.getUnit());
+        assertEquals("olive oil", oil.getName());
+
+        ImportedIngredient salt = result.getIngredients().get(6);
+        assertEquals(0, new BigDecimal("3").compareTo(salt.getQuantity()));
+        assertEquals(Unit.TSP, salt.getUnit());
+        assertEquals("salt", salt.getName());
+
+        ImportedIngredient flour = result.getIngredients().get(7);
+        assertEquals(0, new BigDecimal("1").compareTo(flour.getQuantity()));
+        assertEquals(Unit.CUP, flour.getUnit());
+        assertEquals("flour", flour.getName());
+
+        ImportedIngredient cinnamon = result.getIngredients().get(8);
+        assertEquals(0, new BigDecimal("0.5").compareTo(cinnamon.getQuantity()));
+        assertEquals(Unit.TSP, cinnamon.getUnit());
+        assertEquals("cinnamon", cinnamon.getName());
+
+        ImportedIngredient bakingSoda = result.getIngredients().get(9);
+        assertEquals(0, new BigDecimal("1.5").compareTo(bakingSoda.getQuantity()));
+        assertEquals(Unit.TSP, bakingSoda.getUnit());
+        assertEquals("baking soda", bakingSoda.getName());
+
+        ImportedIngredient butter = result.getIngredients().get(10);
+        assertEquals(0, new BigDecimal("1.5").compareTo(butter.getQuantity()));
+        assertEquals(Unit.TBSP, butter.getUnit());
+        assertEquals("butter", butter.getName());
 
     }
 
