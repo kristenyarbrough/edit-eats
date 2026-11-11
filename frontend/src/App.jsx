@@ -7,7 +7,7 @@ import RecipeCardImage from './components/RecipeCardImage'
 
 function App() {
     const [showImport, setShowImport] = useState(false)
-    const [importMode, setImportMode] = useState('text')
+    const [importMode, setImportMode] = useState('url')
     const [recipeUrl, setRecipeUrl] = useState('')
     const [recipeText, setRecipeText] = useState('')
     const [recipe, setRecipe] = useState(null)
@@ -509,18 +509,18 @@ function App() {
                         <div className="import-mode-selector">
                             <button
                                 type="button"
-                                className={importMode === 'text' ? 'active' : ''}
-                                onClick={() => setImportMode('text')}
+                                className={importMode === 'url' ? 'active' : ''}
+                                onClick={() => setImportMode('url')}
                             >
-                                Import recipe text
+                                Import from URL
                             </button>
 
                             <button
                                 type="button"
-                                className={importMode === 'url' ? 'active' : ''}
-                                onClick={() => setImportMode('url')}
+                                className={importMode === 'text' ? 'active' : ''}
+                                onClick={() => setImportMode('text')}
                             >
-                                Import from url
+                                Import recipe text
                             </button>
                         </div>
 
@@ -545,12 +545,18 @@ function App() {
                         )}
 
                         <div className="import-recipe-actions">
-                            <button onClick={() => setShowImport(false)}>
+                            <button
+                                className="button-secondary"
+                                onClick={() => setShowImport(false)}
+                            >
                                 <X size={20} strokeWidth={1.8} />
                                 Cancel
                             </button>
 
-                            <button onClick={handleImport}>
+                            <button
+                                className="button-primary"
+                                onClick={handleImport}
+                            >
                                 <Import size={20} strokeWidth={1.8} />
                                 Import
                             </button>

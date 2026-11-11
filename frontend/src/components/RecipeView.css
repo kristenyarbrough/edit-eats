@@ -8,7 +8,7 @@
     font-size: clamp(2rem, 5vw, 2.75rem);
     line-height: 1.15;
     font-weight: 700;
-    color: #3f5037;
+    color: var(--color-sage);
     margin: 1.5rem 0 1rem;
     letter-spacing: -0.03em;
 }
@@ -47,10 +47,10 @@
     align-items: center;
     gap: 0.4rem;
     padding: 0.5rem 0.9rem;
-    border: none;
-    border-radius: 6px;
-    background: #f6e497;
-    color: #415037;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-control);
+    background: var(--color-cream-button);
+    color: var(--color-sage);
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
@@ -58,7 +58,7 @@
 }
 
 .recipe-back-button:hover {
-    background-color: #ead77d;
+    background-color: var(--color-cream-button-hover);
 }
 
 .recipe-edit-button {
@@ -67,25 +67,25 @@
     justify-content: center;
     gap: 0.4rem;
     padding: 0.5rem 0.9rem;
-    border: 1px solid #9aaa83;
-    border-radius: 8px;
-    background: transparent;
-    color: #46583c;
+    border: 1px solid var(--color-sage);
+    border-radius: var(--radius-control);
+    background: var(--color-sage-light);
+    color: var(--color-sage);
     font: inherit;
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
 .recipe-edit-button:hover {
-    background: #edf2e7;
-    color: #758866;
+    background: var(--color-sage-button-hover);
+    color: var(--color-sage);
 }
 
 .recipe-edit-button:focus-visible {
-    outline: 3px solid #9aaa83;
-    outline-offset: 3px;
+    outline: 2px solid var(--focus-color);
+    outline-offset: 2px;
 }
 
 .recipe-delete-button {
@@ -94,18 +94,19 @@
     justify-content: center;
     gap: 0.4rem;
     padding: 0.55rem 0.85rem;
-    border: 1px solid #b76a58;
-    border-radius: 8px;
-    background: transparent;
-    color: #8c3e32;
+    border: 1px solid var(--color-danger);
+    border-radius: var(--radius-control);
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
     font: inherit;
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
 .recipe-delete-button:hover {
-    background: #f7e8e4;
+    background: var(--color-danger-bg-hover);
 }
 
 .recipe-detail {
@@ -113,14 +114,14 @@
     flex-direction: column;
     gap: 6px;
     padding: 14px 16px;
-    background-color: #f7f5ed;
-    border: 1px solid #e5e0cf;
-    border-radius: 12px;
+    background-color: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
     min-width: 0;
 }
 
 .recipe-detail-label {
-    color: #747963;
+    color: var(--color-sage);
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -128,7 +129,7 @@
 }
 
 .recipe-detail strong {
-    color: #43543b;
+    color: var(--color-sage);
     font-size: 1.1rem;
     font-weight: 600;
 }
@@ -144,10 +145,10 @@
     display: inline-flex;
     align-items: center;
     padding: 0.4rem 0.85rem;
-    border: 1px solid #d9e1cd;
+    border: 1px solid var(--color-border-strong);
     border-radius: 20px;
-    background-color: #f1f3eb;
-    color: #43543b;
+    background-color: var(--color-sage-light);
+    color: var(--color-sage);
     font-size: 0.85rem;
     font-weight: 500;
 }
@@ -159,22 +160,22 @@
 }
 
 .recipe-view-source a {
-    color: #52634a;
+    color: var(--color-sage);
     font-weight: 600;
     text-decoration: underline;
-    text-decoration-color: #cbd5bd;
+    text-decoration-color: var(--color-border-strong);
     text-underline-offset: 3px;
 }
 
 .recipe-view-source a:hover {
-    color: #3f5037;
+    color: var(--color-sage);
     text-decoration-color: currentColor;
 }
 
 .recipe-view-section {
     margin: 1rem 0;
     padding-left: 0.75rem;
-    border-left: 2px solid #e5e0cf;
+    border-left: 2px solid var(--color-border);
 }
 
 .recipe-view ul {
@@ -201,16 +202,16 @@
 .recipe-view li input[type="checkbox"] {
     flex-shrink: 0;
     margin-top: 0.25rem;
-    accent-color: #52634a;
+    accent-color: var(--color-sage);
     cursor: pointer;
 }
 
 .recipe-view section {
     margin-top: 2rem;
     padding: 1.5rem;
-    background-color: #fbfaf6;
-    border: 1px solid #e8e4d8;
-    border-radius: 14px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
 }
 
 .recipe-view section ol {
@@ -230,16 +231,16 @@
 }
 
 .recipe-view section ol li:hover {
-    background-color: #e8eddf;
+    background-color: var(--color-sage-light);
 }
 
 .recipe-view-section h3 {
     margin: 1.5rem 0 0.75rem;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid #e5e0cf;
+    border-bottom: 1px solid var(--color-border);
     font-size: 1.05rem;
     font-weight: 600;
-    color: #52634a;
+    color: var(--color-sage);
 }
 
 .recipe-step-number {
@@ -250,8 +251,8 @@
     height: 1.75rem;
     margin-right: 0.65rem;
     border-radius: 50%;
-    background-color: #e8eddf;
-    color: #43543b;
+    background-color: var(--color-sage-light);
+    color: var(--color-sage);
     font-size: 0.85rem;
     font-weight: 700;
     vertical-align: middle;
@@ -263,7 +264,7 @@
 }
 
 .recipe-view ul li:has(input[type="checkbox"]:checked) {
-    background-color: #f1f3eb;
+    background-color: var(--color-sage-light);
     border-radius: 6px;
 }
 

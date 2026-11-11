@@ -1,909 +1,756 @@
-import { useEffect, useRef, useState } from 'react'
-import { MoveLeft, Save } from 'lucide-react'
-import {
-    updateNestedSection,
-    removeNestedSection,
-    addNestedSection
-} from '../utils/nestedSectionUtils'
-import { moveItem } from '../utils/reorderUtils'
-import IngredientEditor from './IngredientEditor'
-import InstructionStepEditor from './InstructionStepEditor'
-import IngredientSection from './IngredientSection'
-import InstructionSection from './InstructionSection'
-import TimeEditor from './TimeEditor'
+    import { useEffect, useRef, useState } from 'react'
+    import { MoveLeft, Save } from 'lucide-react'
+    import {
+        updateNestedSection,
+        removeNestedSection,
+        addNestedSection
+    } from '../utils/nestedSectionUtils'
+    import { moveItem } from '../utils/reorderUtils'
+    import IngredientEditor from './IngredientEditor'
+    import InstructionStepEditor from './InstructionStepEditor'
+    import IngredientSection from './IngredientSection'
+    import InstructionSection from './InstructionSection'
+    import TimeEditor from './TimeEditor'
 
-function RecipeReview ({ recipe, onBack, onSave }) {
-    const [editedRecipe, setEditedRecipe] = useState(recipe)
-    const [availableCategories, setAvailableCategories] = useState([])
-    const [creatingRecipeCategory, setCreatingRecipeCategory] = useState(false)
-    const [newRecipeCategoryName, setNewRecipeCategoryName] = useState('')
-    const [recipeCategoryError, setRecipeCategoryError] = useState('')
-    const [availableIngredients, setAvailableIngredients] = useState([])
-    const [availableIngredientCategories, setAvailableIngredientCategories] = useState([])
-    const [validationErrors, setValidationErrors] = useState({})
-    const [hasAttemptedSave, setHasAttemptedSave] = useState(false)
-    const [draggedIngredientIndex, setDraggedIngredientIndex] = useState(null)
-    const [dragOverIngredientIndex, setDragOverIngredientIndex] = useState(null)
-    const [draggedSectionIngredient, setDraggedSectionIngredient] = useState(null)
-    const [dragOverSectionIngredient, setDragOverSectionIngredient] = useState(null)
-    const [draggedStepIndex, setDraggedStepIndex] = useState(null)
-    const [dragOverStepIndex, setDragOverStepIndex] = useState(null)
-    const [draggedSectionIndex, setDraggedSectionIndex] = useState(null)
-    const [dragOverSectionIndex, setDragOverSectionIndex] = useState(null)
-    const [draggedIngredientSection, setDraggedIngredientSection] = useState(null)
-    const [dragOverIngredientSection, setDragOverIngredientSection] = useState(null)
-    const servingsRef = useRef(null)
-    const difficultyRef = useRef(null)
-    const ingredientsRef = useRef(null)
-    const methodRef = useRef(null)
+    function RecipeReview ({ recipe, onBack, onSave }) {
+        const [editedRecipe, setEditedRecipe] = useState(recipe)
+        const [availableCategories, setAvailableCategories] = useState([])
+        const [creatingRecipeCategory, setCreatingRecipeCategory] = useState(false)
+        const [newRecipeCategoryName, setNewRecipeCategoryName] = useState('')
+        const [recipeCategoryError, setRecipeCategoryError] = useState('')
+        const [availableIngredients, setAvailableIngredients] = useState([])
+        const [availableIngredientCategories, setAvailableIngredientCategories] = useState([])
+        const [validationErrors, setValidationErrors] = useState({})
+        const [hasAttemptedSave, setHasAttemptedSave] = useState(false)
+        const [draggedIngredientIndex, setDraggedIngredientIndex] = useState(null)
+        const [dragOverIngredientIndex, setDragOverIngredientIndex] = useState(null)
+        const [draggedSectionIngredient, setDraggedSectionIngredient] = useState(null)
+        const [dragOverSectionIngredient, setDragOverSectionIngredient] = useState(null)
+        const [draggedStepIndex, setDraggedStepIndex] = useState(null)
+        const [dragOverStepIndex, setDragOverStepIndex] = useState(null)
+        const [draggedSectionIndex, setDraggedSectionIndex] = useState(null)
+        const [dragOverSectionIndex, setDragOverSectionIndex] = useState(null)
+        const [draggedIngredientSection, setDraggedIngredientSection] = useState(null)
+        const [dragOverIngredientSection, setDragOverIngredientSection] = useState(null)
+        const servingsRef = useRef(null)
+        const difficultyRef = useRef(null)
+        const ingredientsRef = useRef(null)
+        const methodRef = useRef(null)
 
-    const matchSectionIngredients = (sections, availableIngredients) =>
-        sections.map((section) => ({
-            ...section,
+        const matchSectionIngredients = (sections, availableIngredients) =>
+            sections.map((section) => ({
+                ...section,
 
-            ingredients: (section.ingredients ?? []).map((ingredient) => {
-                const matchingIngredient = availableIngredients.find(
-                    (availableIngredient) =>
-                        availableIngredient.name.trim().toLowerCase() ===
-                        ingredient.ingredientName?.trim().toLowerCase()
-                )
-
-                return matchingIngredient
-                    ? {
-                        ...ingredient,
-                        ingredientId: matchingIngredient.id
-                    }
-                    : ingredient
-            }),
-
-            sections: matchSectionIngredients(
-                section.sections ?? [],
-                availableIngredients
-            )
-        }))
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                const [
-                    categoryResponse,
-                    ingredientResponse,
-                    ingredientCategoryResponse
-                ] = await Promise.all([
-                    fetch('/api/recipe-categories'),
-                    fetch('/api/ingredients'),
-                    fetch('/api/ingredient-categories')
-                ])
-
-                if (!categoryResponse.ok) {
-                    throw new Error(`Failed to load recipe categories (${categoryResponse.status})`)
-                }
-
-                if (!ingredientResponse.ok) {
-                    throw new Error(`Failed to load ingredients (${ingredientResponse.status})`)
-                }
-
-                if (!ingredientCategoryResponse.ok) {
-                    throw new Error(`Failed to load ingredient categories (${ingredientCategoryResponse.status})`)
-                }
-
-                const categories = await categoryResponse.json()
-                const ingredients = await ingredientResponse.json()
-                const ingredientCategories = await ingredientCategoryResponse.json()
-
-                setAvailableCategories(categories)
-                setAvailableIngredients(ingredients)
-                setAvailableIngredientCategories(ingredientCategories)
-
-                setEditedRecipe((currentRecipe) => ({
-                    ...currentRecipe,
-
-                    ingredients: currentRecipe.ingredients.map((ingredient) => {
-                        const matchingIngredient = ingredients.find(
-                            (availableIngredient) =>
-                                availableIngredient.name.trim().toLowerCase() ===
-                                ingredient.ingredientName?.trim().toLowerCase()
-                        )
-
-                        return matchingIngredient
-                            ? {
-                                ...ingredient,
-                                ingredientId: matchingIngredient.id
-                            }
-                            : ingredient
-                    }),
-
-                    ingredientSections: matchSectionIngredients(
-                        currentRecipe.ingredientSections ?? [],
-                        ingredients
+                ingredients: (section.ingredients ?? []).map((ingredient) => {
+                    const matchingIngredient = availableIngredients.find(
+                        (availableIngredient) =>
+                            availableIngredient.name.trim().toLowerCase() ===
+                            ingredient.ingredientName?.trim().toLowerCase()
                     )
-                }))
-            } catch (error) {
-                console.error('Failed to load recipe review data:', error)
-            }
-        }
 
-        loadData()
-    }, [])
-    const updateRecipeField = (field, value) => {
-        setEditedRecipe((current) => {
-            const updatedRecipe = {
-                ...current,
-                [field]: value,
-            }
-
-            if (field === 'prepMinutes' || field === 'cookMinutes' || field === 'passiveMinutes') {
-                const prep = field === 'prepMinutes'
-                    ? value
-                    : current.prepMinutes
-
-                const cook = field === 'cookMinutes'
-                    ? value
-                    : current.cookMinutes
-
-                const passive = field === 'passiveMinutes'
-                    ? value
-                    : current.passiveMinutes
-
-                updatedRecipe.totalMinutes =
-                    (prep || 0) + (cook || 0) + (passive || 0)
-            }
-
-            console.log('Update recipe field:', field, value)
-
-            return updatedRecipe
-        })
-    }
-    const updateIngredient = (index, updatedIngredient) => {
-        setEditedRecipe((current) => {
-            const updatedRecipe = {
-                ...current,
-                ingredients: current.ingredients.map(
-                    (ingredient, ingredientIndex) =>
-                        ingredientIndex === index
-                        ? updatedIngredient
+                    return matchingIngredient
+                        ? {
+                            ...ingredient,
+                            ingredientId: matchingIngredient.id
+                        }
                         : ingredient
-                ),
-            }
+                }),
 
-            updateIngredientValidation(updatedRecipe)
-
-            return updatedRecipe
-        })
-    }
-    const removeIngredient = (index) => {
-        setEditedRecipe((current) => {
-            const updatedRecipe = {
-                ...current,
-                ingredients: current.ingredients.filter(
-                    (_, ingredientIndex) => ingredientIndex !== index
-                ),
-            }
-
-            updateIngredientValidation(updatedRecipe)
-
-            return updatedRecipe
-        })
-    }
-    const addIngredient = () => {
-        setEditedRecipe((current) => ({
-            ...current,
-            ingredients: [
-                ...current.ingredients,
-                {
-                    quantity: null,
-                    unit: null,
-                    ingredientName: '',
-                    preparation: null,
-                    optional: false
-                }
-            ]
-        }))
-    }
-    const moveIngredient = (fromIndex, toIndex) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            ingredients: moveItem(
-                current.ingredients,
-                fromIndex,
-                toIndex
-            )
-        }))
-    }
-    const addStep = () => {
-        setEditedRecipe((current) => ({
-            ...current,
-            steps: [
-                ...current.steps,
-                {
-                    id: crypto.randomUUID(),
-                    instruction: ''
-                }
-            ]
-        }))
-    }
-    const moveStep = (fromIndex, toIndex) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            steps: moveItem(
-                current.steps,
-                fromIndex,
-                toIndex
-            )
-        }))
-    }
-    const moveInstructionSection = (sectionPath, fromIndex, toIndex) => {
-        setEditedRecipe((currentRecipe) => {
-            if (sectionPath.length === 0) {
-                return {
-                   ...currentRecipe,
-                    instructionSections: moveItem(
-                        currentRecipe.instructionSections,
-                        fromIndex,
-                        toIndex
-                    )
-                }
-            }
-
-            return {
-                ...currentRecipe,
-                instructionSections: updateNestedSection(
-                    currentRecipe.instructionSections,
-                    sectionPath,
-                    (section) => ({
-                        ...section,
-                        sections: moveItem(
-                            section.sections,
-                            fromIndex,
-                            toIndex
-                        )
-                    })
+                sections: matchSectionIngredients(
+                    section.sections ?? [],
+                    availableIngredients
                 )
-            }
-        })
-    }
-    const addIngredientSection = (sectionPath = null) => {
-        const newSection = {
-            name: 'New section',
-            ingredients: [
-                {
-                    quantity: null,
-                    unit: null,
-                    ingredientName: '',
-                    preparation: null,
-                    optional: false
-                }
-            ],
-            sections: []
-        }
+            }))
+        useEffect(() => {
+            const loadData = async () => {
+                try {
+                    const [
+                        categoryResponse,
+                        ingredientResponse,
+                        ingredientCategoryResponse
+                    ] = await Promise.all([
+                        fetch('/api/recipe-categories'),
+                        fetch('/api/ingredients'),
+                        fetch('/api/ingredient-categories')
+                    ])
 
-        setEditedRecipe((current) => {
-            if (sectionPath === null) {
-                return {
+                    if (!categoryResponse.ok) {
+                        throw new Error(`Failed to load recipe categories (${categoryResponse.status})`)
+                    }
+
+                    if (!ingredientResponse.ok) {
+                        throw new Error(`Failed to load ingredients (${ingredientResponse.status})`)
+                    }
+
+                    if (!ingredientCategoryResponse.ok) {
+                        throw new Error(`Failed to load ingredient categories (${ingredientCategoryResponse.status})`)
+                    }
+
+                    const categories = await categoryResponse.json()
+                    const ingredients = await ingredientResponse.json()
+                    const ingredientCategories = await ingredientCategoryResponse.json()
+
+                    setAvailableCategories(categories)
+                    setAvailableIngredients(ingredients)
+                    setAvailableIngredientCategories(ingredientCategories)
+
+                    setEditedRecipe((currentRecipe) => ({
+                        ...currentRecipe,
+
+                        ingredients: currentRecipe.ingredients.map((ingredient) => {
+                            const matchingIngredient = ingredients.find(
+                                (availableIngredient) =>
+                                    availableIngredient.name.trim().toLowerCase() ===
+                                    ingredient.ingredientName?.trim().toLowerCase()
+                            )
+
+                            return matchingIngredient
+                                ? {
+                                    ...ingredient,
+                                    ingredientId: matchingIngredient.id
+                                }
+                                : ingredient
+                        }),
+
+                        ingredientSections: matchSectionIngredients(
+                            currentRecipe.ingredientSections ?? [],
+                            ingredients
+                        )
+                    }))
+                } catch (error) {
+                    console.error('Failed to load recipe review data:', error)
+                }
+            }
+
+            loadData()
+        }, [])
+        const updateRecipeField = (field, value) => {
+            setEditedRecipe((current) => {
+                const updatedRecipe = {
                     ...current,
-                    ingredientSections: [
-                        ...current.ingredientSections,
-                        newSection
-                    ]
+                    [field]: value,
                 }
-            }
 
-            return {
-                ...current,
-                ingredientSections: addNestedSection(
-                    current.ingredientSections,
-                    sectionPath,
-                    newSection
-                )
-            }
-        })
-    }
-    const updateSectionIngredient = (
-        sectionPath,
-        ingredientIndex,
-        updatedIngredient
-    ) => {
-        setEditedRecipe((current) => {
-            const updatedRecipe = {
-                ...current,
-                ingredientSections: updateNestedSection(
-                    current.ingredientSections,
-                    sectionPath,
-                    (section) => ({
-                        ...section,
-                        ingredients: section.ingredients.map(
-                            (ingredient, index) =>
-                                index === ingredientIndex
-                                    ? updatedIngredient
-                                    : ingredient
-                        )
-                    })
-                )
-            }
+                if (field === 'prepMinutes' || field === 'cookMinutes' || field === 'passiveMinutes') {
+                    const prep = field === 'prepMinutes'
+                        ? value
+                        : current.prepMinutes
 
-            updateIngredientValidation(updatedRecipe)
+                    const cook = field === 'cookMinutes'
+                        ? value
+                        : current.cookMinutes
 
-            return updatedRecipe
-        })
-    }
-    const removeSectionIngredient = (
-        sectionPath,
-        ingredientIndex
-    ) => {
-        setEditedRecipe((current) => {
-            const updatedRecipe = {
-                ...current,
-                ingredientSections: updateNestedSection(
-                    current.ingredientSections,
-                    sectionPath,
-                    (section) => ({
-                        ...section,
-                        ingredients: section.ingredients.filter(
-                            (_, index) => index !== ingredientIndex
-                        )
-                    })
-                )
-            }
+                    const passive = field === 'passiveMinutes'
+                        ? value
+                        : current.passiveMinutes
 
-            updateIngredientValidation(updatedRecipe)
-
-            return updatedRecipe
-        })
-    }
-    const moveSectionIngredient = (
-        sectionPath,
-        fromIndex,
-        toIndex
-    ) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            ingredientSections: updateNestedSection(
-                current.ingredientSections,
-                sectionPath,
-                (section) => ({
-                    ...section,
-                    ingredients: moveItem(
-                        section.ingredients,
-                        fromIndex,
-                        toIndex
-                    )
-                })
-            )
-        }))
-    }
-    const moveIngredientSection = (
-        sectionPath,
-        fromIndex,
-        toIndex
-    ) => {
-        setEditedRecipe((current) => {
-            if (sectionPath.length === 0) {
-                return {
-                    ...current,
-                    ingredientSections: moveItem(
-                        current.ingredientSections,
-                        fromIndex,
-                        toIndex
-                    )
+                    updatedRecipe.totalMinutes =
+                        (prep || 0) + (cook || 0) + (passive || 0)
                 }
-            }
 
-            return {
-                ...current,
-                ingredientSections: updateNestedSection(
-                    current.ingredientSections,
-                    sectionPath,
-                    (section) => ({
-                        ...section,
-                        sections: moveItem(
-                            section.sections,
-                            fromIndex,
-                            toIndex
-                        )
-                    })
-                )
-            }
-        })
-    }
-    const handleIngredientSectionDragStart = (sectionPath, index) => {
-        setDraggedIngredientSection({
-            parentPath: sectionPath,
-            index
-        })
-        setDragOverIngredientSection(null)
-    }
-    const handleIngredientSectionDragOver = (sectionPath, index) => {
-        setDragOverIngredientSection({
-            parentPath: sectionPath,
-            index
-        })
-    }
-    const handleIngredientSectionDrop = (sectionPath, index) => {
-        if (!draggedIngredientSection) {
-            return
-        }
+                console.log('Update recipe field:', field, value)
 
-        const draggedParentPath = draggedIngredientSection.parentPath
-        const targetParentPath = sectionPath
-
-        const sameParent =
-            draggedParentPath.length === targetParentPath.length &&
-            draggedParentPath.every(
-                (part, i) => part === targetParentPath[i]
-            )
-
-        if (sameParent) {
-            moveIngredientSection(
-                targetParentPath,
-                draggedIngredientSection.index,
-                index
-            )
-        }
-
-        setDraggedIngredientSection(null)
-        setDragOverIngredientSection(null)
-    }
-    const handleIngredientSectionDragEnd = () => {
-        setDraggedIngredientSection(null)
-        setDragOverIngredientSection(null)
-    }
-    const handleSectionIngredientDragStart = (
-        event,
-        sectionPath,
-        index
-    ) => {
-        const path = sectionPath.join('.')
-
-        setDraggedSectionIngredient({
-            sectionPath: path,
-            index
-        })
-
-        event.dataTransfer.effectAllowed = 'move'
-        event.dataTransfer.setData(
-            'application/x-edit-eats-section-ingredient',
-            JSON.stringify({ sectionPath: path, index })
-        )
-    }
-    const handleSectionIngredientDragOver = (
-        event,
-        sectionPath,
-        index
-    ) => {
-        if (
-            !event.dataTransfer.types.includes(
-                'application/x-edit-eats-section-ingredient'
-            )
-        ) {
-            return
-        }
-        event.preventDefault()
-        event.dataTransfer.dropEffect = 'move'
-
-        setDragOverSectionIngredient({
-            sectionPath: sectionPath.join('.'),
-            index
-        })
-    }
-    const handleSectionIngredientDrop = (
-        event,
-        sectionPath,
-        index
-    ) => {
-        event.preventDefault()
-
-        const dragged = JSON.parse(
-            event.dataTransfer.getData(
-                'application/x-edit-eats-section-ingredient'
-            )
-        )
-
-        const targetPath = sectionPath.join('.')
-
-        // Only reorder within the same section
-        if (dragged.sectionPath === targetPath) {
-            moveSectionIngredient(
-                sectionPath,
-                dragged.index,
-                index
-            )
-        }
-
-        setDraggedSectionIngredient(null)
-        setDragOverSectionIngredient(null)
-    }
-
-    const handleSectionIngredientDragEnd = () => {
-        setDraggedSectionIngredient(null)
-        setDragOverSectionIngredient(null)
-    }
-    const addSectionIngredient = (sectionPath) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            ingredientSections: updateNestedSection(
-                current.ingredientSections,
-                sectionPath,
-                (section) => ({
-                    ...section,
-                    ingredients: [
-                        ...section.ingredients,
-                        {
-                            quantity: null,
-                            unit: null,
-                            ingredientName: '',
-                            preparation: null,
-                            optional: false
-                        }
-                    ]
-                })
-            )
-        }))
-    }
-    const addInstructionSection = (sectionPath = null) => {
-        const newSection = {
-            id: crypto.randomUUID(),
-            name: 'New section',
-            steps: [
-                {
-                    id: crypto.randomUUID(),
-                    instruction: ''
-                }
-            ],
-            sections: []
-        }
-
-        setEditedRecipe((current) => {
-            if (sectionPath === null) {
-                return {
-                    ...current,
-                    instructionSections: [
-                        ...current.instructionSections,
-                        newSection
-                    ]
-                }
-            }
-
-            return{
-                ...current,
-                instructionSections: addNestedSection(
-                    current.instructionSections,
-                    sectionPath,
-                    newSection
-                )
-            }
-        })
-    }
-    const updateSectionStep = (
-        sectionPath,
-        stepIndex,
-        updatedStep
-    ) => {
-        setEditedRecipe((current) => {
-            const updatedRecipe = {
-                ...current,
-                instructionSections: updateNestedSection(
-                    current.instructionSections,
-                    sectionPath,
-                    (section) => ({
-                        ...section,
-                        steps: section.steps.map(
-                            (step, index) =>
-                                index === stepIndex
-                                    ? updatedStep
-                                    : step
-                        )
-                    })
-                )
-            }
-
-            if (!hasMissingInstructions(updatedRecipe)) {
-                setValidationErrors((currentErrors) => {
-                    const {
-                        instructions,
-                        ...remainingErrors
-                    } = currentErrors
-                })
-            }
-
-            return updatedRecipe
-        })
-    }
-    const removeSectionStep = (
-        sectionPath,
-        stepIndex
-    ) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            instructionSections: updateNestedSection(
-                current.instructionSections,
-                sectionPath,
-                (section) => ({
-                    ...section,
-                    steps: section.steps.filter(
-                        (_, index) => index !== stepIndex
-                    )
-                })
-            )
-        }))
-    }
-    const addSectionStep = (sectionPath) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            instructionSections: updateNestedSection(
-                current.instructionSections,
-                sectionPath,
-                (section) => ({
-                    ...section,
-                    steps: [
-                        ...(section.steps ?? []),
-                        {
-                            id: crypto.randomUUID(),
-                            instruction: ''
-                        }
-                    ]
-                })
-            )
-        }))
-    }
-    const moveSectionStep = (sectionPath, fromIndex, toIndex) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            instructionSections: updateNestedSection(
-                current.instructionSections,
-                sectionPath,
-                (section) => ({
-                    ...section,
-                    steps: moveItem(
-                        section.steps,
-                        fromIndex,
-                        toIndex
-                    )
-                })
-            )
-        }))
-    }
-    const removeSection = (sectionPath) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            ingredientSections: removeNestedSection(
-                current.ingredientSections,
-                sectionPath
-            )
-        }))
-    }
-    const updateSectionName = (
-        sectionPath,
-        name
-    ) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            ingredientSections: updateNestedSection(
-                current.ingredientSections,
-                sectionPath,
-                (section) => ({
-                    ...section,
-                    name
-                })
-            )
-        }))
-    }
-    const updateInstructionSectionName = (
-        sectionPath,
-        name
-    ) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            instructionSections: updateNestedSection(
-                current.instructionSections,
-                sectionPath,
-                (section) => ({
-                    ...section,
-                    name
-                })
-            )
-        }))
-    }
-    const toggleCategory = (categoryId) => {
-        setEditedRecipe((current) => {
-            const currentCategories = current.categories ?? []
-
-            const isSelected = currentCategories.some(
-                (category) => category.recipeCategoryId === categoryId
-            )
-
-            return {
-                ...current,
-                categories: isSelected
-                    ? currentCategories.filter(
-                        (category) =>
-                            category.recipeCategoryId !== categoryId
-                    )
-                    : [
-                        ...currentCategories,
-                        {
-                            recipeCategoryId: categoryId
-                        }
-                    ]
-            }
-        })
-    }
-    const handleIngredientCreated = (createdIngredient) => {
-        setAvailableIngredients((currentIngredients) => [
-            ...currentIngredients,
-            createdIngredient,
-        ])
-    }
-    const handleIngredientCategoryCreated = (createdCategory) => {
-        setAvailableIngredientCategories((currentCategories) => [
-            ...currentCategories,
-            createdCategory,
-        ])
-    }
-    const removeInstructionSection = (sectionPath) => {
-        setEditedRecipe((current) => ({
-            ...current,
-            instructionSections: removeNestedSection(
-                current.instructionSections,
-                sectionPath
-            )
-        }))
-    }
-    const buildIngredientSectionRequest = (section) => ({
-        name: section.name,
-
-        ingredients: section.ingredients.map((ingredient) => ({
-            ingredientId: ingredient.ingredientId,
-            quantity: ingredient.quantity,
-            unit: ingredient.unit,
-            preparation: ingredient.preparation,
-            note: ingredient.note,
-            optional: ingredient.optional
-        })),
-
-        sections: section.sections.map(buildIngredientSectionRequest),
-    })
-    const buildInstructionSectionRequest = (section) => ({
-        name: section.name,
-
-        steps: section.steps.map((step) => ({
-            instruction: step.instruction
-        })),
-
-        sections: section.sections.map(buildInstructionSectionRequest),
-    })
-    const hasEmptyIngredients = (recipe) => {
-        const hasInvalidIngredient = (ingredients = []) =>
-            ingredients.some(
-                (ingredient) =>
-                    !ingredient.ingredientId
-            )
-
-        const hasInvalidIngredientInSections = (sections = []) =>
-            sections.some(
-                (section) =>
-                    hasInvalidIngredient(section.ingredients) ||
-                    hasInvalidIngredientInSections(section.sections)
-            )
-
-        return (
-            hasInvalidIngredient(recipe.ingredients) ||
-            hasInvalidIngredientInSections(recipe.ingredientSections)
-        )
-    }
-    const hasMissingInstructions = (recipe) => {
-        const hasEmptyStep = (steps = []) =>
-            steps.some((step) => !step.instruction?.trim())
-
-        const hasEmptyInstructionInSections = (sections = []) =>
-            sections.some(
-                (section) =>
-                    hasEmptyStep(section.steps) ||
-                    hasEmptyInstructionInSections(section.sections)
-            )
-
-        const hasNoInstructions =
-            (recipe.steps ?? []).every(
-                (step) => !step.instruction?.trim()
-            ) &&
-            !(recipe.instructionSections ?? []).some(
-                (section) =>
-                    (section.steps ?? []).some(
-                        (step) => step.instruction?.trim()
-                    ) ||
-                    hasInstructionsInNestedSections(section.sections)
-            )
-
-        return (
-            hasNoInstructions ||
-            hasEmptyStep(recipe.steps) ||
-            hasEmptyInstructionInSections(recipe.instructionSections)
-        )
-    }
-    const hasInstructionsInNestedSections = (sections = []) =>
-        sections.some(
-            (section) =>
-                (section.steps ?? []).some(
-                    (step) => step.instruction?.trim()
-                ) ||
-                hasInstructionsInNestedSections(section.sections)
-        )
-    const updateIngredientValidation = (updatedRecipe) => {
-        if (!hasEmptyIngredients(updatedRecipe)) {
-            setValidationErrors((currentErrors) => {
-                const { ingredients, ...remainingErrors } = currentErrors
-                return remainingErrors
+                return updatedRecipe
             })
         }
-    }
-    const validateRecipe = () => {
-        const errors = {}
+        const updateIngredient = (index, updatedIngredient) => {
+            setEditedRecipe((current) => {
+                const updatedRecipe = {
+                    ...current,
+                    ingredients: current.ingredients.map(
+                        (ingredient, ingredientIndex) =>
+                            ingredientIndex === index
+                            ? updatedIngredient
+                            : ingredient
+                    ),
+                }
 
-        if (!editedRecipe.difficulty) {
-            errors.difficulty = 'Please select a difficulty'
+                updateIngredientValidation(updatedRecipe)
+
+                return updatedRecipe
+            })
         }
+        const removeIngredient = (index) => {
+            setEditedRecipe((current) => {
+                const updatedRecipe = {
+                    ...current,
+                    ingredients: current.ingredients.filter(
+                        (_, ingredientIndex) => ingredientIndex !== index
+                    ),
+                }
 
-        if (
-            editedRecipe.servings === '' ||
-            editedRecipe.servings == null ||
-            Number(editedRecipe.servings) < 1
-        ) {
-            errors.servings = 'Please enter at least 1 serving.'
+                updateIngredientValidation(updatedRecipe)
+
+                return updatedRecipe
+            })
         }
-
-        if (hasEmptyIngredients(editedRecipe)) {
-            errors.ingredients = 'Please select or create an ingredient.'
+        const addIngredient = () => {
+            setEditedRecipe((current) => ({
+                ...current,
+                ingredients: [
+                    ...current.ingredients,
+                    {
+                        quantity: null,
+                        unit: null,
+                        ingredientName: '',
+                        preparation: null,
+                        optional: false
+                    }
+                ]
+            }))
         }
+        const moveIngredient = (fromIndex, toIndex) => {
+            setEditedRecipe((current) => ({
+                ...current,
+                ingredients: moveItem(
+                    current.ingredients,
+                    fromIndex,
+                    toIndex
+                )
+            }))
+        }
+        const addStep = () => {
+            setEditedRecipe((current) => ({
+                ...current,
+                steps: [
+                    ...current.steps,
+                    {
+                        id: crypto.randomUUID(),
+                        instruction: ''
+                    }
+                ]
+            }))
+        }
+        const moveStep = (fromIndex, toIndex) => {
+            setEditedRecipe((current) => ({
+                ...current,
+                steps: moveItem(
+                    current.steps,
+                    fromIndex,
+                    toIndex
+                )
+            }))
+        }
+        const moveInstructionSection = (sectionPath, fromIndex, toIndex) => {
+            setEditedRecipe((currentRecipe) => {
+                if (sectionPath.length === 0) {
+                    return {
+                       ...currentRecipe,
+                        instructionSections: moveItem(
+                            currentRecipe.instructionSections,
+                            fromIndex,
+                            toIndex
+                        )
+                    }
+                }
 
-        if (hasMissingInstructions(editedRecipe)) {
-            errors.instructions = 'Please complete or remove empty steps.'}
-
-        setValidationErrors(errors)
-
-        if (Object.keys(errors).length > 0) {
-            if (errors.servings) {
-                servingsRef.current?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center'
-                })
-                servingsRef.current?.focus()
-            } else if (errors.difficulty) {
-                difficultyRef.current?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center'
-                })
-                difficultyRef.current?.focus()
-            } else if (errors.ingredients) {
-                ingredientsRef.current?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center'
-                })
-            } else if (errors.instructions) {
-                methodRef.current?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center'
-                })
+                return {
+                    ...currentRecipe,
+                    instructionSections: updateNestedSection(
+                        currentRecipe.instructionSections,
+                        sectionPath,
+                        (section) => ({
+                            ...section,
+                            sections: moveItem(
+                                section.sections,
+                                fromIndex,
+                                toIndex
+                            )
+                        })
+                    )
+                }
+            })
+        }
+        const addIngredientSection = (sectionPath = null) => {
+            const newSection = {
+                name: 'New section',
+                ingredients: [
+                    {
+                        quantity: null,
+                        unit: null,
+                        ingredientName: '',
+                        preparation: null,
+                        optional: false
+                    }
+                ],
+                sections: []
             }
 
-            return false
+            setEditedRecipe((current) => {
+                if (sectionPath === null) {
+                    return {
+                        ...current,
+                        ingredientSections: [
+                            ...current.ingredientSections,
+                            newSection
+                        ]
+                    }
+                }
+
+                return {
+                    ...current,
+                    ingredientSections: addNestedSection(
+                        current.ingredientSections,
+                        sectionPath,
+                        newSection
+                    )
+                }
+            })
+        }
+        const updateSectionIngredient = (
+            sectionPath,
+            ingredientIndex,
+            updatedIngredient
+        ) => {
+            setEditedRecipe((current) => {
+                const updatedRecipe = {
+                    ...current,
+                    ingredientSections: updateNestedSection(
+                        current.ingredientSections,
+                        sectionPath,
+                        (section) => ({
+                            ...section,
+                            ingredients: section.ingredients.map(
+                                (ingredient, index) =>
+                                    index === ingredientIndex
+                                        ? updatedIngredient
+                                        : ingredient
+                            )
+                        })
+                    )
+                }
+
+                updateIngredientValidation(updatedRecipe)
+
+                return updatedRecipe
+            })
+        }
+        const removeSectionIngredient = (
+            sectionPath,
+            ingredientIndex
+        ) => {
+            setEditedRecipe((current) => {
+                const updatedRecipe = {
+                    ...current,
+                    ingredientSections: updateNestedSection(
+                        current.ingredientSections,
+                        sectionPath,
+                        (section) => ({
+                            ...section,
+                            ingredients: section.ingredients.filter(
+                                (_, index) => index !== ingredientIndex
+                            )
+                        })
+                    )
+                }
+
+                updateIngredientValidation(updatedRecipe)
+
+                return updatedRecipe
+            })
+        }
+        const moveSectionIngredient = (
+            sectionPath,
+            fromIndex,
+            toIndex
+        ) => {
+            setEditedRecipe((current) => ({
+                ...current,
+                ingredientSections: updateNestedSection(
+                    current.ingredientSections,
+                    sectionPath,
+                    (section) => ({
+                        ...section,
+                        ingredients: moveItem(
+                            section.ingredients,
+                            fromIndex,
+                            toIndex
+                        )
+                    })
+                )
+            }))
+        }
+        const moveIngredientSection = (
+            sectionPath,
+            fromIndex,
+            toIndex
+        ) => {
+            setEditedRecipe((current) => {
+                if (sectionPath.length === 0) {
+                    return {
+                        ...current,
+                        ingredientSections: moveItem(
+                            current.ingredientSections,
+                            fromIndex,
+                            toIndex
+                        )
+                    }
+                }
+
+                return {
+                    ...current,
+                    ingredientSections: updateNestedSection(
+                        current.ingredientSections,
+                        sectionPath,
+                        (section) => ({
+                            ...section,
+                            sections: moveItem(
+                                section.sections,
+                                fromIndex,
+                                toIndex
+                            )
+                        })
+                    )
+                }
+            })
+        }
+        const handleIngredientSectionDragStart = (sectionPath, index) => {
+            setDraggedIngredientSection({
+                parentPath: sectionPath,
+                index
+            })
+            setDragOverIngredientSection(null)
+        }
+        const handleIngredientSectionDragOver = (sectionPath, index) => {
+            setDragOverIngredientSection({
+                parentPath: sectionPath,
+                index
+            })
+        }
+        const handleIngredientSectionDrop = (sectionPath, index) => {
+            if (!draggedIngredientSection) {
+                return
+            }
+
+            const draggedParentPath = draggedIngredientSection.parentPath
+            const targetParentPath = sectionPath
+
+            const sameParent =
+                draggedParentPath.length === targetParentPath.length &&
+                draggedParentPath.every(
+                    (part, i) => part === targetParentPath[i]
+                )
+
+            if (sameParent) {
+                moveIngredientSection(
+                    targetParentPath,
+                    draggedIngredientSection.index,
+                    index
+                )
+            }
+
+            setDraggedIngredientSection(null)
+            setDragOverIngredientSection(null)
+        }
+        const handleIngredientSectionDragEnd = () => {
+            setDraggedIngredientSection(null)
+            setDragOverIngredientSection(null)
+        }
+        const handleSectionIngredientDragStart = (
+            event,
+            sectionPath,
+            index
+        ) => {
+            const path = sectionPath.join('.')
+
+            setDraggedSectionIngredient({
+                sectionPath: path,
+                index
+            })
+
+            event.dataTransfer.effectAllowed = 'move'
+            event.dataTransfer.setData(
+                'application/x-edit-eats-section-ingredient',
+                JSON.stringify({ sectionPath: path, index })
+            )
+        }
+        const handleSectionIngredientDragOver = (
+            event,
+            sectionPath,
+            index
+        ) => {
+            if (
+                !event.dataTransfer.types.includes(
+                    'application/x-edit-eats-section-ingredient'
+                )
+            ) {
+                return
+            }
+            event.preventDefault()
+            event.dataTransfer.dropEffect = 'move'
+
+            setDragOverSectionIngredient({
+                sectionPath: sectionPath.join('.'),
+                index
+            })
+        }
+        const handleSectionIngredientDrop = (
+            event,
+            sectionPath,
+            index
+        ) => {
+            event.preventDefault()
+
+            const dragged = JSON.parse(
+                event.dataTransfer.getData(
+                    'application/x-edit-eats-section-ingredient'
+                )
+            )
+
+            const targetPath = sectionPath.join('.')
+
+            // Only reorder within the same section
+            if (dragged.sectionPath === targetPath) {
+                moveSectionIngredient(
+                    sectionPath,
+                    dragged.index,
+                    index
+                )
+            }
+
+            setDraggedSectionIngredient(null)
+            setDragOverSectionIngredient(null)
         }
 
-        return true
-    }
+        const handleSectionIngredientDragEnd = () => {
+            setDraggedSectionIngredient(null)
+            setDragOverSectionIngredient(null)
+        }
+        const addSectionIngredient = (sectionPath) => {
+            setEditedRecipe((current) => ({
+                ...current,
+                ingredientSections: updateNestedSection(
+                    current.ingredientSections,
+                    sectionPath,
+                    (section) => ({
+                        ...section,
+                        ingredients: [
+                            ...section.ingredients,
+                            {
+                                quantity: null,
+                                unit: null,
+                                ingredientName: '',
+                                preparation: null,
+                                optional: false
+                            }
+                        ]
+                    })
+                )
+            }))
+        }
+        const addInstructionSection = (sectionPath = null) => {
+            const newSection = {
+                id: crypto.randomUUID(),
+                name: 'New section',
+                steps: [
+                    {
+                        id: crypto.randomUUID(),
+                        instruction: ''
+                    }
+                ],
+                sections: []
+            }
 
-    const buildSaveRequest =() => {
-        return {
-            id: editedRecipe.id,
-            name: editedRecipe.name,
-            prepMinutes: editedRecipe.prepMinutes,
-            cookMinutes: editedRecipe.cookMinutes,
-            passiveMinutes: editedRecipe.passiveMinutes,
-            servings: editedRecipe.servings,
-            difficulty: editedRecipe.difficulty,
-            sourceUrl: editedRecipe.sourceUrl,
-            imageUrl: editedRecipe.imageUrl,
-            storageInstructions: editedRecipe.storageInstructions,
-            freezerInstructions: editedRecipe.freezerInstructions,
+            setEditedRecipe((current) => {
+                if (sectionPath === null) {
+                    return {
+                        ...current,
+                        instructionSections: [
+                            ...current.instructionSections,
+                            newSection
+                        ]
+                    }
+                }
 
-            ingredients: (editedRecipe.ingredients ?? []).map((ingredient) => ({
+                return{
+                    ...current,
+                    instructionSections: addNestedSection(
+                        current.instructionSections,
+                        sectionPath,
+                        newSection
+                    )
+                }
+            })
+        }
+        const updateSectionStep = (
+            sectionPath,
+            stepIndex,
+            updatedStep
+        ) => {
+            setEditedRecipe((current) => {
+                const updatedRecipe = {
+                    ...current,
+                    instructionSections: updateNestedSection(
+                        current.instructionSections,
+                        sectionPath,
+                        (section) => ({
+                            ...section,
+                            steps: section.steps.map(
+                                (step, index) =>
+                                    index === stepIndex
+                                        ? updatedStep
+                                        : step
+                            )
+                        })
+                    )
+                }
+
+                if (!hasMissingInstructions(updatedRecipe)) {
+                    setValidationErrors((currentErrors) => {
+                        const {
+                            instructions,
+                            ...remainingErrors
+                        } = currentErrors
+                    })
+                }
+
+                return updatedRecipe
+            })
+        }
+        const removeSectionStep = (
+            sectionPath,
+            stepIndex
+        ) => {
+            setEditedRecipe((current) => ({
+                ...current,
+                instructionSections: updateNestedSection(
+                    current.instructionSections,
+                    sectionPath,
+                    (section) => ({
+                        ...section,
+                        steps: section.steps.filter(
+                            (_, index) => index !== stepIndex
+                        )
+                    })
+                )
+            }))
+        }
+        const addSectionStep = (sectionPath) => {
+            setEditedRecipe((current) => ({
+                ...current,
+                instructionSections: updateNestedSection(
+                    current.instructionSections,
+                    sectionPath,
+                    (section) => ({
+                        ...section,
+                        steps: [
+                            ...(section.steps ?? []),
+                            {
+                                id: crypto.randomUUID(),
+                                instruction: ''
+                            }
+                        ]
+                    })
+                )
+            }))
+        }
+        const moveSectionStep = (sectionPath, fromIndex, toIndex) => {
+            setEditedRecipe((current) => ({
+                ...current,
+                instructionSections: updateNestedSection(
+                    current.instructionSections,
+                    sectionPath,
+                    (section) => ({
+                        ...section,
+                        steps: moveItem(
+                            section.steps,
+                            fromIndex,
+                            toIndex
+                        )
+                    })
+                )
+            }))
+        }
+        const removeSection = (sectionPath) => {
+            setEditedRecipe((current) => ({
+                ...current,
+                ingredientSections: removeNestedSection(
+                    current.ingredientSections,
+                    sectionPath
+                )
+            }))
+        }
+        const updateSectionName = (
+            sectionPath,
+            name
+        ) => {
+            setEditedRecipe((current) => ({
+                ...current,
+                ingredientSections: updateNestedSection(
+                    current.ingredientSections,
+                    sectionPath,
+                    (section) => ({
+                        ...section,
+                        name
+                    })
+                )
+            }))
+        }
+        const updateInstructionSectionName = (
+            sectionPath,
+            name
+        ) => {
+            setEditedRecipe((current) => ({
+                ...current,
+                instructionSections: updateNestedSection(
+                    current.instructionSections,
+                    sectionPath,
+                    (section) => ({
+                        ...section,
+                        name
+                    })
+                )
+            }))
+        }
+        const toggleCategory = (categoryId) => {
+            setEditedRecipe((current) => {
+                const currentCategories = current.categories ?? []
+
+                const isSelected = currentCategories.some(
+                    (category) => category.recipeCategoryId === categoryId
+                )
+
+                return {
+                    ...current,
+                    categories: isSelected
+                        ? currentCategories.filter(
+                            (category) =>
+                                category.recipeCategoryId !== categoryId
+                        )
+                        : [
+                            ...currentCategories,
+                            {
+                                recipeCategoryId: categoryId
+                            }
+                        ]
+                }
+            })
+        }
+        const handleIngredientCreated = (createdIngredient) => {
+            setAvailableIngredients((currentIngredients) => [
+                ...currentIngredients,
+                createdIngredient,
+            ])
+        }
+        const handleIngredientCategoryCreated = (createdCategory) => {
+            setAvailableIngredientCategories((currentCategories) => [
+                ...currentCategories,
+                createdCategory,
+            ])
+        }
+        const removeInstructionSection = (sectionPath) => {
+            setEditedRecipe((current) => ({
+                ...current,
+                instructionSections: removeNestedSection(
+                    current.instructionSections,
+                    sectionPath
+                )
+            }))
+        }
+        const buildIngredientSectionRequest = (section) => ({
+            name: section.name,
+
+            ingredients: section.ingredients.map((ingredient) => ({
                 ingredientId: ingredient.ingredientId,
                 quantity: ingredient.quantity,
                 unit: ingredient.unit,
@@ -912,659 +759,817 @@ function RecipeReview ({ recipe, onBack, onSave }) {
                 optional: ingredient.optional
             })),
 
-            steps: (editedRecipe.steps ?? []).map((step) => ({
+            sections: section.sections.map(buildIngredientSectionRequest),
+        })
+        const buildInstructionSectionRequest = (section) => ({
+            name: section.name,
+
+            steps: section.steps.map((step) => ({
                 instruction: step.instruction
             })),
 
-            ingredientSections: (editedRecipe.ingredientSections ?? []).map(
-                buildIngredientSectionRequest
-            ),
-            instructionSections: (editedRecipe.instructionSections ?? []).map(
-                buildInstructionSectionRequest
-            ),
-            categories: (editedRecipe.categories ?? []).map((category) => ({
-                recipeCategoryId: category.id
-            }))
+            sections: section.sections.map(buildInstructionSectionRequest),
+        })
+        const hasEmptyIngredients = (recipe) => {
+            const hasInvalidIngredient = (ingredients = []) =>
+                ingredients.some(
+                    (ingredient) =>
+                        !ingredient.ingredientId
+                )
+
+            const hasInvalidIngredientInSections = (sections = []) =>
+                sections.some(
+                    (section) =>
+                        hasInvalidIngredient(section.ingredients) ||
+                        hasInvalidIngredientInSections(section.sections)
+                )
+
+            return (
+                hasInvalidIngredient(recipe.ingredients) ||
+                hasInvalidIngredientInSections(recipe.ingredientSections)
+            )
         }
-    }
+        const hasMissingInstructions = (recipe) => {
+            const hasEmptyStep = (steps = []) =>
+                steps.some((step) => !step.instruction?.trim())
 
-    return (
-        <div className="recipe-review">
-            <div className="recipe-card">
-                <div className="recipe-header">
-                    <p className="recipe-review-label">Review Recipe</p>
+            const hasEmptyInstructionInSections = (sections = []) =>
+                sections.some(
+                    (section) =>
+                        hasEmptyStep(section.steps) ||
+                        hasEmptyInstructionInSections(section.sections)
+                )
 
-                    <input
-                        className="recipe-name-input"
-                        type="text"
-                        value={editedRecipe.name}
-                        onChange={(event) =>
-                            updateRecipeField('name', event.target.value)
-                        }
-                    />
+            const hasNoInstructions =
+                (recipe.steps ?? []).every(
+                    (step) => !step.instruction?.trim()
+                ) &&
+                !(recipe.instructionSections ?? []).some(
+                    (section) =>
+                        (section.steps ?? []).some(
+                            (step) => step.instruction?.trim()
+                        ) ||
+                        hasInstructionsInNestedSections(section.sections)
+                )
 
-                    <div className="recipe-meta">
-{/* //                         {editedRecipe.servings != null && ( */}
+            return (
+                hasNoInstructions ||
+                hasEmptyStep(recipe.steps) ||
+                hasEmptyInstructionInSections(recipe.instructionSections)
+            )
+        }
+        const hasInstructionsInNestedSections = (sections = []) =>
+            sections.some(
+                (section) =>
+                    (section.steps ?? []).some(
+                        (step) => step.instruction?.trim()
+                    ) ||
+                    hasInstructionsInNestedSections(section.sections)
+            )
+        const updateIngredientValidation = (updatedRecipe) => {
+            if (!hasEmptyIngredients(updatedRecipe)) {
+                setValidationErrors((currentErrors) => {
+                    const { ingredients, ...remainingErrors } = currentErrors
+                    return remainingErrors
+                })
+            }
+        }
+        const validateRecipe = () => {
+            const errors = {}
+
+            if (!editedRecipe.difficulty) {
+                errors.difficulty = 'Please select a difficulty'
+            }
+
+            if (
+                editedRecipe.servings === '' ||
+                editedRecipe.servings == null ||
+                Number(editedRecipe.servings) < 1
+            ) {
+                errors.servings = 'Please enter at least 1 serving.'
+            }
+
+            if (hasEmptyIngredients(editedRecipe)) {
+                errors.ingredients = 'Please select or create an ingredient.'
+            }
+
+            if (hasMissingInstructions(editedRecipe)) {
+                errors.instructions = 'Please complete or remove empty steps.'}
+
+            setValidationErrors(errors)
+
+            if (Object.keys(errors).length > 0) {
+                if (errors.servings) {
+                    servingsRef.current?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    })
+                    servingsRef.current?.focus()
+                } else if (errors.difficulty) {
+                    difficultyRef.current?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    })
+                    difficultyRef.current?.focus()
+                } else if (errors.ingredients) {
+                    ingredientsRef.current?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    })
+                } else if (errors.instructions) {
+                    methodRef.current?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    })
+                }
+
+                return false
+            }
+
+            return true
+        }
+
+        const buildSaveRequest =() => {
+            return {
+                id: editedRecipe.id,
+                name: editedRecipe.name,
+                prepMinutes: editedRecipe.prepMinutes,
+                cookMinutes: editedRecipe.cookMinutes,
+                passiveMinutes: editedRecipe.passiveMinutes,
+                servings: editedRecipe.servings,
+                difficulty: editedRecipe.difficulty,
+                sourceUrl: editedRecipe.sourceUrl,
+                imageUrl: editedRecipe.imageUrl,
+                storageInstructions: editedRecipe.storageInstructions,
+                freezerInstructions: editedRecipe.freezerInstructions,
+
+                ingredients: (editedRecipe.ingredients ?? []).map((ingredient) => ({
+                    ingredientId: ingredient.ingredientId,
+                    quantity: ingredient.quantity,
+                    unit: ingredient.unit,
+                    preparation: ingredient.preparation,
+                    note: ingredient.note,
+                    optional: ingredient.optional
+                })),
+
+                steps: (editedRecipe.steps ?? []).map((step) => ({
+                    instruction: step.instruction
+                })),
+
+                ingredientSections: (editedRecipe.ingredientSections ?? []).map(
+                    buildIngredientSectionRequest
+                ),
+                instructionSections: (editedRecipe.instructionSections ?? []).map(
+                    buildInstructionSectionRequest
+                ),
+                categories: (editedRecipe.categories ?? []).map((category) => ({
+                    recipeCategoryId: category.id
+                }))
+            }
+        }
+
+        return (
+            <div className="recipe-review">
+                <div className="recipe-card">
+                    <div className="recipe-header">
+                        <p className="recipe-review-label">Review Recipe</p>
+
+                        <input
+                            className="recipe-name-input"
+                            type="text"
+                            value={editedRecipe.name}
+                            onChange={(event) =>
+                                updateRecipeField('name', event.target.value)
+                            }
+                        />
+
+                        <div className="recipe-meta">
+    {/* //                         {editedRecipe.servings != null && ( */}
+                            <div className="recipe-meta-field-wrapper">
+                                <label className="recipe-meta-field">
+                                    Serves:
+                                    <input
+                                        ref={servingsRef}
+                                        type="number"
+                                        min="1"
+                                        value={editedRecipe.servings ?? ''}
+                                        onChange={(event) => {
+                                            const value = event.target.value === ''
+                                                ? ''
+                                                : Number(event.target.value)
+
+                                            updateRecipeField('servings', value)
+
+                                            if (value !== '' && Number(value) >= 1) {
+                                                setValidationErrors((currentErrors) => {
+                                                    const { servings, ...remainingErrors } = currentErrors
+                                                    return remainingErrors
+                                                })
+                                            }
+                                        }}
+                                    />
+                                    people
+                                </label>
+
+                                {validationErrors.servings && (
+                                    <p className="form-error">
+                                        {validationErrors.servings}
+                                    </p>
+                                )}
+    {/*                         )} */}
+                            </div>
+
+                            <div className="recipe-meta-field-wrapper">
+                                <label className="recipe-meta-field">
+                                    Difficulty:
+                                    <select
+                                        ref={difficultyRef}
+                                        className={!editedRecipe.difficulty ? 'placeholder-selected' : ''}
+                                        value={editedRecipe.difficulty ?? ''}
+                                        onChange={(event) => {
+                                            const value = event.target.value || null
+
+                                            updateRecipeField('difficulty', value)
+
+                                            if (value) {
+                                                setValidationErrors((currentErrors) => {
+                                                    const { difficulty, ...remainingErrors } = currentErrors
+                                                    return remainingErrors
+                                                })
+                                            }
+                                        }}
+                                    >
+                                        <option value="" disabled>Select difficulty</option>
+                                        <option value="EASY">Easy</option>
+                                        <option value="MEDIUM">Medium</option>
+                                        <option value="HARD">Hard</option>
+                                        <option value="EXPERT">Expert</option>
+                                    </select>
+                                </label>
+
+                                {validationErrors.difficulty && (
+                                    <p className="form-error">
+                                        {validationErrors.difficulty}
+                                    </p>
+                                )}
+                            </div>
+
+                            <TimeEditor
+                                label="Prep:"
+                                value={editedRecipe.prepMinutes}
+                                onChange={(value) =>
+                                    updateRecipeField('prepMinutes', value)
+                                }
+                            />
+
+                            <TimeEditor
+                                label="Cook:"
+                                value={editedRecipe.cookMinutes}
+                                onChange={(value) =>
+                                    updateRecipeField('cookMinutes', value)
+                                }
+                            />
+
+                            <TimeEditor
+                                label="Inactive:"
+                                value={editedRecipe.passiveMinutes}
+                                onChange={(value) =>
+                                    updateRecipeField('passiveMinutes', value)
+                                }
+                            />
+
+                            <TimeEditor
+                                label="Total:"
+                                value={editedRecipe.totalMinutes}
+                                onChange={(value) =>
+                                    updateRecipeField('totalMinutes', value)
+                                }
+                            />
+                        </div>
+                    </div>
+
+                    <section className="recipe-section">
+                        <h2>Recipe Image & Source</h2>
+
                         <div className="recipe-meta-field-wrapper">
                             <label className="recipe-meta-field">
-                                Serves:
+                                Image URL:
                                 <input
-                                    ref={servingsRef}
-                                    type="number"
-                                    min="1"
-                                    value={editedRecipe.servings ?? ''}
-                                    onChange={(event) => {
-                                        const value = event.target.value === ''
-                                            ? ''
-                                            : Number(event.target.value)
-
-                                        updateRecipeField('servings', value)
-
-                                        if (value !== '' && Number(value) >= 1) {
-                                            setValidationErrors((currentErrors) => {
-                                                const { servings, ...remainingErrors } = currentErrors
-                                                return remainingErrors
-                                            })
-                                        }
-                                    }}
+                                    type="url"
+                                    value={editedRecipe.imageUrl ?? ''}
+                                    onChange={(event) =>
+                                        updateRecipeField('imageUrl', event.target.value)
+                                    }
+                                    placeholder="https://example.com/recipe-image.jpg"
                                 />
-                                people
                             </label>
-
-                            {validationErrors.servings && (
-                                <p className="form-error">
-                                    {validationErrors.servings}
-                                </p>
+                            {editedRecipe.imageUrl && (
+                                <img
+                                    className="recipe-review-image-preview"
+                                    src={editedRecipe.imageUrl}
+                                    alt={`Preview of ${editedRecipe.name}`}
+                                />
                             )}
-{/*                         )} */}
                         </div>
 
                         <div className="recipe-meta-field-wrapper">
                             <label className="recipe-meta-field">
-                                Difficulty:
-                                <select
-                                    ref={difficultyRef}
-                                    className={!editedRecipe.difficulty ? 'placeholder-selected' : ''}
-                                    value={editedRecipe.difficulty ?? ''}
-                                    onChange={(event) => {
-                                        const value = event.target.value || null
+                                Source URL:
+                                <input
+                                    type="url"
+                                    value={editedRecipe.sourceUrl ?? ''}
+                                    onChange={(event) =>
+                                        updateRecipeField('sourceUrl', event.target.value)
+                                    }
+                                    placeholder="https://example.com/original-recipe"
+                                />
+                            </label>
+                        </div>
+                    </section>
 
-                                        updateRecipeField('difficulty', value)
+                    <section className="recipe-section">
+                        <h2>Categories</h2>
 
-                                        if (value) {
-                                            setValidationErrors((currentErrors) => {
-                                                const { difficulty, ...remainingErrors } = currentErrors
-                                                return remainingErrors
-                                            })
+                        <button
+                            type="button"
+                            className={`add-item-button ${creatingRecipeCategory ? 'cancel-category-button' : ''}`}
+                            onClick={() => setCreatingRecipeCategory((current) => !current)}
+                        >
+                            {creatingRecipeCategory ? 'Cancel' : 'Add category'}
+                        </button>
+
+                        {creatingRecipeCategory && (
+                            <div className="new-category-form">
+                                <input
+                                    type="text"
+                                    value={newRecipeCategoryName}
+                                    onChange={(event) =>
+                                        setNewRecipeCategoryName(event.target.value)
+                                    }
+                                    placeholder="New recipe category name"
+                                />
+
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        const name = newRecipeCategoryName.trim()
+
+                                        if (!name) {
+                                            setRecipeCategoryError('Please enter a category name.')
+                                            return
+                                        }
+
+                                        setRecipeCategoryError('')
+
+                                        try {
+                                            const response = await fetch(
+                                                `/api/recipe-categories?name=${encodeURIComponent(name)}`,
+                                                {
+                                                    method: 'POST'
+                                                }
+                                            )
+
+                                            if (!response.ok) {
+                                                const message = await response.text()
+                                                throw new Error(message || 'Failed to create category.')
+                                            }
+
+                                            const createdCategory = await response.json()
+
+                                            setAvailableCategories((current) =>
+                                                [...current, createdCategory].sort((a, b) =>
+                                                    a.name.localeCompare(b.name)
+                                                )
+                                            )
+
+                                            setEditedRecipe((current) => ({
+                                                ...current,
+                                                categories: [
+                                                    ...(current.categories ?? []),
+                                                    { recipeCategoryId: createdCategory.id }
+                                                ]
+                                            }))
+
+                                            setNewRecipeCategoryName('')
+                                            setCreatingRecipeCategory(false)
+                                        } catch (error) {
+                                            setRecipeCategoryError(error.message)
                                         }
                                     }}
                                 >
-                                    <option value="" disabled>Select difficulty</option>
-                                    <option value="EASY">Easy</option>
-                                    <option value="MEDIUM">Medium</option>
-                                    <option value="HARD">Hard</option>
-                                    <option value="EXPERT">Expert</option>
-                                </select>
-                            </label>
-
-                            {validationErrors.difficulty && (
-                                <p className="form-error">
-                                    {validationErrors.difficulty}
-                                </p>
-                            )}
-                        </div>
-
-                        <TimeEditor
-                            label="Prep:"
-                            value={editedRecipe.prepMinutes}
-                            onChange={(value) =>
-                                updateRecipeField('prepMinutes', value)
-                            }
-                        />
-
-                        <TimeEditor
-                            label="Cook:"
-                            value={editedRecipe.cookMinutes}
-                            onChange={(value) =>
-                                updateRecipeField('cookMinutes', value)
-                            }
-                        />
-
-                        <TimeEditor
-                            label="Inactive:"
-                            value={editedRecipe.passiveMinutes}
-                            onChange={(value) =>
-                                updateRecipeField('passiveMinutes', value)
-                            }
-                        />
-
-                        <TimeEditor
-                            label="Total:"
-                            value={editedRecipe.totalMinutes}
-                            onChange={(value) =>
-                                updateRecipeField('totalMinutes', value)
-                            }
-                        />
-                    </div>
-                </div>
-
-                <section className="recipe-section">
-                    <h2>Recipe Image & Source</h2>
-
-                    <div className="recipe-meta-field-wrapper">
-                        <label className="recipe-meta-field">
-                            Image URL:
-                            <input
-                                type="url"
-                                value={editedRecipe.imageUrl ?? ''}
-                                onChange={(event) =>
-                                    updateRecipeField('imageUrl', event.target.value)
-                                }
-                                placeholder="https://example.com/recipe-image.jpg"
-                            />
-                        </label>
-                        {editedRecipe.imageUrl && (
-                            <img
-                                className="recipe-review-image-preview"
-                                src={editedRecipe.imageUrl}
-                                alt={`Preview of ${editedRecipe.name}`}
-                            />
+                                    Create category
+                                </button>
+                            </div>
                         )}
-                    </div>
 
-                    <div className="recipe-meta-field-wrapper">
-                        <label className="recipe-meta-field">
-                            Source URL:
-                            <input
-                                type="url"
-                                value={editedRecipe.sourceUrl ?? ''}
-                                onChange={(event) =>
-                                    updateRecipeField('sourceUrl', event.target.value)
-                                }
-                                placeholder="https://example.com/original-recipe"
-                            />
-                        </label>
-                    </div>
-                </section>
+                        <div className="category-list">
+                            {availableCategories.map((category) => {
+                                const isSelected = (editedRecipe.categories ?? []).some(
+                                    (selectedCategory) =>
+                                        selectedCategory.recipeCategoryId === category.id
+                                )
 
-                <section className="recipe-section">
-                    <h2>Categories</h2>
+                                return (
+                                    <label key={category.id} className="category-option">
+                                        <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={() => toggleCategory(category.id)}
+                                        />
 
-                    <button
-                        type="button"
-                        className="add-item-button"
-                        onClick={() => setCreatingRecipeCategory((current) => !current)}
-                    >
-                        {creatingRecipeCategory ? 'Cancel' : 'Add category'}
-                    </button>
+                                        {category.name}
+                                    </label>
+                                )
+                            })}
+                        </div>
+                    </section>
 
-                    {creatingRecipeCategory && (
-                        <div className="new-category-form">
-                            <input
-                                type="text"
-                                value={newRecipeCategoryName}
-                                onChange={(event) =>
-                                    setNewRecipeCategoryName(event.target.value)
-                                }
-                                placeholder="New recipe category name"
-                            />
+                    <section className="recipe-section" ref={ingredientsRef}>
+                        <h2>Ingredients</h2>
+
+                        {validationErrors.ingredients && (
+                            <p className="form-error">
+                                {validationErrors.ingredients}
+                            </p>
+                        )}
+
+                        <div className="recipe-section-actions">
+                            <button
+                                type="button"
+                                className="add-item-button"
+                                onClick={addIngredient}
+                            >
+                                Add ingredient
+                            </button>
 
                             <button
                                 type="button"
-                                onClick={async () => {
-                                    const name = newRecipeCategoryName.trim()
+                                className="add-item-button"
+                                onClick={() => addIngredientSection()}
+                            >
+                                Add section
+                            </button>
+                        </div>
 
-                                    if (!name) {
-                                        setRecipeCategoryError('Please enter a category name.')
-                                        return
-                                    }
-
-                                    setRecipeCategoryError('')
-
-                                    try {
-                                        const response = await fetch(
-                                            `/api/recipe-categories?name=${encodeURIComponent(name)}`,
-                                            {
-                                                method: 'POST'
-                                            }
+                        <div className="ingredient-list">
+                            {editedRecipe.ingredients.map((ingredient, index) => (
+                                <IngredientEditor
+                                    key={index}
+                                    ingredient={ingredient}
+                                    showValidationErrors={hasAttemptedSave}
+                                    availableIngredients={availableIngredients}
+                                    availableIngredientCategories={availableIngredientCategories}
+                                    onIngredientCreated={handleIngredientCreated}
+                                    onIngredientCategoryCreated={handleIngredientCategoryCreated}
+                                    onChange={(updatedIngredient) =>
+                                        updateIngredient(
+                                            index,
+                                            updatedIngredient
                                         )
+                                    }
+                                    onRemove={() => removeIngredient(index)}
+                                    onMoveUp={() => moveIngredient(index, index - 1)}
+                                    onMoveDown={() => moveIngredient(index, index + 1)}
+                                    canMoveUp={index > 0}
+                                    canMoveDown={index < editedRecipe.ingredients.length - 1}
+                                    onDragStart={(event) => {
+                                        setDraggedIngredientIndex(index)
 
-                                        if (!response.ok) {
-                                            const message = await response.text()
-                                            throw new Error(message || 'Failed to create category.')
+                                        event.dataTransfer.effectAllowed = 'move'
+                                        event.dataTransfer.setData(
+                                            'application/x-edit-eats-ingredient',
+                                            index.toString()
+                                        )
+                                    }}
+
+                                    onDragOver={(event) => {
+                                        if (
+                                            !event.dataTransfer.types.includes(
+                                                'application/x-edit-eats-ingredient'
+                                            )
+                                        ) {
+                                            return
                                         }
 
-                                        const createdCategory = await response.json()
+                                        event.preventDefault()
+                                        setDragOverIngredientIndex(index)
+                                        event.dataTransfer.dropEffect = 'move'
+                                    }}
 
-                                        setAvailableCategories((current) =>
-                                            [...current, createdCategory].sort((a, b) =>
-                                                a.name.localeCompare(b.name)
+                                    onDrop={(event) => {
+                                        event.preventDefault()
+
+                                        const draggedIndex = Number(
+                                            event.dataTransfer.getData(
+                                                'application/x-edit-eats-ingredient'
                                             )
                                         )
 
-                                        setEditedRecipe((current) => ({
-                                            ...current,
-                                            categories: [
-                                                ...(current.categories ?? []),
-                                                { recipeCategoryId: createdCategory.id }
-                                            ]
-                                        }))
+                                        moveIngredient(draggedIndex, index)
 
-                                        setNewRecipeCategoryName('')
-                                        setCreatingRecipeCategory(false)
-                                    } catch (error) {
-                                        setRecipeCategoryError(error.message)
+                                        setDraggedIngredientIndex(null)
+                                        setDragOverIngredientIndex(null)
+                                    }}
+
+                                    onDragEnd={() => {
+                                        setDraggedIngredientIndex(null)
+                                        setDragOverIngredientIndex(null)
+                                    }}
+
+                                    isDragging={draggedIngredientIndex === index}
+                                    isDragOver={
+                                        dragOverIngredientIndex === index &&
+                                        draggedIngredientIndex !== index
                                     }
-                                }}
-                            >
-                                Create category
-                            </button>
+                                />
+                            ))}
                         </div>
-                    )}
 
-                    <div className="category-list">
-                        {availableCategories.map((category) => {
-                            const isSelected = (editedRecipe.categories ?? []).some(
-                                (selectedCategory) =>
-                                    selectedCategory.recipeCategoryId === category.id
-                            )
-
-                            return (
-                                <label key={category.id} className="category-option">
-                                    <input
-                                        type="checkbox"
-                                        checked={isSelected}
-                                        onChange={() => toggleCategory(category.id)}
-                                    />
-
-                                    {category.name}
-                                </label>
-                            )
-                        })}
-                    </div>
-                </section>
-
-                <section className="recipe-section" ref={ingredientsRef}>
-                    <h2>Ingredients</h2>
-
-                    {validationErrors.ingredients && (
-                        <p className="form-error">
-                            {validationErrors.ingredients}
-                        </p>
-                    )}
-
-                    <div className="recipe-section-actions">
-                        <button
-                            type="button"
-                            className="add-item-button"
-                            onClick={addIngredient}
-                        >
-                            Add ingredient
-                        </button>
-
-                        <button
-                            type="button"
-                            className="add-item-button"
-                            onClick={() => addIngredientSection()}
-                        >
-                            Add section
-                        </button>
-                    </div>
-
-                    <div className="ingredient-list">
-                        {editedRecipe.ingredients.map((ingredient, index) => (
-                            <IngredientEditor
+                        {editedRecipe.ingredientSections.map((section, index) => (
+                            <IngredientSection
                                 key={index}
-                                ingredient={ingredient}
+                                section={section}
+                                sectionPath={[index]}
                                 showValidationErrors={hasAttemptedSave}
                                 availableIngredients={availableIngredients}
                                 availableIngredientCategories={availableIngredientCategories}
                                 onIngredientCreated={handleIngredientCreated}
                                 onIngredientCategoryCreated={handleIngredientCategoryCreated}
-                                onChange={(updatedIngredient) =>
-                                    updateIngredient(
-                                        index,
-                                        updatedIngredient
-                                    )
-                                }
-                                onRemove={() => removeIngredient(index)}
-                                onMoveUp={() => moveIngredient(index, index - 1)}
-                                onMoveDown={() => moveIngredient(index, index + 1)}
-                                canMoveUp={index > 0}
-                                canMoveDown={index < editedRecipe.ingredients.length - 1}
-                                onDragStart={(event) => {
-                                    setDraggedIngredientIndex(index)
-
-                                    event.dataTransfer.effectAllowed = 'move'
-                                    event.dataTransfer.setData(
-                                        'application/x-edit-eats-ingredient',
-                                        index.toString()
-                                    )
-                                }}
-
-                                onDragOver={(event) => {
-                                    if (
-                                        !event.dataTransfer.types.includes(
-                                            'application/x-edit-eats-ingredient'
-                                        )
-                                    ) {
-                                        return
-                                    }
-
-                                    event.preventDefault()
-                                    setDragOverIngredientIndex(index)
-                                    event.dataTransfer.dropEffect = 'move'
-                                }}
-
-                                onDrop={(event) => {
-                                    event.preventDefault()
-
-                                    const draggedIndex = Number(
-                                        event.dataTransfer.getData(
-                                            'application/x-edit-eats-ingredient'
-                                        )
-                                    )
-
-                                    moveIngredient(draggedIndex, index)
-
-                                    setDraggedIngredientIndex(null)
-                                    setDragOverIngredientIndex(null)
-                                }}
-
-                                onDragEnd={() => {
-                                    setDraggedIngredientIndex(null)
-                                    setDragOverIngredientIndex(null)
-                                }}
-
-                                isDragging={draggedIngredientIndex === index}
-                                isDragOver={
-                                    dragOverIngredientIndex === index &&
-                                    draggedIngredientIndex !== index
-                                }
+                                onUpdateIngredient={updateSectionIngredient}
+                                onRemoveIngredient={removeSectionIngredient}
+                                onMoveIngredient={moveSectionIngredient}
+                                onDragStartIngredient={handleSectionIngredientDragStart}
+                                onDragOverIngredient={handleSectionIngredientDragOver}
+                                onDropIngredient={handleSectionIngredientDrop}
+                                onDragEndIngredient={handleSectionIngredientDragEnd}
+                                draggedIngredient={draggedSectionIngredient}
+                                dragOverIngredient={dragOverSectionIngredient}
+                                onDragStartSection={handleIngredientSectionDragStart}
+                                onDragOverSection={handleIngredientSectionDragOver}
+                                onDropSection={handleIngredientSectionDrop}
+                                onDragEndSection={handleIngredientSectionDragEnd}
+                                draggedIngredientSection={draggedIngredientSection}
+                                dragOverIngredientSection={dragOverIngredientSection}
+                                onRemoveSection={removeSection}
+                                onUpdateSectionName={updateSectionName}
+                                onAddIngredient={addSectionIngredient}
+                                onAddSection={addIngredientSection}
+                                sectionIndex={index}
+                                sectionCount={editedRecipe.ingredientSections.length}
+                                onMoveSection={moveIngredientSection}
                             />
                         ))}
-                    </div>
+                    </section>
 
-                    {editedRecipe.ingredientSections.map((section, index) => (
-                        <IngredientSection
-                            key={index}
-                            section={section}
-                            sectionPath={[index]}
-                            showValidationErrors={hasAttemptedSave}
-                            availableIngredients={availableIngredients}
-                            availableIngredientCategories={availableIngredientCategories}
-                            onIngredientCreated={handleIngredientCreated}
-                            onIngredientCategoryCreated={handleIngredientCategoryCreated}
-                            onUpdateIngredient={updateSectionIngredient}
-                            onRemoveIngredient={removeSectionIngredient}
-                            onMoveIngredient={moveSectionIngredient}
-                            onDragStartIngredient={handleSectionIngredientDragStart}
-                            onDragOverIngredient={handleSectionIngredientDragOver}
-                            onDropIngredient={handleSectionIngredientDrop}
-                            onDragEndIngredient={handleSectionIngredientDragEnd}
-                            draggedIngredient={draggedSectionIngredient}
-                            dragOverIngredient={dragOverSectionIngredient}
-                            onDragStartSection={handleIngredientSectionDragStart}
-                            onDragOverSection={handleIngredientSectionDragOver}
-                            onDropSection={handleIngredientSectionDrop}
-                            onDragEndSection={handleIngredientSectionDragEnd}
-                            draggedIngredientSection={draggedIngredientSection}
-                            dragOverIngredientSection={dragOverIngredientSection}
-                            onRemoveSection={removeSection}
-                            onUpdateSectionName={updateSectionName}
-                            onAddIngredient={addSectionIngredient}
-                            onAddSection={addIngredientSection}
-                            sectionIndex={index}
-                            sectionCount={editedRecipe.ingredientSections.length}
-                            onMoveSection={moveIngredientSection}
-                        />
-                    ))}
-                </section>
+                    <section className="recipe-section">
+                        <h2>Method</h2>
 
-                <section className="recipe-section">
-                    <h2>Method</h2>
+                        {validationErrors.instructions && (
+                            <p className="form-error">
+                                {validationErrors.instructions}
+                            </p>
+                        )}
 
-                    {validationErrors.instructions && (
-                        <p className="form-error">
-                            {validationErrors.instructions}
-                        </p>
-                    )}
+                        <div className="instruction-actions">
+                            <button
+                                type="button"
+                                className="add-item-button"
+                                onClick={addStep}
+                            >
+                                Add step
+                            </button>
 
-                    <div className="instruction-actions">
-                        <button
-                            type="button"
-                            className="add-item-button"
-                            onClick={addStep}
-                        >
-                            Add step
-                        </button>
+                            <button
+                                type="button"
+                                className="add-item-button"
+                                onClick={() => addInstructionSection()}
+                            >
+                                Add section
+                            </button>
+                        </div>
 
-                        <button
-                            type="button"
-                            className="add-item-button"
-                            onClick={() => addInstructionSection()}
-                        >
-                            Add section
-                        </button>
-                    </div>
+                        <div className="instruction-list">
+                            {editedRecipe.steps.map((step, index) => (
+                                <InstructionStepEditor
+                                    key={step.id}
+                                    step={step}
+                                    stepNumber={index + 1}
+                                    onChange={(updatedStep) => {
+                                        setEditedRecipe((current) => {
+                                            const updatedRecipe = {
+                                                ...current,
+                                                steps: current.steps.map(
+                                                    (currentStep, stepIndex) =>
+                                                        stepIndex === index
+                                                            ? updatedStep
+                                                            : currentStep
+                                                )
+                                            }
 
-                    <div className="instruction-list">
-                        {editedRecipe.steps.map((step, index) => (
-                            <InstructionStepEditor
-                                key={step.id}
-                                step={step}
-                                stepNumber={index + 1}
-                                onChange={(updatedStep) => {
-                                    setEditedRecipe((current) => {
-                                        const updatedRecipe = {
+                                            if (!hasMissingInstructions(updatedRecipe)) {
+                                                setValidationErrors((currentErrors) => {
+                                                    const {
+                                                        instructions,
+                                                        ...remainingErrors
+                                                    } = currentErrors
+
+                                                    return remainingErrors
+                                                })
+                                            }
+
+                                            return updatedRecipe
+                                        })
+                                    }}
+
+                                    onRemove={() =>
+                                        setEditedRecipe((current) => ({
                                             ...current,
-                                            steps: current.steps.map(
-                                                (currentStep, stepIndex) =>
-                                                    stepIndex === index
-                                                        ? updatedStep
-                                                        : currentStep
+                                            steps: current.steps.filter(
+                                                (_, stepIndex) =>
+                                                    stepIndex !== index
                                             )
-                                        }
-
-                                        if (!hasMissingInstructions(updatedRecipe)) {
-                                            setValidationErrors((currentErrors) => {
-                                                const {
-                                                    instructions,
-                                                    ...remainingErrors
-                                                } = currentErrors
-
-                                                return remainingErrors
-                                            })
-                                        }
-
-                                        return updatedRecipe
-                                    })
-                                }}
-
-                                onRemove={() =>
-                                    setEditedRecipe((current) => ({
-                                        ...current,
-                                        steps: current.steps.filter(
-                                            (_, stepIndex) =>
-                                                stepIndex !== index
-                                        )
-                                    }))
-                                }
-
-                                onMoveUp={() => moveStep(index, index - 1)}
-
-                                onMoveDown={() => moveStep(index, index + 1)}
-
-                                canMoveUp={index > 0}
-
-                                canMoveDown={index < editedRecipe.steps.length - 1}
-
-                                onDragStart={(event) => {
-                                    setDraggedStepIndex(index)
-
-                                    event.dataTransfer.effectAllowed = 'move'
-                                    event.dataTransfer.setData(
-                                        'application/x-edit-eats-step',
-                                        index.toString()
-                                    )
-                                }}
-
-                                onDragOver={(event) => {
-                                    if (
-                                        !event.dataTransfer.types.includes(
-                                            'application/x-edit-eats-step'
-                                        )
-                                    ) {
-                                        return
+                                        }))
                                     }
 
-                                    event.preventDefault()
-                                    setDragOverStepIndex(index)
+                                    onMoveUp={() => moveStep(index, index - 1)}
 
-                                    event.dataTransfer.dropEffect = 'move'
+                                    onMoveDown={() => moveStep(index, index + 1)}
+
+                                    canMoveUp={index > 0}
+
+                                    canMoveDown={index < editedRecipe.steps.length - 1}
+
+                                    onDragStart={(event) => {
+                                        setDraggedStepIndex(index)
+
+                                        event.dataTransfer.effectAllowed = 'move'
+                                        event.dataTransfer.setData(
+                                            'application/x-edit-eats-step',
+                                            index.toString()
+                                        )
+                                    }}
+
+                                    onDragOver={(event) => {
+                                        if (
+                                            !event.dataTransfer.types.includes(
+                                                'application/x-edit-eats-step'
+                                            )
+                                        ) {
+                                            return
+                                        }
+
+                                        event.preventDefault()
+                                        setDragOverStepIndex(index)
+
+                                        event.dataTransfer.dropEffect = 'move'
+                                    }}
+
+                                    onDrop={(event) => {
+                                        event.preventDefault()
+
+                                        const draggedIndex = Number(
+                                            event.dataTransfer.getData('application/x-edit-eats-step')
+                                        )
+
+                                        moveStep(
+                                            draggedIndex,
+                                            index
+                                        )
+
+                                        setDraggedStepIndex(null)
+                                        setDragOverStepIndex(null)
+                                    }}
+
+                                    onDragEnd={() => {
+                                        setDraggedStepIndex(null)
+                                        setDragOverStepIndex(null)
+                                    }}
+
+                                    isDragging={draggedStepIndex === index}
+                                    isDragOver={
+                                        dragOverStepIndex === index &&
+                                        draggedStepIndex !== index
+                                    }
+                                />
+                            ))}
+                        </div>
+
+                        {editedRecipe.instructionSections.map((section, index) => (
+                            <InstructionSection
+                                key={section.id}
+                                section={section}
+                                sectionPath={[index]}
+                                sectionIndex={index}
+                                sectionCount={editedRecipe.instructionSections.length}
+                                onUpdateStep={updateSectionStep}
+                                onRemoveStep={removeSectionStep}
+                                onRemoveSection={removeInstructionSection}
+                                onUpdateSectionName={updateInstructionSectionName}
+                                onAddStep={addSectionStep}
+                                onAddSection={addInstructionSection}
+                                onMoveStep={moveSectionStep}
+                                onMoveSection={moveInstructionSection}
+
+                                onDragStart={() => {
+                                    setDraggedSectionIndex(index)
                                 }}
 
-                                onDrop={(event) => {
-                                    event.preventDefault()
+                                onDragOver={() => {
+                                    setDragOverSectionIndex(index)
+                                }}
 
-                                    const draggedIndex = Number(
-                                        event.dataTransfer.getData('application/x-edit-eats-step')
-                                    )
+                                onDrop={(draggedIndex) => {
+                                    if (draggedIndex !== null) {
+                                        moveInstructionSection(
+                                            [],
+                                            draggedSectionIndex,
+                                            index
+                                        )
+                                    }
 
-                                    moveStep(
-                                        draggedIndex,
-                                        index
-                                    )
-
-                                    setDraggedStepIndex(null)
-                                    setDragOverStepIndex(null)
+                                    setDraggedSectionIndex(null)
+                                    setDragOverSectionIndex(null)
                                 }}
 
                                 onDragEnd={() => {
-                                    setDraggedStepIndex(null)
-                                    setDragOverStepIndex(null)
+                                    setDraggedSectionIndex(null)
+                                    setDragOverSectionIndex(null)
                                 }}
 
-                                isDragging={draggedStepIndex === index}
+                                isDragging={draggedSectionIndex === index}
+
                                 isDragOver={
-                                    dragOverStepIndex === index &&
-                                    draggedStepIndex !== index
+                                    dragOverSectionIndex === index &&
+                                    draggedSectionIndex !== index
                                 }
                             />
                         ))}
-                    </div>
+                    </section>
 
-                    {editedRecipe.instructionSections.map((section, index) => (
-                        <InstructionSection
-                            key={section.id}
-                            section={section}
-                            sectionPath={[index]}
-                            sectionIndex={index}
-                            sectionCount={editedRecipe.instructionSections.length}
-                            onUpdateStep={updateSectionStep}
-                            onRemoveStep={removeSectionStep}
-                            onRemoveSection={removeInstructionSection}
-                            onUpdateSectionName={updateInstructionSectionName}
-                            onAddStep={addSectionStep}
-                            onAddSection={addInstructionSection}
-                            onMoveStep={moveSectionStep}
-                            onMoveSection={moveInstructionSection}
+                    <section className="recipe-section">
+                        <h2>Storage & Freezing</h2>
 
-                            onDragStart={() => {
-                                setDraggedSectionIndex(index)
-                            }}
+                        <div className="recipe-meta-field-wrapper">
+                            <label>
+                                Storage Instructions:
+                                <div className="textarea-wrapper">
+                                    <textarea
+                                        value={editedRecipe.storageInstructions ?? ''}
+                                        onChange={(event) =>
+                                            updateRecipeField('storageInstructions', event.target.value)
+                                        }
+                                        placeholder="Are there any storage instructions?"
+                                        rows={3}
+                                    />
+                                </div>
+                            </label>
+                        </div>
 
-                            onDragOver={() => {
-                                setDragOverSectionIndex(index)
-                            }}
+                        <div className="recipe-meta-field-wrapper">
+                            <label>
+                                Freezer Instructions:
+                                <div className="textarea-wrapper">
+                                    <textarea
+                                        value={editedRecipe.freezerInstructions ?? ''}
+                                        onChange={(event) =>
+                                            updateRecipeField('freezerInstructions', event.target.value)
+                                        }
+                                        placeholder="Are there any instructions for freezing and thawing?"
+                                        rows={3}
+                                    />
+                                </div>
+                            </label>
+                        </div>
+                    </section>
 
-                            onDrop={(draggedIndex) => {
-                                if (draggedIndex !== null) {
-                                    moveInstructionSection(
-                                        [],
-                                        draggedSectionIndex,
-                                        index
-                                    )
+                    <div className="recipe-review-actions">
+                        <button
+                            type="button"
+                            className="button-secondary"
+                            onClick={onBack}>
+                            <MoveLeft size={20} strokeWidth={1.8} />
+                            Back
+                        </button>
+
+                        <button
+                            type="button"
+                            className="button-primary"
+                            onClick={() => {
+                                setHasAttemptedSave(true)
+
+                                if (validateRecipe()) {
+                                    console.log('Recipe update payload:', JSON.stringify(buildSaveRequest(), null, 2))
+                                    onSave(buildSaveRequest())
                                 }
-
-                                setDraggedSectionIndex(null)
-                                setDragOverSectionIndex(null)
                             }}
-
-                            onDragEnd={() => {
-                                setDraggedSectionIndex(null)
-                                setDragOverSectionIndex(null)
-                            }}
-
-                            isDragging={draggedSectionIndex === index}
-
-                            isDragOver={
-                                dragOverSectionIndex === index &&
-                                draggedSectionIndex !== index
-                            }
-                        />
-                    ))}
-                </section>
-
-                <section className="recipe-section">
-                    <h2>Storage & Freezing</h2>
-
-                    <div className="recipe-meta-field-wrapper">
-                        <label>
-                            Storage Instructions:
-                            <div className="textarea-wrapper">
-                                <textarea
-                                    value={editedRecipe.storageInstructions ?? ''}
-                                    onChange={(event) =>
-                                        updateRecipeField('storageInstructions', event.target.value)
-                                    }
-                                    placeholder="Are there any storage instructions?"
-                                    rows={3}
-                                />
-                            </div>
-                        </label>
+                        >
+                            <Save size={20} strokeWidth={1.8} />
+                            Save Recipe
+                        </button>
                     </div>
-
-                    <div className="recipe-meta-field-wrapper">
-                        <label>
-                            Freezer Instructions:
-                            <div className="textarea-wrapper">
-                                <textarea
-                                    value={editedRecipe.freezerInstructions ?? ''}
-                                    onChange={(event) =>
-                                        updateRecipeField('freezerInstructions', event.target.value)
-                                    }
-                                    placeholder="Are there any instructions for freezing and thawing?"
-                                    rows={3}
-                                />
-                            </div>
-                        </label>
-                    </div>
-                </section>
-
-                <div className="recipe-review-actions">
-                    <button onClick={onBack}>
-                        <MoveLeft size={20} strokeWidth={1.8} />
-                        Back
-                    </button>
-
-                    <button
-                        onClick={() => {
-                            setHasAttemptedSave(true)
-
-                            if (validateRecipe()) {
-                                console.log('Recipe update payload:', JSON.stringify(buildSaveRequest(), null, 2))
-                                onSave(buildSaveRequest())
-                            }
-                        }}
-                    >
-                        <Save size={20} strokeWidth={1.8} />
-                        Save Recipe
-                    </button>
                 </div>
             </div>
-        </div>
-    )
-}
+        )
+    }
 
-export default RecipeReview
+    export default RecipeReview

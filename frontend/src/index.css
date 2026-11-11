@@ -1,4 +1,66 @@
 @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
+:root {
+    /* Brand colours */
+    --color-sage: #415037;
+    --color-sage-light: #e8ebdf;
+    --color-sage-medium: #6f765f;
+    --color-sage-categories: #f1f3eb;
+
+    /* Primary actions */
+    --color-primary: #f6e497;
+    --color-primary-hover: #ead77d;
+    --color-primary-border: #e4d17c;
+
+    /* Secondary actions */
+    --color-cream-button: #f3f0e8;
+    --color-cream-button-hover: #eae5d9;
+    --color-sage-button-hover: #dce3d2;
+    --color-rust-light: #f0dcd2;
+    --color-rust-light-hover: #e8cbbd;
+    --color-rust-text: #754536;
+
+    /* Surfaces and borders */
+    --color-page: #f6f3e7;
+    --color-surface: #fffdf7;
+    --color-surface-muted: #f3f0e8;
+    --color-surface-muted-rd: #f7f5ed;
+    --color-border: #e8e3d5;
+    --color-border-strong: #d8cfae;
+    --color-recipe-card: #faf3d8;
+    --color-recipe-section: #faf9f4;
+
+    /* Feedback */
+    --color-danger: #8c3e32;
+    --color-danger-bg: #f7e8e4;
+    --color-danger-bg-hover: #f0d8d1;
+
+    /* Shared sizing */
+    --radius-control: 8px;
+    --radius-card: 12px;
+    --focus-color: #b5a46a;
+
+    /* Text colours */
+    --color-text: #373b32;
+    --color-text-muted: #555;
+    --color-text-placeholder: #999;
+    --color-primary-text: #51472c;
+
+    /* Success feedback */
+    --color-success-bg: #edf4e8;
+    --color-success-text: #36543b;
+    --color-success-border: #cbdcc2;
+    --color-success-icon: #d5e2ca;
+    --color-save-border: #cbd8bd;
+
+    /* Additional borders */
+    --color-danger-border: #e5bdb3;
+    --color-delete-button-border: #b76a58;
+    --color-edit-button-border: #9aaa83;
+
+    /* Destructive action hover */
+    --color-danger-hover: #713126;
+}
+
 * {
     box-sizing: border-box;
 }
@@ -6,8 +68,8 @@
 body {
     margin: 0;
     font-family: 'Fredoka', sans-serif;
-    background: #f6f3e7;
-    color: #415037;
+    background: var(--color-page);
+    color: var(--color-sage);
 }
 
 button {
