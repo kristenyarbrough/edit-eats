@@ -343,6 +343,7 @@ public class RecipeImportService {
                     .name(parsed.name())
                     .preparation(parsed.preparation())
                     .optional(parsed.optional())
+                    .substitutions(parsed.substitutions())
                     .build();
 
         }
@@ -401,6 +402,7 @@ public class RecipeImportService {
                 .name(parsed.name())
                 .preparation(parsed.preparation())
                 .optional(parsed.optional())
+                .substitutions(parsed.substitutions())
                 .build();
 
     }
@@ -553,6 +555,32 @@ public class RecipeImportService {
 
         String trimmed = ingredientText.trim();
 
+        // Ingredient substitution: andouille or smoked sausage
+        int orIndex = trimmed.toLowerCase().indexOf(" or ");
+
+        if (orIndex >= 0) {
+
+            String mainIngredient = trimmed.substring(0, orIndex).trim();
+            String alternativeIngredient = trimmed.substring(orIndex + 4).trim();
+
+            // Parse the alternative separately so it can have its own quantity and unit.
+            ImportedIngredient alternative = parseIngredient(alternativeIngredient);
+
+            return new ParsedIngredientText(
+                    mainIngredient,
+                    null,
+                    false,
+                    List.of(
+                            ImportedIngredientSubstitution.builder()
+                                    .name(alternative.getName())
+                                    .quantity(alternative.getQuantity())
+                                    .unit(alternative.getUnit())
+                                    .build()
+                    )
+            );
+
+        }
+
         // Parenthesised optional
         if (endsWithIgnoreCase(trimmed, "(optional)")) {
 
@@ -561,7 +589,8 @@ public class RecipeImportService {
             return new ParsedIngredientText(
                     name,
                     null,
-                    true
+                    true,
+                    List.of()
             );
         }
 
@@ -573,7 +602,8 @@ public class RecipeImportService {
             return new ParsedIngredientText(
                     name,
                     null,
-                    true
+                    true,
+                    List.of()
             );
         }
 
@@ -585,7 +615,8 @@ public class RecipeImportService {
             return new ParsedIngredientText(
                     name,
                     null,
-                    true
+                    true,
+                    List.of()
             );
         }
 
@@ -599,7 +630,8 @@ public class RecipeImportService {
             return new ParsedIngredientText(
                     name,
                     preparation.isEmpty() ? null : preparation,
-                    false
+                    false,
+                    List.of()
             );
         }
 
@@ -616,7 +648,8 @@ public class RecipeImportService {
             return new ParsedIngredientText(
                     name,
                     preparation.isEmpty() ? null : preparation,
-                    false
+                    false,
+                    List.of()
             );
 
         }
@@ -634,7 +667,8 @@ public class RecipeImportService {
             return new ParsedIngredientText(
                     name,
                     "to taste",
-                    false
+                    false,
+                    List.of()
             );
 
         }
@@ -642,7 +676,8 @@ public class RecipeImportService {
         return new ParsedIngredientText(
                 trimmed,
                 null,
-                false
+                false,
+                List.of()
         );
 
 
@@ -912,7 +947,8 @@ public class RecipeImportService {
     private record ParsedIngredientText(
             String name,
             String preparation,
-            boolean optional
+            boolean optional,
+            List<ImportedIngredientSubstitution> substitutions
     ) {
 
     }
@@ -1045,18 +1081,25 @@ public class RecipeImportService {
     private ImportedIngredientResponse toIngredientResponse(
             ImportedIngredient ingredient) {
 
-//        Long ingredientId = ingredientRepository.findByNameIgnoreCase(ingredient.getName())
-//                .map(Ingredient::getId)
-//                .orElse(null);
-
         return ImportedIngredientResponse.builder()
                 .ingredientId(null)
                 .ingredientName(ingredient.getName())
                 .quantity(ingredient.getQuantity())
                 .unit(ingredient.getUnit())
+                .alternativeQuantity(ingredient.getAlternativeQuantity())
+                .alternativeUnit(ingredient.getAlternativeUnit())
                 .preparation(ingredient.getPreparation())
                 .note(ingredient.getNote())
                 .optional(ingredient.getOptional())
+                .substitutions(ingredient.getSubstitutions() == null
+                        ? List.of()
+                        : ingredient.getSubstitutions().stream()
+                                .map(substitution -> ImportedIngredientSubstitutionResponse.builder()
+                                        .ingredientName(substitution.getName())
+                                        .quantity(substitution.getQuantity())
+                                        .unit(substitution.getUnit())
+                                        .build())
+                                .toList())
                 .build();
 
     }

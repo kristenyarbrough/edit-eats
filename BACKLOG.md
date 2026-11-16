@@ -241,6 +241,9 @@ Relationships:
     - [x] Import a recipe from URL
     - [ ] Add a recipe from scratch
     - [ ] Import from an image of a recipe (e.g. cookbook)
+    - [ ] Import from instagram
+      - [ ] Caption
+      - [ ] Reel
     - [x] Edit a recipe
       - [x] Reorder steps
       - [x] Reorder ingredients

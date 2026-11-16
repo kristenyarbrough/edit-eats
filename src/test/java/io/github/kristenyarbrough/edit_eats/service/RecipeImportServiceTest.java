@@ -1074,6 +1074,66 @@ class RecipeImportServiceTest {
     }
 
     @Test
+    void shouldParseIngredientSubstitution() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Jambalaya
+                
+                Ingredients:
+                200 g andouille or smoked sausage
+                
+                Method:
+                Cook the sausage.
+                """);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("andouille", ingredient.getName());
+        assertEquals(0, new BigDecimal("200").compareTo(ingredient.getQuantity()));
+        assertEquals(Unit.G, ingredient.getUnit());
+
+        assertEquals(1, ingredient.getSubstitutions().size());
+
+        ImportedIngredientSubstitution substitution = ingredient.getSubstitutions().get(0);
+
+        assertEquals("smoked sausage", substitution.getName());
+        assertNull(substitution.getQuantity());
+        assertNull(substitution.getUnit());
+
+    }
+
+    @Test
+    void shouldParseIngredientSubstitutionWithAlternativeQuantityAndUnit() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Herbed Chicken
+                
+                Ingredients:
+                2 tsp fresh thyme or 1 tsp dried thyme
+                
+                Method:
+                Cook the chicken.
+                """);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        // Main ingredient
+        assertEquals("fresh thyme", ingredient.getName());
+        assertEquals(0, new BigDecimal("2").compareTo(ingredient.getQuantity()));
+        assertEquals(Unit.TSP, ingredient.getUnit());
+
+        // Alternative ingredient
+        assertEquals(1, ingredient.getSubstitutions().size());
+
+        ImportedIngredientSubstitution substitution = ingredient.getSubstitutions().get(0);
+
+        assertEquals("dried thyme", substitution.getName());
+        assertEquals(0, new BigDecimal("1").compareTo(substitution.getQuantity()));
+        assertEquals(Unit.TSP, substitution.getUnit());
+        
+    }
+
+    @Test
     void shouldPreserveIngredientSectionsWhenImportingRecipeFromUrl() {
 
         ImportedIngredient chicken = ImportedIngredient.builder()
