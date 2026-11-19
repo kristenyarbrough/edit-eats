@@ -13,5 +13,6 @@ public class ImportedIngredientSubstitution {
     private String name;
     private BigDecimal quantity;
     private Unit unit;
+    private String preparation;
 
 }

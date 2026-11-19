@@ -13,5 +13,6 @@ public class ImportedIngredientSubstitutionResponse {
     private String ingredientName;
     private BigDecimal quantity;
     private Unit unit;
+    private String preparation;
 
 }

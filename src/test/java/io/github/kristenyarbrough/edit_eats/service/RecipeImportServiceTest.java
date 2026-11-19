@@ -2,6 +2,8 @@ package io.github.kristenyarbrough.edit_eats.service;
 
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
 import io.github.kristenyarbrough.edit_eats.dto.imported.*;
+import io.github.kristenyarbrough.edit_eats.dto.response.ImportedIngredientResponse;
+import io.github.kristenyarbrough.edit_eats.dto.response.ImportedIngredientSubstitutionResponse;
 import io.github.kristenyarbrough.edit_eats.dto.response.RecipeDraftResponse;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -1132,6 +1134,85 @@ class RecipeImportServiceTest {
         assertEquals(Unit.TSP, substitution.getUnit());
         
     }
+
+    @Test
+    void shouldParseMultipleIngredientSubstitutions() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Jambalaya
+                
+                Ingredients:
+                200 g andouille or smoked sausage or chorizo
+                
+                Method:
+                Cook the sausage.
+                """);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("andouille", ingredient.getName());
+
+        assertEquals(2, ingredient.getSubstitutions().size());
+
+        assertEquals("smoked sausage", ingredient.getSubstitutions().get(0).getName());
+
+        assertEquals("chorizo", ingredient.getSubstitutions().get(1).getName());
+
+    }
+
+    @Test
+    void shouldParsePreparationForIngredientSubstitutions() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Jambalaya
+                
+                Ingredients:
+                200 g andouille, sliced or smoked sausage, sliced
+                
+                Method:
+                Cook the sausage.
+                """);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        // Main ingredient
+        assertEquals("andouille", ingredient.getName());
+        assertEquals("sliced", ingredient.getPreparation());
+
+        // Alternative ingredient
+        assertEquals(1, ingredient.getSubstitutions().size());
+
+        ImportedIngredientSubstitution substitution = ingredient.getSubstitutions().get(0);
+
+        assertEquals("smoked sausage", substitution.getName());
+        assertEquals("sliced", substitution.getPreparation());
+
+    }
+
+    @Test
+    void shouldIncludeSubstitutionPreparationInDraftResponse() {
+
+        RecipeDraftResponse result = recipeImportService.importRecipeDraftFromText("""
+                Jambalaya
+                
+                Ingredients:
+                200 g andouille, sliced or smoked sausage, sliced
+                
+                Method:
+                Cook the sausage.
+                """);
+
+        ImportedIngredientResponse ingredient = result.getIngredients().get(0);
+
+        assertEquals(1, ingredient.getSubstitutions().size());
+
+        ImportedIngredientSubstitutionResponse substitution = ingredient.getSubstitutions().get(0);
+
+        assertEquals("smoked sausage", substitution.getIngredientName());
+        assertEquals("sliced", substitution.getPreparation());
+
+    }
+
 
     @Test
     void shouldPreserveIngredientSectionsWhenImportingRecipeFromUrl() {

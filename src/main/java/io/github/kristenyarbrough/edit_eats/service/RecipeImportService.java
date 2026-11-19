@@ -1,10 +1,8 @@
 package io.github.kristenyarbrough.edit_eats.service;
 
-import io.github.kristenyarbrough.edit_eats.domain.Ingredient;
 import io.github.kristenyarbrough.edit_eats.domain.Unit;
 import io.github.kristenyarbrough.edit_eats.dto.imported.*;
 import io.github.kristenyarbrough.edit_eats.dto.response.*;
-import io.github.kristenyarbrough.edit_eats.repository.IngredientRepository;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -14,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -555,28 +554,31 @@ public class RecipeImportService {
 
         String trimmed = ingredientText.trim();
 
-        // Ingredient substitution: andouille or smoked sausage
-        int orIndex = trimmed.toLowerCase().indexOf(" or ");
+        // Ingredient substitution: andouille or smoked sausage or chorizo
+        String[] ingredientOptions = trimmed.split("\\s+or\\s+", 0);
 
-        if (orIndex >= 0) {
+        if (ingredientOptions.length > 1) {
 
-            String mainIngredient = trimmed.substring(0, orIndex).trim();
-            String alternativeIngredient = trimmed.substring(orIndex + 4).trim();
+            ParsedIngredientText mainParsed = parseIngredientText(ingredientOptions[0].trim());
 
-            // Parse the alternative separately so it can have its own quantity and unit.
-            ImportedIngredient alternative = parseIngredient(alternativeIngredient);
+            List<ImportedIngredientSubstitution> substitutions =
+                    Arrays.stream(ingredientOptions)
+                            .skip(1)
+                            .map(String::trim)
+                            .map(this::parseIngredient)
+                            .map(alternative -> ImportedIngredientSubstitution.builder()
+                                        .name(alternative.getName())
+                                        .quantity(alternative.getQuantity())
+                                        .unit(alternative.getUnit())
+                                        .preparation(alternative.getPreparation())
+                                        .build())
+                            .toList();
 
             return new ParsedIngredientText(
-                    mainIngredient,
-                    null,
-                    false,
-                    List.of(
-                            ImportedIngredientSubstitution.builder()
-                                    .name(alternative.getName())
-                                    .quantity(alternative.getQuantity())
-                                    .unit(alternative.getUnit())
-                                    .build()
-                    )
+                    mainParsed.name(),
+                    mainParsed.preparation(),
+                    mainParsed.optional(),
+                    substitutions
             );
 
         }
@@ -1098,6 +1100,7 @@ public class RecipeImportService {
                                         .ingredientName(substitution.getName())
                                         .quantity(substitution.getQuantity())
                                         .unit(substitution.getUnit())
+                                        .preparation(substitution.getPreparation())
                                         .build())
                                 .toList())
                 .build();
