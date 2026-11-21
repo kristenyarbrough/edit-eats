@@ -341,6 +341,7 @@ public class RecipeImportService {
                     .unit(unit)
                     .name(parsed.name())
                     .preparation(parsed.preparation())
+                    .note(parsed.note())
                     .optional(parsed.optional())
                     .substitutions(parsed.substitutions())
                     .build();
@@ -400,6 +401,7 @@ public class RecipeImportService {
                 .unit(unit)
                 .name(parsed.name())
                 .preparation(parsed.preparation())
+                .note(parsed.note)
                 .optional(parsed.optional())
                 .substitutions(parsed.substitutions())
                 .build();
@@ -567,11 +569,12 @@ public class RecipeImportService {
                             .map(String::trim)
                             .map(this::parseIngredient)
                             .map(alternative -> ImportedIngredientSubstitution.builder()
-                                        .name(alternative.getName())
-                                        .quantity(alternative.getQuantity())
-                                        .unit(alternative.getUnit())
-                                        .preparation(alternative.getPreparation())
-                                        .build())
+                                    .name(alternative.getName())
+                                    .quantity(alternative.getQuantity())
+                                    .unit(alternative.getUnit())
+                                    .preparation(alternative.getPreparation())
+                                    .note(alternative.getNote())
+                                    .build())
                             .toList();
 
             return new ParsedIngredientText(
@@ -627,14 +630,20 @@ public class RecipeImportService {
         if (commaIndex >= 0) {
 
             String name = trimmed.substring(0, commaIndex).trim();
-            String preparation = trimmed.substring(commaIndex + 1).trim();
+            String detail = trimmed.substring(commaIndex + 1).trim();
+
+            boolean isNote = detail.equalsIgnoreCase("to taste")
+                    || detail.toLowerCase().startsWith("for ")
+                    || detail.equalsIgnoreCase("divided");
 
             return new ParsedIngredientText(
                     name,
-                    preparation.isEmpty() ? null : preparation,
+                    isNote ? null : detail.isEmpty() ? null : detail,
                     false,
-                    List.of()
+                    List.of(),
+                    isNote ? detail : null
             );
+
         }
 
         int openParenthesis = trimmed.indexOf('(');
@@ -668,9 +677,10 @@ public class RecipeImportService {
 
             return new ParsedIngredientText(
                     name,
-                    "to taste",
+                    null,
                     false,
-                    List.of()
+                    List.of(),
+                    "to taste"
             );
 
         }
@@ -950,8 +960,21 @@ public class RecipeImportService {
             String name,
             String preparation,
             boolean optional,
-            List<ImportedIngredientSubstitution> substitutions
+            List<ImportedIngredientSubstitution> substitutions,
+            String note
     ) {
+
+        private ParsedIngredientText(
+                String name,
+                String preparation,
+                boolean optional,
+                List<ImportedIngredientSubstitution> substitutions
+
+        ) {
+
+            this(name, preparation, optional, substitutions, null);
+
+        }
 
     }
 
@@ -1101,6 +1124,7 @@ public class RecipeImportService {
                                         .quantity(substitution.getQuantity())
                                         .unit(substitution.getUnit())
                                         .preparation(substitution.getPreparation())
+                                        .note(substitution.getNote())
                                         .build())
                                 .toList())
                 .build();

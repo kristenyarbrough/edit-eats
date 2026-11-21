@@ -634,7 +634,8 @@ class RecipeImportServiceTest {
         assertNull(pepper.getQuantity());
         assertNull(pepper.getUnit());
         assertEquals("pepper", pepper.getName());
-        assertEquals("to taste", pepper.getPreparation());
+        assertEquals("to taste", pepper.getNote());
+        assertNull(pepper.getPreparation());
 
     }
 
@@ -865,7 +866,8 @@ class RecipeImportServiceTest {
 
         assertEquals(Unit.TBSP, oil.getUnit());
         assertEquals("olive oil", oil.getName());
-        assertEquals("divided", oil.getPreparation());
+        assertEquals("divided", oil.getNote());
+        assertNull(oil.getPreparation());
 
     }
 
@@ -888,14 +890,16 @@ class RecipeImportServiceTest {
         assertNull(salt.getQuantity());
         assertNull(salt.getUnit());
         assertEquals("salt", salt.getName());
-        assertEquals("to taste", salt.getPreparation());
+        assertEquals("to taste", salt.getNote());
+        assertNull(salt.getPreparation());
 
         ImportedIngredient pepper = result.getIngredients().get(1);
 
         assertNull(pepper.getQuantity());
         assertNull(pepper.getUnit());
         assertEquals("pepper", pepper.getName());
-        assertEquals("to taste", pepper.getPreparation());
+        assertEquals("to taste", pepper.getNote());
+        assertNull(pepper.getPreparation());
 
     }
 
@@ -961,7 +965,8 @@ class RecipeImportServiceTest {
         assertNull(ingredient.getQuantity());
         assertNull(ingredient.getUnit());
         assertEquals("Salt", ingredient.getName());
-        assertEquals("to taste", ingredient.getPreparation());
+        assertEquals("to taste", ingredient.getNote());
+        assertNull(ingredient.getPreparation());
     }
 
     @Test
@@ -987,7 +992,8 @@ class RecipeImportServiceTest {
         );
         assertEquals(Unit.TSP, ingredient.getUnit());
         assertEquals("salt", ingredient.getName());
-        assertEquals("to taste", ingredient.getPreparation());
+        assertEquals("to taste", ingredient.getNote());
+        assertNull(ingredient.getPreparation());
     }
 
     @Test
@@ -1009,7 +1015,145 @@ class RecipeImportServiceTest {
         assertNull(ingredient.getQuantity());
         assertNull(ingredient.getUnit());
         assertEquals("Salt", ingredient.getName());
-        assertEquals("to taste", ingredient.getPreparation());
+        assertEquals("to taste", ingredient.getNote());
+        assertNull(ingredient.getPreparation());
+    }
+
+    @Test
+    void shouldParseToTasteAsNote() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Seasoned Vegetables
+                
+                Ingredients:
+                salt, to taste
+                pepper to taste
+                
+                Method:
+                Season the vegetables.
+                """);
+
+        ImportedIngredient salt = result.getIngredients().get(0);
+        ImportedIngredient pepper = result.getIngredients().get(1);
+
+        assertEquals("salt", salt.getName());
+        assertEquals("to taste", salt.getNote());
+        assertNull(salt.getPreparation());
+
+        assertEquals("pepper", pepper.getName());
+        assertEquals("to taste", pepper.getNote());
+        assertNull(pepper.getPreparation());
+
+    }
+
+    @Test
+    void shouldParseForDustingAsNote() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Cake
+                
+                Ingredients:
+                2 tbsp icing sugar, for dusting
+                
+                Method:
+                Dust the cake with icing sugar.
+                """);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("icing sugar", ingredient.getName());
+        assertEquals("for dusting", ingredient.getNote());
+        assertNull(ingredient.getPreparation());
+
+    }
+
+    @Test
+    void shouldParseDividedAsNote() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Pasta
+                
+                Ingredients:
+                2 tbsp butter, divided
+                
+                Method:
+                Melt the butter.
+                """);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("butter", ingredient.getName());
+        assertEquals("divided", ingredient.getNote());
+        assertNull(ingredient.getPreparation());
+
+    }
+
+    @Test
+    void shouldParseForDrizzlingAsNote() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Salad
+                
+                Ingredients:
+                2 tbsp olive oil, for drizzling
+                
+                Method:
+                Drizzle olive oil over the salad.
+                """);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("olive oil", ingredient.getName());
+        assertEquals("for drizzling", ingredient.getNote());
+        assertNull(ingredient.getPreparation());
+
+    }
+
+    @Test
+    void shouldParseDividedSugarAsNote() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Cake
+                
+                Ingredients:
+                1 cup sugar, divided
+                
+                Method:
+                Add some sugar to the mixture and reserve the rest.
+                """);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("sugar", ingredient.getName());
+        assertEquals("divided", ingredient.getNote());
+        assertNull(ingredient.getPreparation());
+
+    }
+
+    @Test
+    void shouldParseNoteOnIngredientSubstitution() {
+
+        ImportedRecipe result = recipeImportService.importRecipeFromText("""
+                Pasta
+                
+                Ingredients:
+                200 g butter or 200 g margarine, divided
+                
+                Method:
+                Melt the butter.
+                """);
+
+        ImportedIngredient ingredient = result.getIngredients().get(0);
+
+        assertEquals("butter", ingredient.getName());
+        assertEquals(1, ingredient.getSubstitutions().size());
+
+        ImportedIngredientSubstitution substitution = ingredient.getSubstitutions().get(0);
+
+        assertEquals("margarine", substitution.getName());
+        assertEquals("divided", substitution.getNote());
+        assertNull(ingredient.getPreparation());
+
     }
 
     @Test
